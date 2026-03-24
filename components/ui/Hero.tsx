@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, RefreshCcw, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 export function Hero() {
     const { isLoggedIn } = useAuthStore();
@@ -18,18 +19,16 @@ export function Hero() {
 function GuestHero() {
     return (
         <div className="relative w-full h-full flex flex-col items-center justify-center text-center px-4">
-            {/* Abstract Animated Background */}
-            <div className="absolute inset-0 z-0 overflow-hidden opacity-30">
-                <motion.div
-                    animate={{
-                        scale: [1, 1.2, 1],
-                        rotate: [0, 5, -5, 0],
-                        filter: ["hue-rotate(0deg)", "hue-rotate(90deg)", "hue-rotate(0deg)"]
-                    }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="w-full h-full bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-indigo-900 via-purple-900 to-black"
+            {/* Custom Banner Background */}
+            <div className="absolute inset-0 z-0">
+                <Image
+                    src="/home-banner.jpg"
+                    alt="Hero Banner"
+                    fill
+                    className="object-cover opacity-60"
+                    priority
                 />
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+                <div className="absolute inset-0 bg-black/40" />
             </div>
 
             <div className="relative z-10 max-w-4xl space-y-8">
@@ -71,11 +70,13 @@ function GuestHero() {
                     </button>
                 </motion.div>
             </div>
-        </div>
+        </div >
     );
 }
 
 function LoggedInHero() {
+    const { user } = useAuthStore();
+
     return (
         <div className="relative w-full h-full flex flex-col md:flex-row">
             {/* Left Panel: AI Control / Greeting */}
@@ -90,7 +91,7 @@ function LoggedInHero() {
                         <span className="text-sm font-bold tracking-wider">AI COORDINATOR</span>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-                        Hello, <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-neon to-white">Sarah</span>.
+                        Hello, <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-neon to-white">{user?.name || "User"}</span>.
                         <br />
                         <span className="text-2xl md:text-3xl text-gray-400 font-light">Here is your Pick.</span>
                     </h1>

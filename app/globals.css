@@ -3,31 +3,95 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-card: var(--card);
 
-  --color-cinematic-900: #050505;
-  --color-cinematic-800: #111111;
-  --color-cinematic-700: #1a1a1a;
-
-  --color-brand-neon: #CCFF00;
-  --color-brand-soft: #F5F5F7;
-
-  --font-sans: var(--font-outfit), var(--font-noto), sans-serif;
+  --color-neon-purple: #8B5CF6;
+  --color-neon-blue: #3B82F6;
+  --color-brand-neon: #ccf381;
+  --color-brand-purple: #a855f7;
+  --color-dark-surface: #0F0F0F;
 }
 
 @layer base {
   :root {
-    /* Reverted to Light Base */
-    --background: #ffffff;
-    --foreground: #111111;
-  }
-
-  /* Optional: Utility class if we want to force dark sections */
-  .dark-theme {
+    /* Cinematic Dark Theme (Higgsfield Inspired) */
     --background: #050505;
+    /* Deep Black */
     --foreground: #F5F5F7;
+    /* Off White */
+
+    --card: #0F0F0F;
+    --card-foreground: #F5F5F7;
+
+    --primary: #8B5CF6;
+    /* Neon Purple */
+    --primary-foreground: #ffffff;
+
+    --border: #282828;
+    --input: #282828;
+    --ring: #8B5CF6;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    scroll-behavior: smooth;
+  }
+
+  /* Custom Scrollbar */
+  @media (pointer: fine) {
+    body {
+      cursor: none;
+    }
+
+    a,
+    button,
+    [role="button"] {
+      cursor: none;
+    }
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  /* Glassmorphism */
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  .glass-panel-dark {
+    @apply bg-black/40 backdrop-blur-lg border border-white/5;
+  }
+
+  /* Neon Glow */
+  .text-glow {
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
   }
 }

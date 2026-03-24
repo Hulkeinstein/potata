@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   description: "Premier Korean Fashion for UAE",
 };
 
+import { Navbar } from "@/components/ui/Navbar";
+import { InitialLoader } from "@/components/ui/InitialLoader";
+import { CustomCursor } from "@/components/ui/CustomCursor";
+
+// ... (Metadata export remains)
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,6 +35,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={cn(outfit.variable, notoSansKr.variable, "font-sans min-h-screen bg-background text-foreground")}>
+        <InitialLoader />
+        <CustomCursor />
+        <Navbar />
         {children}
       </body>
     </html>

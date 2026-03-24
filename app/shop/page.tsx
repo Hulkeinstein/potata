@@ -1,0 +1,115 @@
+"use client";
+
+import { useState } from "react";
+import { PRODUCTS } from "@/data/dummy";
+import { ProductCard } from "@/components/ui/ProductCard";
+import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CATEGORIES } from "@/lib/constants";
+
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+
+export default function ShopPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ShopContent />
+        </Suspense>
+    );
+}
+
+function ShopContent() {
+    const searchParams = useSearchParams();
+    const initialCategory = searchParams.get("category");
+    const [selectedCategory, setSelectedCategory] = useState<string>(
+        initialCategory && CATEGORIES.includes(initialCategory as any)
+            ? initialCategory
+            : "All"
+    );
+
+    const filteredProducts =
+        selectedCategory === "All"
+            ? PRODUCTS
+            : PRODUCTS.filter((p) => p.category === selectedCategory);
+
+    return (
+        <div className="min-h-screen bg-black pb-20 pt-16 text-white">
+            {/* Filter Bar (Sticky) */}
+            <div className="sticky top-16 z-40 bg-black/80 backdrop-blur-md border-b border-white/5">
+                <div className="max-w-7xl mx-auto px-4 h-12 flex items-center justify-between">
+                    <div
+                        className="flex items-center gap-4 overflow-x-auto no-scrollbar"
+                        role="tablist"
+                        aria-label="Product categories"
+                    >
+                        <button
+                            className="flex items-center gap-2 text-sm font-bold border border-white/10 rounded-full px-3 py-1 hover:border-purple-500 hover:text-purple-400 transition-colors focus:outline-none"
+                            aria-label="Open filters"
+                        >
+                            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+                            Filter
+                        </button>
+                        {CATEGORIES.map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => setSelectedCategory(cat)}
+                                role="tab"
+                                aria-selected={selectedCategory === cat}
+                                className={cn(
+                                    "text-sm px-3 py-1 rounded-full whitespace-nowrap transition-colors focus:outline-none",
+                                    selectedCategory === cat
+                                        ? "bg-white text-black font-bold"
+                                        : "text-gray-400 hover:text-white"
+                                )}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        className="flex items-center gap-1 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors focus:outline-none rounded"
+                        aria-label="Sort options"
+                    >
+                        Sort by: <span className="text-white">Newest</span>
+                        <ChevronDown className="w-3 h-3" aria-hidden="true" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Product Grid */}
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                <h1 className="text-xl font-bold mb-6 flex items-baseline gap-2">
+                    {selectedCategory === "All" ? "All Products" : selectedCategory}
+                    <span className="text-gray-500 text-sm font-normal">
+                        ({filteredProducts.length})
+                    </span>
+                </h1>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10">
+                    {filteredProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                </div>
+
+                {/* Load More */}
+                {filteredProducts.length > 0 && (
+                    <div className="py-12 flex justify-center">
+                        <button className="px-8 py-3 border border-white/20 rounded-full font-bold hover:bg-white hover:text-black transition-colors">
+                            Load More
+                        </button>
+                    </div>
+                )}
+
+                {/* Empty State */}
+                {filteredProducts.length === 0 && (
+                    <div className="py-20 text-center">
+                        <p className="text-gray-500 font-medium">
+                            No products found in this category.
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

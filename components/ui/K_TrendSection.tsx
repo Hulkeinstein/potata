@@ -1,27 +1,41 @@
 "use client";
 
+import { useRef } from "react";
 import { TRENDS } from "@/data/dummy";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 export function K_TrendSection() {
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    const scroll = (direction: "left" | "right") => {
+        if (scrollRef.current) {
+            const scrollAmount = direction === "left" ? -420 : 420; // Card width + gap
+            scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+        }
+    };
+
     return (
-        <section className="w-full bg-cinematic-900 py-16 text-white overflow-hidden">
+        <section className="w-full bg-black py-16 text-white overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 flex justify-between items-end">
                 <div>
                     <span className="text-brand-neon font-bold tracking-wider text-xs uppercase mb-2 block">Curated for UAE</span>
                     <h2 className="text-3xl font-bold">Trending in Seoul</h2>
                 </div>
                 <div className="flex gap-2">
-                    <button className="p-2 border border-white/20 rounded-full hover:bg-white/10"><ArrowRight className="w-5 h-5 rotate-180" /></button>
-                    <button className="p-2 border border-white/20 rounded-full hover:bg-white/10"><ArrowRight className="w-5 h-5" /></button>
+                    <button onClick={() => scroll("left")} className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
+                        <ArrowRight className="w-5 h-5 rotate-180" />
+                    </button>
+                    <button onClick={() => scroll("right")} className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
+                        <ArrowRight className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
 
             {/* Horizontal Scroll Container */}
-            <div className="flex gap-6 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-8 no-scrollbar snap-x">
+            <div ref={scrollRef} className="flex gap-6 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-8 no-scrollbar snap-x scroll-smooth">
                 {TRENDS.map((trend) => (
-                    <div key={trend.id} className="relative min-w-[300px] md:min-w-[400px] aspect-video rounded-xl overflow-hidden shrink-0 snap-center group cursor-pointer">
+                    <div key={trend.id} className="relative min-w-[300px] md:min-w-[400px] aspect-video rounded-xl overflow-hidden shrink-0 snap-center group cursor-pointer border border-white/5 hover:border-purple-500/50 transition-colors">
                         <Image
                             src={trend.imageUrl}
                             alt={trend.title}
