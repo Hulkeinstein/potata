@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
+import { formatPrice } from "@/lib/utils";
 
 export function CartDrawer() {
     const { items, isOpen, closeCart, updateQuantity, removeItem } = useCartStore();
@@ -108,7 +109,7 @@ export function CartDrawer() {
 
                                             <div className="flex items-center justify-between mt-2">
                                                 <p className="text-sm font-bold text-brand-neon">
-                                                    ₩{item.product.price.toLocaleString()}
+                                                    {formatPrice(item.product.price)}
                                                 </p>
 
                                                 {/* Quantity */}
@@ -141,15 +142,15 @@ export function CartDrawer() {
                                 <div className="space-y-2 mb-6">
                                     <div className="flex justify-between text-sm text-zinc-400">
                                         <span>Subtotal</span>
-                                        <span>₩{subtotal.toLocaleString()}</span>
+                                        <span>{formatPrice(subtotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-zinc-400">
                                         <span>Shipping</span>
-                                        <span>{shipping === 0 ? "Free" : `₩${shipping.toLocaleString()}`}</span>
+                                        <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
                                     </div>
                                     <div className="flex justify-between text-base font-bold text-white pt-2 border-t border-white/5">
                                         <span>Total</span>
-                                        <span>₩{total.toLocaleString()}</span>
+                                        <span>{formatPrice(total)}</span>
                                     </div>
                                 </div>
 

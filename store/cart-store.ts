@@ -54,7 +54,7 @@ export const useCartStore = create<CartStore>()(
         }),
         {
             name: 'cart-storage',
-            skipHydration: true, // Handle hydration manualy if needed, or default behavior
+            skipHydration: true, // Handle hydration manually if needed, or default behavior
         }
     )
 );

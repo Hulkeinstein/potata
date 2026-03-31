@@ -16,6 +16,4 @@ export const formatPrice = (krwPrice: number): string => {
     return `${CURRENCY.DEFAULT_CURRENCY} ${aedPrice.toLocaleString(CURRENCY.LOCALE)}`;
 };
 
-export const formatKRWPrice = (price: number): string => {
-    return `KRW ${price.toLocaleString("ko-KR")}`;
-};
+
