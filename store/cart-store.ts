@@ -1,52 +1,44 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { CartItem, CartState } from '@/types';
 
-export interface CartItem {
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    option?: string;
-    quantity: number;
-}
-
-interface CartStore {
-    items: CartItem[];
+interface CartStore extends CartState {
     isOpen: boolean;
-    addItem: (item: CartItem) => void;
-    removeItem: (id: string) => void;
-    updateQuantity: (id: string, delta: number) => void;
     toggleCart: () => void;
     openCart: () => void;
     closeCart: () => void;
-    clearCart: () => void;
 }
+
+const isSameCartItem = (left: CartItem, right: CartItem) =>
+    left.product.id === right.product.id &&
+    left.size === right.size &&
+    left.color === right.color;
 
 export const useCartStore = create<CartStore>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             items: [],
             isOpen: false,
             addItem: (newItem) => set((state) => {
-                const existingItem = state.items.find((item) => item.id === newItem.id);
+                const existingItem = state.items.find((item) => isSameCartItem(item, newItem));
                 if (existingItem) {
                     return {
                         items: state.items.map((item) =>
-                            item.id === newItem.id
-                                ? { ...item, quantity: item.quantity + 1 }
+                            isSameCartItem(item, newItem)
+                                ? { ...item, quantity: item.quantity + newItem.quantity }
                                 : item
                         ),
                         isOpen: true, // Open cart when adding item
                     };
                 }
-                return { items: [...state.items, { ...newItem, quantity: 1 }], isOpen: true };
+                return { items: [...state.items, newItem], isOpen: true };
             }),
-            removeItem: (id) => set((state) => ({
-                items: state.items.filter((item) => item.id !== id),
+            removeItem: (targetItem) => set((state) => ({
+                items: state.items.filter((item) => !isSameCartItem(item, targetItem)),
             })),
-            updateQuantity: (id, delta) => set((state) => ({
+            updateQuantity: (targetItem, delta) => set((state) => ({
                 items: state.items.map((item) => {
-                    if (item.id === id) {
+                    if (isSameCartItem(item, targetItem)) {
                         const newQuantity = Math.max(1, item.quantity + delta);
                         return { ...item, quantity: newQuantity };
                     }
@@ -57,6 +49,8 @@ export const useCartStore = create<CartStore>()(
             openCart: () => set({ isOpen: true }),
             closeCart: () => set({ isOpen: false }),
             clearCart: () => set({ items: [] }),
+            totalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
+            totalPrice: () => get().items.reduce((total, item) => total + item.product.price * item.quantity, 0),
         }),
         {
             name: 'cart-storage',

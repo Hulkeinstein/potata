@@ -5,9 +5,9 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Heart, Share2, Plus, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatPrice } from "@/lib/constants";
 import { useCartStore } from "@/store/cart-store";
 import type { Product } from "@/types";
+import { formatPrice } from "@/lib/utils";
 
 interface ProductDetailClientProps {
     product: Product;
@@ -39,12 +39,13 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
         const sizeToUse = selectedSize || productSizes[0];
 
         addItem({
-            id: product.id + selectedColor + sizeToUse,
-            name: product.name,
-            price: product.price,
-            image: productImages[0],
-            option: `${selectedColor} / ${sizeToUse}`,
+            product: {
+                ...product,
+                imageUrl: productImages[0],
+            },
             quantity: 1,
+            color: selectedColor,
+            size: sizeToUse,
         });
     };
 

@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Heart } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { formatPrice } from "@/lib/constants";
+import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/types";
 
 import { HeartButton } from "@/components/common/HeartButton";

@@ -3,7 +3,6 @@
 import { useAuthStore } from "@/store/auth-store";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, RefreshCcw, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 export function Hero() {

@@ -12,7 +12,7 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
 
 export function Navbar() {
-    const { isLoggedIn, login, logout } = useAuthStore();
+    const { isLoggedIn, logout } = useAuthStore();
     const router = useRouter();
     const { toggleCart, items: cartItems } = useCartStore();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

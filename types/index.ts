@@ -100,8 +100,8 @@ export interface CartItem {
 export interface CartState {
   items: CartItem[];
   addItem: (item: CartItem) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (item: CartItem) => void;
+  updateQuantity: (item: CartItem, delta: number) => void;
   clearCart: () => void;
   totalItems: () => number;
   totalPrice: () => number;

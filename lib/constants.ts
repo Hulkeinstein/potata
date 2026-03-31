@@ -2,13 +2,6 @@
  * 애플리케이션 전역 상수
  */
 
-// 통화 설정
-export const CURRENCY = {
-  KRW_TO_AED_RATE: Number(process.env.NEXT_PUBLIC_CURRENCY_RATE) || 0.0027,
-  DEFAULT_CURRENCY: 'AED',
-  LOCALE: 'en-AE',
-} as const;
-
 // 브랜드 정보
 export const BRAND = {
   NAME: 'POTATA',
@@ -73,13 +66,3 @@ export const ALPHABET = [
   '#', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
   'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
 ] as const;
-
-// 유틸리티 함수
-export const formatPrice = (krwPrice: number): string => {
-  const aedPrice = Math.round(krwPrice * CURRENCY.KRW_TO_AED_RATE);
-  return `${CURRENCY.DEFAULT_CURRENCY} ${aedPrice.toLocaleString(CURRENCY.LOCALE)}`;
-};
-
-export const formatKRWPrice = (price: number): string => {
-  return `KRW ${price.toLocaleString('ko-KR')}`;
-};

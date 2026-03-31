@@ -5,8 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ArrowRight, ChevronRight, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Mail, ArrowRight, X } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 
 export default function LoginPage() {
@@ -20,7 +19,11 @@ export default function LoginPage() {
         e.preventDefault();
         // Login Logic
         const name = email.split("@")[0] || "Guest";
-        login(name); // Set global state with name
+        login({
+            id: email || "guest-user",
+            email: email || "guest@potata.com",
+            name,
+        });
         router.push("/");
     };
 

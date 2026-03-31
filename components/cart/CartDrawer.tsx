@@ -5,7 +5,6 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
-import { cn } from "@/lib/utils";
 
 export function CartDrawer() {
     const { items, isOpen, closeCart, updateQuantity, removeItem } = useCartStore();
@@ -20,7 +19,7 @@ export function CartDrawer() {
         return () => { document.body.style.overflow = "unset"; };
     }, [isOpen]);
 
-    const subtotal = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const subtotal = items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
     const shipping = subtotal > 50000 ? 0 : 3000;
     const total = subtotal + shipping;
 
@@ -77,12 +76,12 @@ export function CartDrawer() {
                                 </div>
                             ) : (
                                 items.map((item) => (
-                                    <div key={item.id} className="flex gap-4">
+                                    <div key={`${item.product.id}-${item.color ?? "default"}-${item.size ?? "default"}`} className="flex gap-4">
                                         {/* Image */}
                                         <div className="relative w-20 h-24 flex-shrink-0 bg-zinc-800 rounded-md overflow-hidden">
                                             <Image
-                                                src={item.image}
-                                                alt={item.name}
+                                                src={item.product.imageUrl}
+                                                alt={item.product.name}
                                                 fill
                                                 className="object-cover"
                                             />
@@ -92,28 +91,30 @@ export function CartDrawer() {
                                         <div className="flex-1 flex flex-col justify-between">
                                             <div>
                                                 <div className="flex justify-between items-start">
-                                                    <h3 className="text-sm font-bold text-white line-clamp-2">{item.name}</h3>
+                                                    <h3 className="text-sm font-bold text-white line-clamp-2">{item.product.name}</h3>
                                                     <button
-                                                        onClick={() => removeItem(item.id)}
+                                                        onClick={() => removeItem(item)}
                                                         className="text-zinc-600 hover:text-red-400 transition-colors"
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </button>
                                                 </div>
-                                                {item.option && (
-                                                    <p className="text-xs text-zinc-500 mt-1">{item.option}</p>
+                                                {(item.color || item.size) && (
+                                                    <p className="text-xs text-zinc-500 mt-1">
+                                                        {[item.color, item.size].filter(Boolean).join(" / ")}
+                                                    </p>
                                                 )}
                                             </div>
 
                                             <div className="flex items-center justify-between mt-2">
                                                 <p className="text-sm font-bold text-brand-neon">
-                                                    ₩{item.price.toLocaleString()}
+                                                    ₩{item.product.price.toLocaleString()}
                                                 </p>
 
                                                 {/* Quantity */}
                                                 <div className="flex items-center gap-3 bg-white/5 rounded-full px-2 py-1">
                                                     <button
-                                                        onClick={() => updateQuantity(item.id, -1)}
+                                                        onClick={() => updateQuantity(item, -1)}
                                                         className="p-1 hover:text-white text-zinc-500 transition-colors"
                                                         disabled={item.quantity <= 1}
                                                     >
@@ -121,7 +122,7 @@ export function CartDrawer() {
                                                     </button>
                                                     <span className="text-xs font-medium w-4 text-center text-white">{item.quantity}</span>
                                                     <button
-                                                        onClick={() => updateQuantity(item.id, 1)}
+                                                        onClick={() => updateQuantity(item, 1)}
                                                         className="p-1 hover:text-white text-zinc-500 transition-colors"
                                                     >
                                                         <Plus className="w-3 h-3" />

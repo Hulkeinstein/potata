@@ -6,11 +6,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-    User, Package, Ticket, Coins, ChevronRight, Settings,
+    Package, Ticket, Coins, ChevronRight, Settings,
     Heart, FileText, Bell, LogOut
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
-import { cn } from "@/lib/utils";
 
 // Mock Data
 const MY_STATS = [

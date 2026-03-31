@@ -1,15 +1,23 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type { AuthState, User } from '@/types';
 
-interface AuthState {
-    isLoggedIn: boolean;
-    user: { name: string } | null;
-    login: (name?: string) => void;
-    logout: () => void;
-}
+const defaultUser: User = {
+    id: 'guest-user',
+    email: 'guest@potata.com',
+    name: 'User',
+};
 
-export const useAuthStore = create<AuthState>((set) => ({
-    isLoggedIn: false,
-    user: null,
-    login: (name = "User") => set({ isLoggedIn: true, user: { name } }),
-    logout: () => set({ isLoggedIn: false, user: null }),
-}));
+export const useAuthStore = create<AuthState>()(
+    persist(
+        (set) => ({
+            isLoggedIn: false,
+            user: null,
+            login: (user = defaultUser) => set({ isLoggedIn: true, user }),
+            logout: () => set({ isLoggedIn: false, user: null }),
+        }),
+        {
+            name: 'auth-storage',
+        }
+    )
+);
