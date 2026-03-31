@@ -104,7 +104,7 @@ function LoggedInHero() {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="font-medium text-white">Oversized Blazer Set</p>
-                                    <p className="text-xs text-brand-neon">KRW 129,000</p>
+                                    <p className="text-xs text-brand-neon">AED 349</p>
                                 </div>
                                 <ArrowRight className="text-gray-500 w-4 h-4" />
                             </div>
