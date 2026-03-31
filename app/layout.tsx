@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Outfit, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Navbar } from "@/components/ui/Navbar";
+import { InitialLoader } from "@/components/ui/InitialLoader";
+import { CustomCursor } from "@/components/ui/CustomCursor";
+import { Footer } from "@/components/ui/Footer";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -11,7 +15,7 @@ const outfit = Outfit({
 
 const notoSansKr = Noto_Sans_KR({
   subsets: ["latin"],
-  weight: ["400", "500", "700"], // Preload common weights
+  weight: ["400", "500", "700"],
   variable: "--font-noto",
   display: 'swap',
 });
@@ -20,12 +24,6 @@ export const metadata: Metadata = {
   title: "POTATA - Seoul to Dubai",
   description: "Premier Korean Fashion for UAE",
 };
-
-import { Navbar } from "@/components/ui/Navbar";
-import { InitialLoader } from "@/components/ui/InitialLoader";
-import { CustomCursor } from "@/components/ui/CustomCursor";
-
-// ... (Metadata export remains)
 
 export default function RootLayout({
   children,
@@ -39,6 +37,7 @@ export default function RootLayout({
         <CustomCursor />
         <Navbar />
         {children}
+        <Footer />
       </body>
     </html>
   );
