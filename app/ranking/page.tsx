@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { PRODUCTS } from "@/data/dummy";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 
 // Mock Categories
 const CATEGORIES = ["ALL", "TOP", "OUTER", "PANTS", "DRESS", "SKIRT", "BAG", "SHOES", "ACC"];
@@ -94,7 +94,7 @@ export default function RankingPage() {
                                 <p className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider group-hover:text-purple-400 transition-colors">{product.brand}</p>
                                 <p className="text-sm text-gray-200 truncate mb-1.5 font-medium group-hover:text-white transition-colors">{product.name}</p>
                                 <div className="flex items-baseline gap-2">
-                                    <span className="text-lg font-bold text-white">{(Math.round(product.price * 0.003)).toLocaleString()} AED</span>
+                                    <span className="text-lg font-bold text-white">{formatPrice(product.price)}</span>
                                     {i < 3 && <span className="text-xs text-red-500 font-bold animate-pulse">HOT</span>}
                                 </div>
                             </div>

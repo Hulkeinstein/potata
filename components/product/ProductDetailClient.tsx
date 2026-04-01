@@ -245,53 +245,66 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                         </div>
                     </div>
 
-                    {/* Content Placeholder */}
+                    {/* Tab Content */}
                     <div className="min-h-[800px] grid grid-cols-12 gap-8">
                         <div className="col-span-12 lg:col-span-8 space-y-12">
-                            {/* Detail Images Placeholder */}
-                            <div className="space-y-4">
-                                <h3 className="text-xl font-bold mb-6">Product Detail</h3>
-                                <p className="text-gray-300 leading-relaxed mb-8">
-                                    {product.description || "No description available."}
-                                </p>
-                                {productImages.map((img, idx) => (
-                                    <div key={idx} className="relative w-full aspect-4/6 bg-zinc-900 rounded-lg overflow-hidden border border-white/5">
-                                        <Image
-                                            src={img}
-                                            alt={`${product.name} detail ${idx + 1}`}
-                                            fill
-                                            className="object-cover hover:scale-105 transition-transform duration-700 ease-out"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
 
-                            {/* Review Section */}
-                            <div id="review" className="pt-12 border-t border-white/10">
-                                <h3 className="text-xl font-bold mb-6 flex justify-between items-center">
-                                    Reviews
-                                    <span className="text-sm font-normal text-brand-neon cursor-pointer">Write a Review</span>
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Mock Reviews */}
-                                    {[1, 2, 3, 4].map((i) => (
-                                        <div key={i} className="p-4 bg-zinc-900/30 rounded-lg border border-white/5">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 bg-zinc-800 rounded-full" />
-                                                    <span className="text-sm font-medium">User{i}</span>
-                                                </div>
-                                                <div className="flex text-yellow-500">
-                                                    {[...Array(5)].map((_, j) => (
-                                                        <Star key={j} className="w-3 h-3 fill-current" />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-zinc-400">Great pants! Fits perfectly and very comfortable.</p>
+                            {/* Detail Tab */}
+                            {activeTab === "detail" && (
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-bold mb-6">Product Detail</h3>
+                                    <p className="text-gray-300 leading-relaxed mb-8">
+                                        {product.description || "No description available."}
+                                    </p>
+                                    {productImages.map((img, idx) => (
+                                        <div key={idx} className="relative w-full aspect-4/6 bg-zinc-900 rounded-lg overflow-hidden border border-white/5">
+                                            <Image
+                                                src={img}
+                                                alt={`${product.name} detail ${idx + 1}`}
+                                                fill
+                                                className="object-cover hover:scale-105 transition-transform duration-700 ease-out"
+                                            />
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Review Tab */}
+                            {activeTab === "review" && (
+                                <div className="pt-4">
+                                    <h3 className="text-xl font-bold mb-6 flex justify-between items-center">
+                                        Reviews
+                                        <span className="text-sm font-normal text-brand-neon cursor-pointer">Write a Review</span>
+                                    </h3>
+                                    <div className="py-20 flex flex-col items-center justify-center text-center gap-3 bg-zinc-900/20 rounded-xl border border-white/5">
+                                        <Star className="w-10 h-10 text-zinc-700" />
+                                        <p className="text-zinc-400 font-medium">No reviews yet. Be the first to review!</p>
+                                        <button className="mt-2 px-6 py-2 rounded-full border border-brand-neon text-brand-neon text-sm font-medium hover:bg-brand-neon hover:text-black transition-colors">
+                                            Write a Review
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Q&A Tab */}
+                            {activeTab === "q&a" && (
+                                <div className="pt-4">
+                                    <h3 className="text-xl font-bold mb-6 flex justify-between items-center">
+                                        Q&amp;A
+                                        <span className="text-sm font-normal text-brand-neon cursor-pointer">Ask a Question</span>
+                                    </h3>
+                                    <div className="py-20 flex flex-col items-center justify-center text-center gap-3 bg-zinc-900/20 rounded-xl border border-white/5">
+                                        <svg className="w-10 h-10 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <p className="text-zinc-400 font-medium">No questions yet. Ask a question!</p>
+                                        <button className="mt-2 px-6 py-2 rounded-full border border-brand-neon text-brand-neon text-sm font-medium hover:bg-brand-neon hover:text-black transition-colors">
+                                            Ask a Question
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
 
                         {/* Right Sidebar for Bottom (Optional) */}
