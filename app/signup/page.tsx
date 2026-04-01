@@ -6,19 +6,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowRight, X, User, Lock } from "lucide-react";
-import { useAuthStore } from "@/store/auth-store";
 
 export default function SignupPage() {
     const router = useRouter();
-    const login = useAuthStore((state) => state.login);
     const [showEmailForm, setShowEmailForm] = useState(false);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const handleSignup = (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
@@ -32,12 +31,29 @@ export default function SignupPage() {
             return;
         }
 
-        login({
-            id: email || "new-user",
-            email: email || "user@potata.com",
-            name: name || "Guest",
-        });
-        router.push("/");
+        setLoading(true);
+
+        try {
+            const res = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password, name }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                setError(data.error || "회원가입에 실패했습니다.");
+                return;
+            }
+
+            // 인증 코드 입력 페이지로 이동
+            router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        } catch {
+            setError("서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -143,6 +159,7 @@ export default function SignupPage() {
                                                 type="text"
                                                 value={name}
                                                 onChange={(e) => setName(e.target.value)}
+                                                required
                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg pl-11 pr-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
                                                 placeholder="홍길동"
                                             />
@@ -157,6 +174,7 @@ export default function SignupPage() {
                                                 type="email"
                                                 value={email}
                                                 onChange={(e) => setEmail(e.target.value)}
+                                                required
                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg pl-11 pr-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
                                                 placeholder="example@potata.com"
                                             />
@@ -171,6 +189,7 @@ export default function SignupPage() {
                                                 type="password"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
+                                                required
                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg pl-11 pr-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
                                                 placeholder="••••••••"
                                             />
@@ -185,27 +204,40 @@ export default function SignupPage() {
                                                 type="password"
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
+                                                required
                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg pl-11 pr-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
                                                 placeholder="••••••••"
                                             />
                                         </div>
                                     </div>
 
-                                    {error && (
-                                        <motion.p
-                                            initial={{ opacity: 0, y: -5 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="text-red-400 text-sm text-center"
-                                        >
-                                            {error}
-                                        </motion.p>
-                                    )}
+                                    <AnimatePresence>
+                                        {error && (
+                                            <motion.p
+                                                initial={{ opacity: 0, y: -5 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0 }}
+                                                className="text-red-400 text-sm text-center"
+                                            >
+                                                {error}
+                                            </motion.p>
+                                        )}
+                                    </AnimatePresence>
 
                                     <button
                                         type="submit"
-                                        className="w-full h-12 bg-brand-neon text-black font-bold rounded-lg flex items-center justify-center gap-2 mt-6 hover:bg-brand-neon/90 transition-all shadow-[0_0_15px_rgba(204,243,129,0.4)]"
+                                        disabled={loading}
+                                        className="w-full h-12 bg-brand-neon text-black font-bold rounded-lg flex items-center justify-center gap-2 mt-6 hover:bg-brand-neon/90 transition-all shadow-[0_0_15px_rgba(204,243,129,0.4)] disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
-                                        회원가입
+                                        {loading ? (
+                                            <motion.div
+                                                animate={{ rotate: 360 }}
+                                                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                                                className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full"
+                                            />
+                                        ) : (
+                                            "다음 — 이메일 인증"
+                                        )}
                                     </button>
                                 </form>
 
