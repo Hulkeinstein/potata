@@ -18,6 +18,8 @@ export default function ShopPage() {
     );
 }
 
+const PAGE_SIZE = 8;
+
 function ShopContent() {
     const searchParams = useSearchParams();
     const initialCategory = searchParams.get("category");
@@ -26,11 +28,19 @@ function ShopContent() {
             ? initialCategory
             : "All"
     );
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     const filteredProducts =
         selectedCategory === "All"
             ? PRODUCTS
             : PRODUCTS.filter((p) => p.category === selectedCategory);
+
+    const visibleProducts = filteredProducts.slice(0, visibleCount);
+    const hasMore = visibleCount < filteredProducts.length;
+
+    const handleLoadMore = () => {
+        setVisibleCount((prev) => prev + PAGE_SIZE);
+    };
 
     return (
         <div className="min-h-screen bg-black pb-20 pt-16 text-white">
@@ -87,15 +97,18 @@ function ShopContent() {
                 </h1>
 
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-10">
-                    {filteredProducts.map((product) => (
+                    {visibleProducts.map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
                 </div>
 
                 {/* Load More */}
-                {filteredProducts.length > 0 && (
+                {hasMore && (
                     <div className="py-12 flex justify-center">
-                        <button className="px-8 py-3 border border-white/20 rounded-full font-bold hover:bg-white hover:text-black transition-colors">
+                        <button
+                            onClick={handleLoadMore}
+                            className="px-8 py-3 border border-white/20 rounded-full font-bold hover:bg-white hover:text-black transition-colors"
+                        >
                             Load More
                         </button>
                     </div>
