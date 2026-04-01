@@ -128,7 +128,7 @@ export default function SignupPage() {
                                     <h2 className="text-xl font-bold text-white">이메일 회원가입</h2>
                                     <button
                                         onClick={() => setShowEmailForm(false)}
-                                        className="text-zinc-500 hover:text-white transition-colors"
+                                        className="text-zinc-400 hover:text-white transition-colors"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
@@ -138,7 +138,7 @@ export default function SignupPage() {
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-400 font-medium ml-1">이름</label>
                                         <div className="relative">
-                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
                                                 type="text"
                                                 value={name}
@@ -152,7 +152,7 @@ export default function SignupPage() {
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-400 font-medium ml-1">이메일</label>
                                         <div className="relative">
-                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
                                                 type="email"
                                                 value={email}
@@ -166,7 +166,7 @@ export default function SignupPage() {
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-400 font-medium ml-1">비밀번호</label>
                                         <div className="relative">
-                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
                                                 type="password"
                                                 value={password}
@@ -180,7 +180,7 @@ export default function SignupPage() {
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-400 font-medium ml-1">비밀번호 확인</label>
                                         <div className="relative">
-                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
                                                 type="password"
                                                 value={confirmPassword}
@@ -210,7 +210,7 @@ export default function SignupPage() {
                                 </form>
 
                                 <div className="text-center mt-4">
-                                    <Link href="/login" className="text-xs text-zinc-500 hover:text-white underline decoration-zinc-700">
+                                    <Link href="/login" className="text-xs text-zinc-400 hover:text-white underline decoration-zinc-700">
                                         이미 계정이 있으신가요? 로그인
                                     </Link>
                                 </div>
@@ -223,7 +223,7 @@ export default function SignupPage() {
                 <div className="text-center mt-8">
                     <Link
                         href="/"
-                        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-brand-neon transition-colors font-medium group"
+                        className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-brand-neon transition-colors font-medium group"
                     >
                         로그인 없이 둘러보기 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Link>

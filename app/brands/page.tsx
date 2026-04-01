@@ -133,7 +133,7 @@ export default function BrandsPage() {
                 <section className="px-4 mt-8">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-xl font-bold text-white">Trending Now</h3>
-                        <div className="flex gap-2 text-sm text-gray-500">
+                        <div className="flex gap-2 text-sm text-gray-400">
                             <span>Sort by:</span>
                             <span className="text-purple-400 font-bold cursor-pointer">Popular</span>
                         </div>
@@ -164,7 +164,7 @@ export default function BrandsPage() {
                                     <p className="text-sm text-gray-300 truncate mb-1.5 group-hover:text-white transition-colors">{product.name}</p>
                                     <div className="flex items-baseline gap-2">
                                         <span className="text-base font-bold text-white">{(Math.round(product.price * 0.003)).toLocaleString()} AED</span>
-                                        <span className="text-xs text-zinc-500 line-through">{(Math.round(product.price * 0.004)).toLocaleString()}</span>
+                                        <span className="text-xs text-zinc-400 line-through">{(Math.round(product.price * 0.004)).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>

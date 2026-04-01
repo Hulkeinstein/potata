@@ -107,7 +107,7 @@ export default function LoginPage() {
                                     <h2 className="text-xl font-bold text-white">이메일 로그인</h2>
                                     <button
                                         onClick={() => setShowEmailForm(false)}
-                                        className="text-zinc-500 hover:text-white transition-colors"
+                                        className="text-zinc-400 hover:text-white transition-colors"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
@@ -144,7 +144,7 @@ export default function LoginPage() {
                                 </form>
 
                                 <div className="text-center mt-4">
-                                    <Link href="/signup" className="text-xs text-zinc-500 hover:text-white underline decoration-zinc-700">
+                                    <Link href="/signup" className="text-xs text-zinc-400 hover:text-white underline decoration-zinc-700">
                                         계정이 없으신가요? 회원가입
                                     </Link>
                                 </div>
@@ -157,7 +157,7 @@ export default function LoginPage() {
                 <div className="text-center mt-8">
                     <Link
                         href="/"
-                        className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-brand-neon transition-colors font-medium group"
+                        className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-brand-neon transition-colors font-medium group"
                     >
                         로그인 없이 둘러보기 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Link>

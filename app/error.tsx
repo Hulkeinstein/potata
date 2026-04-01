@@ -29,14 +29,14 @@ export default function Error({ error, reset }: ErrorProps) {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Something went wrong
         </h1>
-        <p className="text-gray-500 mb-8">
+        <p className="text-gray-400 mb-8">
           We apologize for the inconvenience. Please try again.
         </p>
 
         {/* 에러 정보 (개발 환경에서만) */}
         {process.env.NODE_ENV === "development" && (
           <div className="mb-8 p-4 bg-gray-50 rounded-lg text-left">
-            <p className="text-xs font-mono text-gray-600 break-all">
+            <p className="text-xs font-mono text-gray-400 break-all">
               {error.message}
             </p>
             {error.digest && (

@@ -27,7 +27,7 @@ export default function LikedPage() {
                 <div className="flex items-center gap-3 mb-8">
                     <Heart className="w-8 h-8 text-brand-neon fill-brand-neon" />
                     <h1 className="text-3xl font-bold font-outfit text-white">Liked Items</h1>
-                    <span className="text-zinc-500 text-lg font-medium">({likedProducts.length})</span>
+                    <span className="text-zinc-400 text-lg font-medium">({likedProducts.length})</span>
                 </div>
 
                 {likedProducts.length > 0 ? (
@@ -46,7 +46,7 @@ export default function LikedPage() {
                 ) : (
                     <div className="flex flex-col items-center justify-center py-32 text-center">
                         <div className="w-24 h-24 rounded-full bg-zinc-900 flex items-center justify-center mb-6">
-                            <Heart className="w-10 h-10 text-zinc-600" />
+                            <Heart className="w-10 h-10 text-zinc-400" />
                         </div>
                         <h2 className="text-2xl font-bold text-white mb-2">Your wishlist is empty</h2>
                         <p className="text-zinc-400 mb-8">Save items you love to find them easily later.</p>

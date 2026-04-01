@@ -40,13 +40,13 @@
 
   /* Custom Scrollbar */
   @media (pointer: fine) {
-    body {
+    body.custom-cursor-active {
       cursor: none;
     }
 
-    a,
-    button,
-    [role="button"] {
+    body.custom-cursor-active a,
+    body.custom-cursor-active button,
+    body.custom-cursor-active [role="button"] {
       cursor: none;
     }
   }

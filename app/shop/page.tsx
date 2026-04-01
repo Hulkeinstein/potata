@@ -81,7 +81,7 @@ function ShopContent() {
             <div className="max-w-7xl mx-auto px-4 py-8">
                 <h1 className="text-xl font-bold mb-6 flex items-baseline gap-2">
                     {selectedCategory === "All" ? "All Products" : selectedCategory}
-                    <span className="text-gray-500 text-sm font-normal">
+                    <span className="text-gray-400 text-sm font-normal">
                         ({filteredProducts.length})
                     </span>
                 </h1>
@@ -104,7 +104,7 @@ function ShopContent() {
                 {/* Empty State */}
                 {filteredProducts.length === 0 && (
                     <div className="py-20 text-center">
-                        <p className="text-gray-500 font-medium">
+                        <p className="text-gray-400 font-medium">
                             No products found in this category.
                         </p>
                     </div>

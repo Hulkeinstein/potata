@@ -15,11 +15,11 @@ export default function ForYouPage() {
                 <div className="px-5 mb-6">
                     <div className="flex items-center justify-between mb-2">
                         <h1 className="text-2xl font-bold tracking-tight">For Sarah</h1>
-                        <button className="text-gray-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
+                        <button className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
                             <RefreshCcw className="w-5 h-5" />
                         </button>
                     </div>
-                    <p className="text-sm text-gray-500">Analysis based on your recent style.</p>
+                    <p className="text-sm text-gray-400">Analysis based on your recent style.</p>
                 </div>
 
                 {/* AI Curator Card */}
