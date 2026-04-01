@@ -164,7 +164,7 @@ export default function BrandsPage() {
                                     <p className="text-sm text-gray-300 truncate mb-1.5 group-hover:text-white transition-colors">{product.name}</p>
                                     <div className="flex items-baseline gap-2">
                                         <span className="text-base font-bold text-white">{formatPrice(product.price)}</span>
-                                        <span className="text-xs text-zinc-500 line-through">{formatPrice(Math.round(product.price / 0.003 * 0.004))}</span>
+                                        <span className="text-xs text-zinc-500 line-through">{(Math.round(product.price * 0.004)).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
