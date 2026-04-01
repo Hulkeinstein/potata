@@ -151,7 +151,7 @@ export function Navbar() {
             <div
                 id="mobile-menu"
                 className={cn(
-                    "fixed top-16 left-0 right-0 bg-white z-40 md:hidden transition-all duration-300 ease-in-out border-b border-gray-100 shadow-lg",
+                    "fixed top-16 left-0 right-0 bg-black/95 backdrop-blur-xl z-40 md:hidden transition-all duration-300 ease-in-out border-b border-white/10 shadow-lg",
                     isMobileMenuOpen
                         ? "opacity-100 translate-y-0"
                         : "opacity-0 -translate-y-4 pointer-events-none"
@@ -166,7 +166,7 @@ export function Navbar() {
                                 key={link.href}
                                 href={link.href}
                                 onClick={closeMobileMenu}
-                                className="text-sm font-bold py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-neon"
+                                className="text-sm font-bold py-3 px-4 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-brand-neon"
                                 role="menuitem"
                             >
                                 {link.label}
@@ -184,7 +184,7 @@ export function Navbar() {
                     </div>
 
                     {/* Mobile Auth Button */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="mt-4 pt-4 border-t border-white/10">
                         <button
                             onClick={() => {
                                 isLoggedIn ? logout() : router.push("/login");
@@ -194,7 +194,7 @@ export function Navbar() {
                                 "w-full py-3 rounded-lg font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-brand-neon",
                                 isLoggedIn
                                     ? "border border-brand-neon text-brand-neon"
-                                    : "bg-gray-100 text-gray-700"
+                                    : "bg-white/10 text-gray-300 hover:bg-white/20"
                             )}
                         >
                             {isLoggedIn ? "Logout" : "Login"}

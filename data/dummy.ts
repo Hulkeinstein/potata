@@ -5,8 +5,8 @@ export const PRODUCTS: Product[] = [
     id: "1",
     name: "Kalix T Jacket Black - 26SS",
     brand: "The North Face White Label",
-    price: 267000,
-    originalPrice: 289000,
+    price: 719,
+    originalPrice: 779,
     discountRate: 8,
     imageUrl: "https://kream-phinf.pstatic.net/MjAyNjAxMjJfMTY5/MDAxNzY5MDU5OTg1NDYw.5pHBpFjHOVcZNCXV6ztANvhSF8iN1YR-NKgntgy4soYg.Rfk67XmSl-1tcOF4wT-hPNyxyl7dr3mmgltZqs4zSBwg.PNG/a_fe5a41998e644efb82dd74b30e400d85.png",
     images: [
@@ -24,7 +24,7 @@ export const PRODUCTS: Product[] = [
     id: "2",
     name: "Therma-Fit ADV Lunar Lake Loose Hooded Jacket",
     brand: "Nike ACG",
-    price: 254000,
+    price: 685,
     imageUrl: "https://kream-phinf.pstatic.net/MjAyNTA3MzFfMSAg/MDAxNzUzOTE2MTYxOTM5.XdiPYVzO-7w5UY4JAG8Wbk6FNhhHJ4PoiNZF5ie9MZkg.dBg9TnRTAvqvktPmcMUASIMfQ2_1gD6VVO7dNYgy46Ig.PNG/a_7b3a332e386c47fc99e5c23000b6b9d5.png",
     images: [
       "https://kream-phinf.pstatic.net/MjAyNTA3MzFfMSAg/MDAxNzUzOTE2MTYxOTM5.XdiPYVzO-7w5UY4JAG8Wbk6FNhhHJ4PoiNZF5ie9MZkg.dBg9TnRTAvqvktPmcMUASIMfQ2_1gD6VVO7dNYgy46Ig.PNG/a_7b3a332e386c47fc99e5c23000b6b9d5.png"
@@ -40,8 +40,8 @@ export const PRODUCTS: Product[] = [
     id: "3",
     name: "Fur Hoodie Zip Up Gray",
     brand: "AMOU",
-    price: 67000,
-    originalPrice: 89000,
+    price: 179,
+    originalPrice: 239,
     discountRate: 25,
     imageUrl: "https://kream-phinf.pstatic.net/MjAyNTExMTBfMTk0/MDAxNzYyNzYwODc0MzEz.iFWrfwVG1fiC7oa9WhKHB9-KobMFwrTBmM1BTYGeWfwg.w6R3zRlzoE8ihaqDILRqi2_dWngeFU1TJfixtdd93jYg.PNG/p_b5c283c605da422184870ee1f5c23863.png",
     images: [
@@ -59,7 +59,7 @@ export const PRODUCTS: Product[] = [
     id: "4",
     name: "25 Hoodie Light Gray Navy",
     brand: "IAB Studio",
-    price: 137000,
+    price: 369,
     imageUrl: "https://kream-phinf.pstatic.net/MjAyNTEyMDJfMjg4/MDAxNzY0NjY3OTM2MTI0.r5Wf0TyvugM2bFkVW1nge1K6Q6sTl3nuepU7wl7OLjwg.FzJclmGcfDI6BzGZawkWs5n0acKv6J1IxF-oLJkrZGsg.PNG/a_78fbf8993b6947688f27169e17b43213.png",
     images: [
       "https://kream-phinf.pstatic.net/MjAyNTEyMDJfMjg4/MDAxNzY0NjY3OTM2MTI0.r5Wf0TyvugM2bFkVW1nge1K6Q6sTl3nuepU7wl7OLjwg.FzJclmGcfDI6BzGZawkWs5n0acKv6J1IxF-oLJkrZGsg.PNG/a_78fbf8993b6947688f27169e17b43213.png"
@@ -76,7 +76,7 @@ export const PRODUCTS: Product[] = [
     id: "5",
     name: "Molly One Tuck Sweat Pants Gray",
     brand: "AMOU",
-    price: 35100,
+    price: 95,
     imageUrl: "https://kream-phinf.pstatic.net/MjAyNTExMTBfNjYg/MDAxNzYyNzYwNTM3MjM0.Kv01uq8FPrWbV2qIQqXgUbMMAZNqbbBkvGjBqlohqQ0g.ULW7Y3KTXCsXqsmP_w-kZWhzmER2VtkQcQlUVPqzah0g.PNG/p_dd7808d62b75495f8c082a06c74f919e.png",
     images: [
       "https://kream-phinf.pstatic.net/MjAyNTExMTBfNjYg/MDAxNzYyNzYwNTM3MjM0.Kv01uq8FPrWbV2qIQqXgUbMMAZNqbbBkvGjBqlohqQ0g.ULW7Y3KTXCsXqsmP_w-kZWhzmER2VtkQcQlUVPqzah0g.PNG/p_dd7808d62b75495f8c082a06c74f919e.png"
@@ -92,7 +92,7 @@ export const PRODUCTS: Product[] = [
     id: "6",
     name: "Dri-Fit Challenger Woven Pants Black",
     brand: "Nike",
-    price: 38000,
+    price: 99,
     imageUrl: "https://kream-phinf.pstatic.net/MjAyNTA3MzBfMTAg/MDAxNzUzODYyMzM5MDIz.ztAnS8xeeJUAEKLVBdDRV-iGGz9zVVCysb95u7YjjlIg.gkoEk35axHEHtSTKEnUwxzyYobsRMVx0qjl1WglZObIg.PNG/a_c047a1824ced4dd587252913e2cf5b8d.png",
     images: [
       "https://kream-phinf.pstatic.net/MjAyNTA3MzBfMTAg/MDAxNzUzODYyMzM5MDIz.ztAnS8xeeJUAEKLVBdDRV-iGGz9zVVCysb95u7YjjlIg.gkoEk35axHEHtSTKEnUwxzyYobsRMVx0qjl1WglZObIg.PNG/a_c047a1824ced4dd587252913e2cf5b8d.png"
@@ -109,7 +109,7 @@ export const PRODUCTS: Product[] = [
     id: "7",
     name: "LTP-V007L-7B1",
     brand: "Casio",
-    price: 27000,
+    price: 69,
     imageUrl: "https://kream-phinf.pstatic.net/MjAyNTA3MzFfODUg/MDAxNzUzODk0NjU2NzIz.MaBCG9a4YXqzGEjoegBVj2KeKVmz2IoZMmfAAtwc5FIg.C_dJznH0jv6FkFhL2YC3ckEjuhUC8kev6hTmudJ0k0Qg.PNG/a_d26969425975469384d8d1b5f8731aeb.png",
     images: [
       "https://kream-phinf.pstatic.net/MjAyNTA3MzFfODUg/MDAxNzUzODk0NjU2NzIz.MaBCG9a4YXqzGEjoegBVj2KeKVmz2IoZMmfAAtwc5FIg.C_dJznH0jv6FkFhL2YC3ckEjuhUC8kev6hTmudJ0k0Qg.PNG/a_d26969425975469384d8d1b5f8731aeb.png"
@@ -125,7 +125,7 @@ export const PRODUCTS: Product[] = [
     id: "8",
     name: "Air Force 1 '07 Low White",
     brand: "Nike",
-    price: 105000,
+    price: 279,
     imageUrl: "https://kream-phinf.pstatic.net/MjAyNDA2MjJfMTMx/MDAxNzE5MDI5ODMzOTg2.8TsdHQrXy3-tcIMHceZOG5eBSdl_-ybtjFhLVIZDOXEg.TUQIZNOi5ptP4zsfcdsi3EBAgTwh2jruSeKGnbMekaQg.PNG/a_56586590956f4404862cbdaeff6a5e63.png",
     images: [
       "https://kream-phinf.pstatic.net/MjAyNDA2MjJfMTMx/MDAxNzE5MDI5ODMzOTg2.8TsdHQrXy3-tcIMHceZOG5eBSdl_-ybtjFhLVIZDOXEg.TUQIZNOi5ptP4zsfcdsi3EBAgTwh2jruSeKGnbMekaQg.PNG/a_56586590956f4404862cbdaeff6a5e63.png"
