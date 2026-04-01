@@ -16,7 +16,7 @@ export default function NotFound() {
         </div>
 
         {/* 메시지 */}
-        <p className="text-gray-500 mb-8">
+        <p className="text-gray-400 mb-8">
           The page you're looking for doesn't exist or has been moved.
           Let's get you back on track.
         </p>
@@ -52,7 +52,7 @@ export default function NotFound() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-gray-600 hover:text-black px-3 py-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="text-sm font-medium text-gray-400 hover:text-black px-3 py-1 rounded-full hover:bg-gray-100 transition-colors"
               >
                 {link.label}
               </Link>

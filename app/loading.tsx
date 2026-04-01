@@ -9,7 +9,7 @@ export default function Loading() {
         </div>
 
         {/* 브랜드 텍스트 */}
-        <p className="text-sm font-bold text-gray-500 tracking-[0.2em] animate-pulse">
+        <p className="text-sm font-bold text-gray-400 tracking-[0.2em] animate-pulse">
           LOADING
         </p>
       </div>

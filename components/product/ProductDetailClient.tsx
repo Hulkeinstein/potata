@@ -102,7 +102,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 </span>
                                 {productDiscount > 0 && (
                                     <>
-                                        <span className="text-xl text-zinc-600 line-through mb-1">
+                                        <span className="text-xl text-zinc-400 line-through mb-1">
                                             {formatPrice(productOriginalPrice)}
                                         </span>
                                         <span className="text-xl text-red-500 font-bold mb-1">
@@ -142,7 +142,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center">
                                             <label className="text-sm font-medium text-zinc-300">Size</label>
-                                            <span className="text-xs text-zinc-500 underline cursor-pointer hover:text-white">Size Guide</span>
+                                            <span className="text-xs text-zinc-400 underline cursor-pointer hover:text-white">Size Guide</span>
                                         </div>
                                         <div className="grid grid-cols-4 gap-2">
                                             {productSizes.map((size) => (
@@ -176,17 +176,17 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-zinc-300">
                                                 {product.name}
-                                                <div className="text-zinc-500 text-xs mt-0.5">
+                                                <div className="text-zinc-400 text-xs mt-0.5">
                                                     {selectedColor} {selectedSize ? `/ ${selectedSize}` : ""}
                                                 </div>
                                             </span>
-                                            <X className="w-4 h-4 text-zinc-500 cursor-pointer hover:text-white" onClick={() => { setSelectedSize(null); setSelectedColor(productColors[0]) }} />
+                                            <X className="w-4 h-4 text-zinc-400 cursor-pointer hover:text-white" onClick={() => { setSelectedSize(null); setSelectedColor(productColors[0]) }} />
                                         </div>
                                         <div className="flex justify-between items-end border-t border-white/5 pt-2 mt-2">
                                             <div className="flex items-center gap-3 bg-black/20 rounded px-2 py-1">
-                                                <button className="p-1 hover:text-white text-zinc-500"><Minus className="w-3 h-3" /></button>
+                                                <button className="p-1 hover:text-white text-zinc-400"><Minus className="w-3 h-3" /></button>
                                                 <span className="text-sm font-medium">1</span>
-                                                <button className="p-1 hover:text-white text-zinc-500"><Plus className="w-3 h-3" /></button>
+                                                <button className="p-1 hover:text-white text-zinc-400"><Plus className="w-3 h-3" /></button>
                                             </div>
                                             <span className="font-bold text-lg text-white">{formatPrice(product.price)}</span>
                                         </div>
@@ -235,63 +235,76 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                         "py-4 text-sm font-medium border-b-2 transition-colors relative",
                                         activeTab === tab.toLowerCase()
                                             ? "border-brand-neon text-brand-neon"
-                                            : "border-transparent text-zinc-500 hover:text-white"
+                                            : "border-transparent text-zinc-400 hover:text-white"
                                     )}
                                 >
                                     {tab}
-                                    {tab === "Review" && <span className="ml-1 text-xs text-zinc-600 font-normal">({productReviewCount})</span>}
+                                    {tab === "Review" && <span className="ml-1 text-xs text-zinc-400 font-normal">({productReviewCount})</span>}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Content Placeholder */}
+                    {/* Tab Content */}
                     <div className="min-h-[800px] grid grid-cols-12 gap-8">
                         <div className="col-span-12 lg:col-span-8 space-y-12">
-                            {/* Detail Images Placeholder */}
-                            <div className="space-y-4">
-                                <h3 className="text-xl font-bold mb-6">Product Detail</h3>
-                                <p className="text-gray-300 leading-relaxed mb-8">
-                                    {product.description || "No description available."}
-                                </p>
-                                {productImages.map((img, idx) => (
-                                    <div key={idx} className="relative w-full aspect-4/6 bg-zinc-900 rounded-lg overflow-hidden border border-white/5">
-                                        <Image
-                                            src={img}
-                                            alt={`${product.name} detail ${idx + 1}`}
-                                            fill
-                                            className="object-cover hover:scale-105 transition-transform duration-700 ease-out"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
 
-                            {/* Review Section */}
-                            <div id="review" className="pt-12 border-t border-white/10">
-                                <h3 className="text-xl font-bold mb-6 flex justify-between items-center">
-                                    Reviews
-                                    <span className="text-sm font-normal text-brand-neon cursor-pointer">Write a Review</span>
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Mock Reviews */}
-                                    {[1, 2, 3, 4].map((i) => (
-                                        <div key={i} className="p-4 bg-zinc-900/30 rounded-lg border border-white/5">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 bg-zinc-800 rounded-full" />
-                                                    <span className="text-sm font-medium">User{i}</span>
-                                                </div>
-                                                <div className="flex text-yellow-500">
-                                                    {[...Array(5)].map((_, j) => (
-                                                        <Star key={j} className="w-3 h-3 fill-current" />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <p className="text-sm text-zinc-400">Great pants! Fits perfectly and very comfortable.</p>
+                            {/* Detail Tab */}
+                            {activeTab === "detail" && (
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-bold mb-6">Product Detail</h3>
+                                    <p className="text-gray-300 leading-relaxed mb-8">
+                                        {product.description || "No description available."}
+                                    </p>
+                                    {productImages.map((img, idx) => (
+                                        <div key={idx} className="relative w-full aspect-4/6 bg-zinc-900 rounded-lg overflow-hidden border border-white/5">
+                                            <Image
+                                                src={img}
+                                                alt={`${product.name} detail ${idx + 1}`}
+                                                fill
+                                                className="object-cover hover:scale-105 transition-transform duration-700 ease-out"
+                                            />
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Review Tab */}
+                            {activeTab === "review" && (
+                                <div className="pt-4">
+                                    <h3 className="text-xl font-bold mb-6 flex justify-between items-center">
+                                        Reviews
+                                        <span className="text-sm font-normal text-brand-neon cursor-pointer">Write a Review</span>
+                                    </h3>
+                                    <div className="py-20 flex flex-col items-center justify-center text-center gap-3 bg-zinc-900/20 rounded-xl border border-white/5">
+                                        <Star className="w-10 h-10 text-zinc-700" />
+                                        <p className="text-zinc-400 font-medium">No reviews yet. Be the first to review!</p>
+                                        <button className="mt-2 px-6 py-2 rounded-full border border-brand-neon text-brand-neon text-sm font-medium hover:bg-brand-neon hover:text-black transition-colors">
+                                            Write a Review
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Q&A Tab */}
+                            {activeTab === "q&a" && (
+                                <div className="pt-4">
+                                    <h3 className="text-xl font-bold mb-6 flex justify-between items-center">
+                                        Q&amp;A
+                                        <span className="text-sm font-normal text-brand-neon cursor-pointer">Ask a Question</span>
+                                    </h3>
+                                    <div className="py-20 flex flex-col items-center justify-center text-center gap-3 bg-zinc-900/20 rounded-xl border border-white/5">
+                                        <svg className="w-10 h-10 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <p className="text-zinc-400 font-medium">No questions yet. Ask a question!</p>
+                                        <button className="mt-2 px-6 py-2 rounded-full border border-brand-neon text-brand-neon text-sm font-medium hover:bg-brand-neon hover:text-black transition-colors">
+                                            Ask a Question
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
 
                         {/* Right Sidebar for Bottom (Optional) */}

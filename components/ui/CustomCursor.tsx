@@ -22,6 +22,7 @@ export function CustomCursor() {
         if (!mediaQuery.matches) return;
 
         setIsVisible(true);
+        document.body.classList.add("custom-cursor-active");
 
         const moveCursor = (e: MouseEvent) => {
             mouseX.set(e.clientX - 16); // Center the 32px cursor
@@ -50,6 +51,7 @@ export function CustomCursor() {
         return () => {
             window.removeEventListener("mousemove", moveCursor);
             window.removeEventListener("mouseover", handleMouseOver);
+            document.body.classList.remove("custom-cursor-active");
         };
     }, [mouseX, mouseY]);
 

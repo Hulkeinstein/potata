@@ -87,12 +87,12 @@ export default function MyPage() {
                             href={stat.href}
                             className="bg-zinc-900/50 border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors group"
                         >
-                            <stat.icon className="w-6 h-6 text-zinc-500 group-hover:text-brand-neon transition-colors" />
+                            <stat.icon className="w-6 h-6 text-zinc-400 group-hover:text-brand-neon transition-colors" />
                             <div className="text-center">
                                 <span className="block text-xl font-bold font-outfit text-white group-hover:text-brand-neon transition-colors">
                                     {stat.value}
                                 </span>
-                                <span className="text-xs text-zinc-500">{stat.label}</span>
+                                <span className="text-xs text-zinc-400">{stat.label}</span>
                             </div>
                         </Link>
                     ))}
@@ -119,7 +119,7 @@ export default function MyPage() {
                                     {item.label}
                                 </span>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
+                            <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
                         </Link>
                     ))}
                 </motion.div>
@@ -130,7 +130,7 @@ export default function MyPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                     onClick={() => { logout(); router.push("/"); }}
-                    className="w-full py-4 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                    className="w-full py-4 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                 >
                     <LogOut className="w-4 h-4" />
                     Sign Out

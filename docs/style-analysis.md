@@ -138,10 +138,10 @@ globals.css 유틸리티:
 ### 🟡 스타일 불일치
 
 5. **가격 포맷 혼재:**
-   - `ProductCard`: `formatPrice()` (KRW→AED 변환)
+   - `ProductCard`: `formatPrice()` (AED format)
    - `BrandsPage`: 하드코딩 환율 `(Math.round(price * 0.003))`
    - `RankingPage`: 동일 하드코딩
-   - `Hero LoggedIn`: `KRW 129,000` (원화)
+   - `Hero LoggedIn`: `AED 349` (unified AED)
 
 6. **pt 오프셋 불일치:** Navbar `h-16`인데 `pt-16` / `pt-20` / `pt-24` 혼재
 7. **Footer**: Home에만 존재, 다른 페이지에 없음
@@ -247,7 +247,7 @@ globals.css 유틸리티:
 **개선 우선순위:**
 1. 🔴 다크/라이트 충돌 (404, Error, 모바일 메뉴) — 가장 시급
 2. 🔴 접근성: 포커스 트랩, 색상 대비, 커서 폴백
-3. 🟡 가격 포맷 통일 (formatPrice로 일원화)
+3. ✅ 가격 포맷 통일 (formatPrice로 일원화, AED only)
 4. 🟡 CSS 변수/유틸리티 정의 ↔ 실사용 괴리 해소
 5. 🟠 미완성 UI (플레이스홀더 링크, 더미 기능)
 6. 🟠 Footer → Layout 레벨 이동
