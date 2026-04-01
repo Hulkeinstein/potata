@@ -6,11 +6,7 @@
   --color-primary: var(--primary);
   --color-card: var(--card);
 
-  --color-neon-purple: #8B5CF6;
-  --color-neon-blue: #3B82F6;
   --color-brand-neon: #ccf381;
-  --color-brand-purple: #a855f7;
-  --color-dark-surface: #0F0F0F;
 }
 
 @layer base {
@@ -79,15 +75,6 @@
     /* IE and Edge */
     scrollbar-width: none;
     /* Firefox */
-  }
-
-  /* Glassmorphism */
-  .glass-panel {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
-  }
-
-  .glass-panel-dark {
-    @apply bg-black/40 backdrop-blur-lg border border-white/5;
   }
 
   /* Neon Glow */
