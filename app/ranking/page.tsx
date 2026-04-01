@@ -52,7 +52,7 @@ export default function RankingPage() {
                                 onClick={() => setSelectedType(tab)}
                                 className={cn(
                                     "pb-3 text-sm font-bold uppercase tracking-wider transition-all relative",
-                                    selectedType === tab ? "text-white" : "text-gray-500 hover:text-gray-300"
+                                    selectedType === tab ? "text-white" : "text-gray-400 hover:text-gray-300"
                                 )}
                             >
                                 {tab}

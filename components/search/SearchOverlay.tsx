@@ -57,6 +57,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     {/* Close Button */}
                     <button
                         onClick={onClose}
+                        aria-label="Close search"
                         className="absolute top-6 right-6 p-2 text-gray-400 hover:text-white transition-colors"
                     >
                         <X className="w-8 h-8" />
@@ -75,7 +76,9 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Search brands, items..."
-                            className="w-full bg-transparent border-b-2 border-white/20 text-3xl md:text-5xl font-bold text-white placeholder-gray-600 py-4 focus:outline-none focus:border-brand-neon transition-colors"
+                            aria-label="Search products"
+                            autoFocus
+                            className="w-full bg-transparent border-b-2 border-white/20 text-3xl md:text-5xl font-bold text-white placeholder-gray-500 py-4 focus:outline-none focus:border-brand-neon transition-colors"
                         />
                         <Search className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400" />
                     </motion.div>
@@ -98,7 +101,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                     <li key={term} className="group cursor-pointer flex items-center gap-4">
                                         <span className={cn(
                                             "text-lg font-bold w-6 text-center",
-                                            index < 3 ? "text-white" : "text-gray-600"
+                                            index < 3 ? "text-white" : "text-gray-400"
                                         )}>
                                             {index + 1}
                                         </span>

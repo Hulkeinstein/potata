@@ -16,17 +16,17 @@ export default function Error({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
         {/* 아이콘 */}
         <div className="mb-8 flex justify-center">
-          <div className="w-20 h-20 bg-red-950/50 rounded-full flex items-center justify-center">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
             <AlertCircle className="w-10 h-10 text-red-500" />
           </div>
         </div>
 
         {/* 메시지 */}
-          <h1 className="text-2xl font-bold text-white mb-2">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Something went wrong
         </h1>
         <p className="text-gray-400 mb-8">
@@ -35,7 +35,7 @@ export default function Error({ error, reset }: ErrorProps) {
 
         {/* 에러 정보 (개발 환경에서만) */}
         {process.env.NODE_ENV === "development" && (
-          <div className="mb-8 p-4 bg-white/5 rounded-lg text-left border border-white/10">
+          <div className="mb-8 p-4 bg-gray-50 rounded-lg text-left">
             <p className="text-xs font-mono text-gray-400 break-all">
               {error.message}
             </p>
@@ -58,7 +58,7 @@ export default function Error({ error, reset }: ErrorProps) {
           </button>
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-white/10 text-gray-300 font-bold rounded-full hover:bg-white/10 transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 text-gray-700 font-bold rounded-full hover:bg-gray-50 transition-colors"
           >
             <Home className="w-4 h-4" />
             Go Home

@@ -75,7 +75,7 @@ export const InitialLoader = () => {
 
                     {/* Optional: Subtle Progress or Tagline */}
                     <motion.div
-                        className="text-zinc-500 text-sm tracking-[0.3em] uppercase"
+                        className="text-zinc-400 text-sm tracking-[0.3em] uppercase"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1, transition: { delay: 1.5, duration: 1 } }}
                     >

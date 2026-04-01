@@ -23,10 +23,10 @@ export function K_TrendSection() {
                     <h2 className="text-3xl font-bold">Trending in Seoul</h2>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => scroll("left")} className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
+                    <button onClick={() => scroll("left")} aria-label="Scroll left" className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
                         <ArrowRight className="w-5 h-5 rotate-180" />
                     </button>
-                    <button onClick={() => scroll("right")} className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
+                    <button onClick={() => scroll("right")} aria-label="Scroll right" className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
                         <ArrowRight className="w-5 h-5" />
                     </button>
                 </div>

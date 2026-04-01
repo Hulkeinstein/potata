@@ -102,7 +102,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 </span>
                                 {productDiscount > 0 && (
                                     <>
-                                        <span className="text-xl text-zinc-600 line-through mb-1">
+                                        <span className="text-xl text-zinc-400 line-through mb-1">
                                             {formatPrice(productOriginalPrice)}
                                         </span>
                                         <span className="text-xl text-red-500 font-bold mb-1">
@@ -142,7 +142,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center">
                                             <label className="text-sm font-medium text-zinc-300">Size</label>
-                                            <span className="text-xs text-zinc-500 underline cursor-pointer hover:text-white">Size Guide</span>
+                                            <span className="text-xs text-zinc-400 underline cursor-pointer hover:text-white">Size Guide</span>
                                         </div>
                                         <div className="grid grid-cols-4 gap-2">
                                             {productSizes.map((size) => (
@@ -176,17 +176,17 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-zinc-300">
                                                 {product.name}
-                                                <div className="text-zinc-500 text-xs mt-0.5">
+                                                <div className="text-zinc-400 text-xs mt-0.5">
                                                     {selectedColor} {selectedSize ? `/ ${selectedSize}` : ""}
                                                 </div>
                                             </span>
-                                            <X className="w-4 h-4 text-zinc-500 cursor-pointer hover:text-white" onClick={() => { setSelectedSize(null); setSelectedColor(productColors[0]) }} />
+                                            <X className="w-4 h-4 text-zinc-400 cursor-pointer hover:text-white" onClick={() => { setSelectedSize(null); setSelectedColor(productColors[0]) }} />
                                         </div>
                                         <div className="flex justify-between items-end border-t border-white/5 pt-2 mt-2">
                                             <div className="flex items-center gap-3 bg-black/20 rounded px-2 py-1">
-                                                <button className="p-1 hover:text-white text-zinc-500"><Minus className="w-3 h-3" /></button>
+                                                <button className="p-1 hover:text-white text-zinc-400"><Minus className="w-3 h-3" /></button>
                                                 <span className="text-sm font-medium">1</span>
-                                                <button className="p-1 hover:text-white text-zinc-500"><Plus className="w-3 h-3" /></button>
+                                                <button className="p-1 hover:text-white text-zinc-400"><Plus className="w-3 h-3" /></button>
                                             </div>
                                             <span className="font-bold text-lg text-white">{formatPrice(product.price)}</span>
                                         </div>
@@ -235,11 +235,11 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                         "py-4 text-sm font-medium border-b-2 transition-colors relative",
                                         activeTab === tab.toLowerCase()
                                             ? "border-brand-neon text-brand-neon"
-                                            : "border-transparent text-zinc-500 hover:text-white"
+                                            : "border-transparent text-zinc-400 hover:text-white"
                                     )}
                                 >
                                     {tab}
-                                    {tab === "Review" && <span className="ml-1 text-xs text-zinc-600 font-normal">({productReviewCount})</span>}
+                                    {tab === "Review" && <span className="ml-1 text-xs text-zinc-400 font-normal">({productReviewCount})</span>}
                                 </button>
                             ))}
                         </div>

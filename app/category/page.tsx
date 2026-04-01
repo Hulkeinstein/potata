@@ -109,7 +109,7 @@ export default function CategoryPage() {
                             "w-full py-6 flex flex-col items-center gap-2 text-center transition-all border-b border-white/5",
                             selectedCategory.id === cat.id
                                 ? "bg-black text-brand-neon relative after:content-[''] after:absolute after:left-0 after:top-0 after:bottom-0 after:w-1 after:bg-brand-neon"
-                                : "text-zinc-500"
+                                : "text-zinc-400"
                         )}
                     >
                         <div className="relative w-8 h-8 rounded-full overflow-hidden opacity-80">

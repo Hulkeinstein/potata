@@ -187,12 +187,12 @@ function TryOnContent() {
                                     ) : (
                                         <div className="flex flex-col items-center pointer-events-none z-40 transition-opacity">
                                             <div className="p-8 rounded-full bg-white/5 mb-4 group-hover:bg-purple-500/20 group-hover:shadow-[0_0_30px_rgba(168,85,247,0.3)] transition-all duration-300">
-                                                <Upload className="w-8 h-8 text-gray-500 group-hover:text-purple-400 transition-colors" />
+                                                <Upload className="w-8 h-8 text-gray-400 group-hover:text-purple-400 transition-colors" />
                                             </div>
                                             <p className="text-gray-400 font-medium group-hover:text-purple-200 transition-colors">
                                                 {userImage ? "Change Photo" : "Upload Full Body Photo"}
                                             </p>
-                                            <p className="text-xs text-gray-600 mt-2 group-hover:text-gray-500">Recommended: Well lit, simple background</p>
+                                            <p className="text-xs text-gray-400 mt-2 group-hover:text-gray-400">Recommended: Well lit, simple background</p>
                                         </div>
                                     )}
 
@@ -212,7 +212,7 @@ function TryOnContent() {
                             onClick={() => setActiveTab("wardrobe")}
                             className={cn(
                                 "rgb-tab px-4 py-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors",
-                                activeTab === "wardrobe" ? "border-purple-500 text-white" : "border-transparent text-gray-500 hover:text-white"
+                                activeTab === "wardrobe" ? "border-purple-500 text-white" : "border-transparent text-gray-400 hover:text-white"
                             )}
                         >
                             <Shirt className="w-4 h-4" />
@@ -222,7 +222,7 @@ function TryOnContent() {
                             onClick={() => setActiveTab("gallery")}
                             className={cn(
                                 "rgb-tab px-4 py-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors",
-                                activeTab === "gallery" ? "border-purple-500 text-white" : "border-transparent text-gray-500 hover:text-white"
+                                activeTab === "gallery" ? "border-purple-500 text-white" : "border-transparent text-gray-400 hover:text-white"
                             )}
                         >
                             <Grid className="w-4 h-4" />
@@ -232,7 +232,7 @@ function TryOnContent() {
                             onClick={() => setActiveTab("recents")}
                             className={cn(
                                 "rgb-tab px-4 py-3 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors",
-                                activeTab === "recents" ? "border-purple-500 text-white" : "border-transparent text-gray-500 hover:text-white"
+                                activeTab === "recents" ? "border-purple-500 text-white" : "border-transparent text-gray-400 hover:text-white"
                             )}
                         >
                             <History className="w-4 h-4" />
@@ -261,7 +261,7 @@ function TryOnContent() {
                                                 "px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all border",
                                                 selectedCategory === cat
                                                     ? "bg-white text-black border-white"
-                                                    : "bg-transparent text-gray-500 border-zinc-800 hover:text-white hover:border-zinc-600"
+                                                    : "bg-transparent text-gray-400 border-zinc-800 hover:text-white hover:border-zinc-600"
                                             )}
                                         >
                                             {cat}
@@ -286,7 +286,7 @@ function TryOnContent() {
                                 </div>
 
                                 {gallery.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                                         <Grid className="w-12 h-12 mb-4 opacity-50" />
                                         <p>No generated images yet.</p>
                                         <button onClick={() => setActiveTab("wardrobe")} className="mt-4 text-purple-400 font-bold hover:underline">
@@ -331,7 +331,7 @@ function TryOnContent() {
                                 </div>
 
                                 {recents.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+                                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                                         <Clock className="w-12 h-12 mb-4 opacity-50" />
                                         <p>No recent items found.</p>
                                     </div>
