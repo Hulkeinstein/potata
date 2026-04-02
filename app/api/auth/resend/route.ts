@@ -6,6 +6,7 @@ import {
   isExpired,
   EXPIRY_MS,
 } from "@/lib/verification-store";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,8 +41,14 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
-    // 이메일 발송 (현재는 콘솔 로그로 대체)
-    console.log(`[EMAIL] Verification code for ${email}: ${newCode}`);
+    // 실제 이메일 발송 처리 (Resend 연동)
+    const emailResult = await sendVerificationEmail(email, entry.name, newCode);
+    if (!emailResult.success) {
+      return NextResponse.json(
+        { success: false, error: "이메일 재발송에 실패했습니다. 다시 시도해주세요." },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

@@ -4,6 +4,7 @@ import {
   setVerification,
   EXPIRY_MS,
 } from "@/lib/verification-store";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,8 +52,15 @@ export async function POST(req: NextRequest) {
       expiresAt,
     });
 
-    // 이메일 발송 (현재는 콘솔 로그로 대체)
-    console.log(`[EMAIL] Verification code for ${email}: ${code}`);
+    // 실제 이메일 발송 처리 (Resend 연동)
+    const emailResult = await sendVerificationEmail(email, name, code);
+    if (!emailResult.success) {
+      console.error("[signup] Failed to send email:", emailResult.error);
+      return NextResponse.json(
+        { success: false, error: `이메일 발송에 실패했습니다: ${(emailResult.error as Error)?.message || "서버 오류 (서버 재시작이 필요할 수 있습니다)"}` },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
