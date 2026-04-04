@@ -5,11 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { signOut, useSession } from "next-auth/react";
 import {
     Package, Ticket, Coins, ChevronRight, Settings,
     Heart, FileText, Bell, LogOut
 } from "lucide-react";
-import { useAuthStore } from "@/store/auth-store";
 
 // Mock Data
 const MY_STATS = [
@@ -26,16 +26,17 @@ const MY_MENU = [
 ];
 
 export default function MyPage() {
-    const { user, isLoggedIn, logout, hasHydrated } = useAuthStore();
+    const { data: session, status } = useSession();
     const router = useRouter();
+    const user = session?.user;
 
     useEffect(() => {
-        if (hasHydrated && !isLoggedIn) {
+        if (status === "unauthenticated") {
             router.replace("/login");
         }
-    }, [hasHydrated, isLoggedIn, router]);
+    }, [router, status]);
 
-    if (!hasHydrated || !isLoggedIn || !user) {
+    if (status !== "authenticated" || !user) {
         return <div className="min-h-screen bg-black" />;
     }
 
@@ -127,7 +128,11 @@ export default function MyPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
-                    onClick={() => { logout(); router.push("/"); }}
+                    onClick={async () => {
+                        await signOut({ redirect: false });
+                        router.push("/");
+                        router.refresh();
+                    }}
                     className="w-full py-4 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                 >
                     <LogOut className="w-4 h-4" />

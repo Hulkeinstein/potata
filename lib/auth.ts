@@ -1,6 +1,8 @@
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const MIN_PASSWORD_LENGTH = 8;
 export const VERIFICATION_CODE_LENGTH = 6;
+export const VERIFICATION_EXPIRY_MS = 10 * 60 * 1000;
+export const MAX_VERIFICATION_ATTEMPTS = 5;
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -12,6 +14,10 @@ export function normalizeName(name: string): string {
 
 export function isValidEmail(email: string): boolean {
   return EMAIL_REGEX.test(normalizeEmail(email));
+}
+
+export function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 export function extractErrorMessage(

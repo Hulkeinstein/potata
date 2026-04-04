@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  getVerification,
-  setVerification,
-  generateCode,
-  EXPIRY_MS,
-} from "@/lib/verification-store";
 import { sendVerificationEmail } from "@/lib/email";
-import { extractErrorMessage, normalizeEmail } from "@/lib/auth";
+import {
+  extractErrorMessage,
+  generateVerificationCode,
+  normalizeEmail,
+  VERIFICATION_EXPIRY_MS,
+} from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import type { ResendVerificationRequest } from "@/types";
 
 export async function POST(req: NextRequest) {
@@ -21,27 +21,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const entry = getVerification(email);
+    const [user, entry] = await Promise.all([
+      prisma.user.findUnique({
+        where: { email },
+      }),
+      prisma.verificationCode.findFirst({
+        where: { email },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
-    if (!entry) {
+    if (!user || user.emailVerified || !entry) {
       return NextResponse.json(
         { success: false, error: "인증 요청을 찾을 수 없습니다. 다시 회원가입을 시도해주세요." },
         { status: 404 }
       );
     }
 
-    const newCode = generateCode();
-    const expiresAt = Date.now() + EXPIRY_MS;
+    const newCode = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + VERIFICATION_EXPIRY_MS);
 
-    setVerification(email, {
-      code: newCode,
-      email: entry.email,
-      name: entry.name,
-      passwordHash: entry.passwordHash,
-      expiresAt,
-    });
+    await prisma.$transaction([
+      prisma.verificationCode.deleteMany({
+        where: { email },
+      }),
+      prisma.verificationCode.create({
+        data: {
+          email,
+          name: user.name,
+          passwordHash: user.passwordHash,
+          code: newCode,
+          expiresAt,
+        },
+      }),
+    ]);
 
-    const emailResult = await sendVerificationEmail(email, entry.name, newCode);
+    const emailResult = await sendVerificationEmail(email, user.name, newCode);
     if (!emailResult.success) {
       return NextResponse.json(
         {

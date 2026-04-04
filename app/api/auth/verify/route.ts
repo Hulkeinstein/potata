@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getVerification,
-  deleteVerification,
-  incrementAttempts,
-  isExpired,
-  MAX_ATTEMPTS,
-} from "@/lib/verification-store";
-import {
+  MAX_VERIFICATION_ATTEMPTS,
   extractErrorMessage,
   normalizeEmail,
   VERIFICATION_CODE_LENGTH,
 } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import type { VerifyEmailRequest } from "@/types";
 
 export async function POST(req: NextRequest) {
@@ -33,7 +28,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const entry = getVerification(email);
+    const entry = await prisma.verificationCode.findFirst({
+      where: { email },
+      orderBy: { createdAt: "desc" },
+    });
 
     if (!entry) {
       return NextResponse.json(
@@ -42,16 +40,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (isExpired(entry)) {
-      deleteVerification(email);
+    if (entry.expiresAt.getTime() <= Date.now()) {
+      await prisma.verificationCode.deleteMany({
+        where: { email },
+      });
       return NextResponse.json(
         { success: false, error: "인증 코드가 만료되었습니다. 재발송을 눌러주세요.", expired: true },
         { status: 410 }
       );
     }
 
-    if (entry.attempts >= MAX_ATTEMPTS) {
-      deleteVerification(email);
+    if (entry.attempts >= MAX_VERIFICATION_ATTEMPTS) {
+      await prisma.verificationCode.deleteMany({
+        where: { email },
+      });
       return NextResponse.json(
         { success: false, error: "인증 시도 횟수를 초과했습니다. 다시 회원가입을 시도해주세요.", tooManyAttempts: true },
         { status: 429 }
@@ -59,8 +61,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (entry.code !== code) {
-      incrementAttempts(email);
-      const remaining = MAX_ATTEMPTS - (entry.attempts + 1);
+      await prisma.verificationCode.update({
+        where: { id: entry.id },
+        data: {
+          attempts: {
+            increment: 1,
+          },
+        },
+      });
+      const remaining = MAX_VERIFICATION_ATTEMPTS - (entry.attempts + 1);
       return NextResponse.json(
         {
           success: false,
@@ -70,19 +79,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = {
-      id: `user-${Date.now()}`,
-      email: entry.email,
-      name: entry.name,
-    };
+    const user = await prisma.$transaction(async (tx) => {
+      const verifiedUser = await tx.user.upsert({
+        where: { email: entry.email },
+        update: {
+          name: entry.name,
+          passwordHash: entry.passwordHash,
+          emailVerified: true,
+        },
+        create: {
+          email: entry.email,
+          name: entry.name,
+          passwordHash: entry.passwordHash,
+          emailVerified: true,
+        },
+      });
 
-    console.log(`[AUTH] User verified and created: ${email}`);
-    deleteVerification(email);
+      await tx.verificationCode.deleteMany({
+        where: { email },
+      });
+
+      return verifiedUser;
+    });
+
+    console.log(`[AUTH] User verified: ${email}`);
 
     return NextResponse.json({
       success: true,
       message: "이메일 인증이 완료되었습니다.",
-      user,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar ?? undefined,
+      },
     });
   } catch (error) {
     console.error("[verify] error:", error);

@@ -1,22 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowRight, X } from "lucide-react";
-import { signIn } from "next-auth/react";
-import { useAuthStore } from "@/store/auth-store";
+import { signIn, useSession } from "next-auth/react";
 
 export default function LoginPage() {
     const router = useRouter();
-    const login = useAuthStore((state) => state.login);
+    const { status } = useSession();
     const [showEmailForm, setShowEmailForm] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (status === "authenticated") {
+            router.replace("/");
+        }
+    }, [router, status]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,7 +41,6 @@ export default function LoginPage() {
             return;
         }
 
-        login({ id: "", email, name: email.split("@")[0] });
         router.push("/");
         router.refresh();
     };
