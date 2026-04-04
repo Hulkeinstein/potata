@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/ui/ProductCard";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/constants";
+import type { ProductCategory } from "@/types";
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -19,14 +20,17 @@ export default function ShopPage() {
 }
 
 const PAGE_SIZE = 8;
+const CATEGORY_SET = new Set<string>(CATEGORIES);
+
+function isProductCategory(value: string | null): value is ProductCategory {
+    return value !== null && CATEGORY_SET.has(value);
+}
 
 function ShopContent() {
     const searchParams = useSearchParams();
     const initialCategory = searchParams.get("category");
-    const [selectedCategory, setSelectedCategory] = useState<string>(
-        initialCategory && CATEGORIES.includes(initialCategory as any)
-            ? initialCategory
-            : "All"
+    const [selectedCategory, setSelectedCategory] = useState<ProductCategory>(
+        isProductCategory(initialCategory) ? initialCategory : "All"
     );
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 

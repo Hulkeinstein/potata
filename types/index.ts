@@ -84,10 +84,43 @@ export interface UserPreferences {
 // 인증 관련 타입
 export interface AuthState {
   isLoggedIn: boolean;
+  hasHydrated: boolean;
   user: User | null;
   login: (user?: User) => void;
   logout: () => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
 }
+
+export interface SignupRequest {
+  email: string;
+  password: string;
+  name: string;
+}
+
+export interface VerifyEmailRequest {
+  email: string;
+  code: string;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface AuthSuccessResponse {
+  success: true;
+  message: string;
+  devCode?: string;
+  user?: User;
+}
+
+export interface AuthErrorResponse {
+  success: false;
+  error: string;
+  expired?: boolean;
+  tooManyAttempts?: boolean;
+}
+
+export type AuthApiResponse = AuthSuccessResponse | AuthErrorResponse;
 
 // 장바구니 관련 타입
 export interface CartItem {

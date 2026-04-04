@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowLeft, RefreshCw, CheckCircle } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
+import { VERIFICATION_CODE_LENGTH } from "@/lib/auth";
+import type { AuthApiResponse, User } from "@/types";
+
+const EMPTY_CODES = Array.from({ length: VERIFICATION_CODE_LENGTH }, () => "");
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -13,7 +17,7 @@ export default function VerifyEmailPage() {
   const email = searchParams.get("email") || "";
   const login = useAuthStore((state) => state.login);
 
-  const [codes, setCodes] = useState<string[]>(["", "", "", "", "", ""]);
+  const [codes, setCodes] = useState<string[]>(EMPTY_CODES);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -29,28 +33,24 @@ export default function VerifyEmailPage() {
     return () => clearTimeout(timer);
   }, [resendCooldown]);
 
-  // 이메일 없으면 회원가입으로 리다이렉트
   useEffect(() => {
     if (!email) router.replace("/signup");
   }, [email, router]);
 
   const handleCodeChange = (index: number, value: string) => {
-    // 숫자만 허용
     const digit = value.replace(/\D/g, "").slice(-1);
     const newCodes = [...codes];
     newCodes[index] = digit;
     setCodes(newCodes);
     setError("");
 
-    // 다음 칸으로 자동 이동
-    if (digit && index < 5) {
+    if (digit && index < VERIFICATION_CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // 6자리 모두 입력되면 자동 제출
-    if (digit && index === 5) {
-      const fullCode = [...newCodes.slice(0, 5), digit].join("");
-      if (fullCode.length === 6) {
+    if (digit && index === VERIFICATION_CODE_LENGTH - 1) {
+      const fullCode = newCodes.join("");
+      if (fullCode.length === VERIFICATION_CODE_LENGTH) {
         handleVerify(fullCode);
       }
     }
@@ -63,73 +63,79 @@ export default function VerifyEmailPage() {
     if (e.key === "ArrowLeft" && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
-    if (e.key === "ArrowRight" && index < 5) {
+    if (e.key === "ArrowRight" && index < VERIFICATION_CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, VERIFICATION_CODE_LENGTH);
     if (!pasted) return;
-    const newCodes = [...codes];
-    for (let i = 0; i < 6; i++) {
+    const newCodes = [...EMPTY_CODES];
+    for (let i = 0; i < VERIFICATION_CODE_LENGTH; i += 1) {
       newCodes[i] = pasted[i] || "";
     }
     setCodes(newCodes);
-    inputRefs.current[Math.min(pasted.length, 5)]?.focus();
+    inputRefs.current[Math.min(pasted.length, VERIFICATION_CODE_LENGTH - 1)]?.focus();
 
-    if (pasted.length === 6) {
+    if (pasted.length === VERIFICATION_CODE_LENGTH) {
       handleVerify(pasted);
     }
   };
 
-  const handleVerify = useCallback(
-    async (codeOverride?: string) => {
-      const code = codeOverride ?? codes.join("");
-      if (code.length < 6) {
-        setError("6자리 인증 코드를 모두 입력해주세요.");
+  const handleVerify = async (codeOverride?: string) => {
+    const code = codeOverride ?? codes.join("");
+    if (code.length < VERIFICATION_CODE_LENGTH) {
+      setError(`${VERIFICATION_CODE_LENGTH}자리 인증 코드를 모두 입력해주세요.`);
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+
+      const data = (await res.json()) as AuthApiResponse;
+
+      if (!res.ok || !data.success) {
+        const errorMessage = data.success ? "인증에 실패했습니다." : data.error;
+        setError(errorMessage ?? "인증에 실패했습니다.");
+        if (!data.success && data.tooManyAttempts) {
+          setTimeout(() => router.replace("/signup"), 2000);
+        }
+        if (!data.success && data.expired) {
+          setCodes([...EMPTY_CODES]);
+        }
         return;
       }
 
-      setLoading(true);
-      setError("");
-
-      try {
-        const res = await fetch("/api/auth/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, code }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || !data.success) {
-          setError(data.error || "인증에 실패했습니다.");
-          if (data.tooManyAttempts) {
-            setTimeout(() => router.replace("/signup"), 2000);
-          }
-          if (data.expired) {
-            setCodes(["", "", "", "", "", ""]);
-          }
-          return;
-        }
-
-        // 인증 성공
-        setSuccess(true);
-        login(data.user);
-
-        setTimeout(() => {
-          router.replace("/");
-        }, 1800);
-      } catch {
-        setError("서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
-      } finally {
-        setLoading(false);
+      const verifiedUser = data.user as User | undefined;
+      if (!verifiedUser) {
+        setError("인증 결과를 처리할 수 없습니다. 다시 시도해주세요.");
+        return;
       }
-    },
-    [codes, email, login, router]
-  );
+
+      setSuccess(true);
+      login(verifiedUser);
+
+      setTimeout(() => {
+        router.replace("/");
+      }, 1800);
+    } catch {
+      setError("서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleResend = async () => {
     if (resendCooldown > 0) return;
@@ -143,14 +149,15 @@ export default function VerifyEmailPage() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as AuthApiResponse;
 
       if (!res.ok || !data.success) {
-        setError(data.error || "재발송에 실패했습니다.");
+        const errorMessage = data.success ? "재발송에 실패했습니다." : data.error;
+        setError(errorMessage ?? "재발송에 실패했습니다.");
         return;
       }
 
-      setCodes(["", "", "", "", "", ""]);
+      setCodes([...EMPTY_CODES]);
       inputRefs.current[0]?.focus();
       setResendCooldown(60);
     } catch {
@@ -254,7 +261,7 @@ export default function VerifyEmailPage() {
                 </div>
 
                 <p className="text-zinc-400 text-sm text-center mb-6">
-                  6자리 인증 코드를 입력해주세요
+                  {VERIFICATION_CODE_LENGTH}자리 인증 코드를 입력해주세요
                 </p>
 
                 {/* Code inputs */}

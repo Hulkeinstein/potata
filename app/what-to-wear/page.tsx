@@ -5,9 +5,10 @@ import { Heart } from "lucide-react";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
+import type { OOTD } from "@/types";
 
 // Mock OOTD Data
-const OOTDS = [
+const OOTDS: OOTD[] = [
     { id: 1, user: "@sarah.k", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80", likes: 120, desc: "Lovely jacket for Dubai winter! ❄️", product: "Classic Tweed Jacket" },
     { id: 2, user: "@fashion_dubai", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80", likes: 85, desc: "Modest and chic. Love the fit.", product: "Oversized Trench" },
     { id: 3, user: "@mina_style", image: "https://images.unsplash.com/photo-1550246140-29f40b909e5a?w=800&q=80", likes: 210, desc: "Perfect for weekend brunch!", product: "Wool Knit Vest" },
@@ -70,7 +71,7 @@ export default function WhatToWearPage() {
 }
 
 // Sub-component to handle individual image loading states
-function ImageWrapper({ item }: { item: any }) {
+function ImageWrapper({ item }: { item: OOTD }) {
     const [isLoading, setIsLoading] = useState(true);
 
     return (

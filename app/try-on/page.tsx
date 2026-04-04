@@ -1,24 +1,47 @@
 "use client";
 
 import { PRODUCTS } from "@/data/dummy";
-import { Upload, Sparkles, Shirt, Camera, History, Grid, Clock, X, Trash2 } from "lucide-react";
+import { Upload, Sparkles, Shirt, Camera, History, Grid, Clock, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/constants";
 import { useStudioStore } from "@/store/studio-store";
 import { Skeleton } from "@/components/ui/Skeleton";
+import type { Product, ProductCategory } from "@/types";
 
 type Tab = "wardrobe" | "gallery" | "recents";
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
+type GeneratedTryOnResponse = {
+    output?: string;
+    error?: string;
+};
+
+interface SelectableProductCardProps {
+    product: Product;
+    selectedProduct: string | null;
+    setSelectedProduct: (productId: string) => void;
+}
+
+function getTryOnCategory(category?: ProductCategory): string {
+    switch (category) {
+        case "Bottom":
+            return "lower_body";
+        case "Dress":
+            return "dresses";
+        default:
+            return "upper_body";
+    }
+}
+
 function TryOnContent() {
     const searchParams = useSearchParams();
     const initialProductId = searchParams.get("product");
 
-    const [selectedCategory, setSelectedCategory] = useState<string>("All");
+    const [selectedCategory, setSelectedCategory] = useState<ProductCategory>("All");
     const [selectedProduct, setSelectedProduct] = useState<string | null>(initialProductId);
     const [userImage, setUserImage] = useState<string | null>(null);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -28,8 +51,6 @@ function TryOnContent() {
     const [errorLog, setErrorLog] = useState<string | null>(null);
 
     const { gallery, recents, addToGallery, addToRecents, removeFromGallery } = useStudioStore();
-
-
 
     // Utility: Resize image to max 1024px to prevent payload issues
     const compressImage = (file: File): Promise<string> => {
@@ -71,34 +92,32 @@ function TryOnContent() {
     const handleGenerate = async () => {
         if (!selectedProduct || !userImage) return;
 
-
-
         setIsGenerating(true);
         setErrorLog(null);
 
         const product = PRODUCTS.find((p) => p.id === selectedProduct);
-        if (!product) return;
+        if (!product) {
+            setIsGenerating(false);
+            setErrorLog("선택한 상품 정보를 찾을 수 없습니다.");
+            return;
+        }
 
         // Add to Recents
         addToRecents(product.id);
 
         try {
-            let category = "upper_body";
-            if (product.category === "Bottom") category = "lower_body";
-            if (product.category === "Dress") category = "dresses";
-
             const response = await fetch("/api/try-on", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     userImage,
                     productImage: product.imageUrl,
-                    category,
+                    category: getTryOnCategory(product.category),
                     description: product.description,
                 }),
             });
 
-            const data = await response.json();
+            const data = (await response.json()) as GeneratedTryOnResponse;
             if (response.ok && data.output) {
                 setGeneratedImage(data.output);
                 addToGallery(data.output, product.id);
@@ -270,7 +289,7 @@ function TryOnContent() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 pb-24">
-                                    {PRODUCTS.filter((p) => selectedCategory === "All" || p.category === selectedCategory).map((product, index) => (
+                                    {PRODUCTS.filter((p) => selectedCategory === "All" || p.category === selectedCategory).map((product) => (
                                         <ProductCard key={product.id} product={product} selectedProduct={selectedProduct} setSelectedProduct={setSelectedProduct} />
                                     ))}
                                 </div>
@@ -391,7 +410,11 @@ export default function TryOnPage() {
 }
 
 // Sub-component for Product Card with Loading State
-function ProductCard({ product, selectedProduct, setSelectedProduct }: any) {
+function ProductCard({
+    product,
+    selectedProduct,
+    setSelectedProduct,
+}: SelectableProductCardProps) {
     const [isLoading, setIsLoading] = useState(true);
 
     return (

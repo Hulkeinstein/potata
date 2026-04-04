@@ -95,7 +95,7 @@ function LoggedInHero() {
                         <span className="text-2xl md:text-3xl text-gray-400 font-light">Here is your Pick.</span>
                     </h1>
                     <p className="text-gray-400 text-sm leading-relaxed">
-                        Based on your recent interest in <i>"Minimalist Streetwear"</i> and Dubai's current weather (24°C).
+                        Based on your recent interest in <i>&quot;Minimalist Streetwear&quot;</i> and Dubai&apos;s current weather (24°C).
                     </p>
 
                     <div className="pt-8 flex flex-col gap-4">

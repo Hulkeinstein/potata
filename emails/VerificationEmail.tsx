@@ -1,4 +1,4 @@
-import * as React from 'react';
+import type { CSSProperties } from "react";
 import {
   Html,
   Head,
@@ -7,7 +7,7 @@ import {
   Section,
   Text,
   Heading,
-} from '@react-email/components';
+} from "@react-email/components";
 
 interface VerificationEmailProps {
   name: string;
@@ -37,56 +37,56 @@ export const VerificationEmail = ({ name, code }: VerificationEmailProps) => {
   );
 };
 
-const main = {
-  backgroundColor: '#ffffff',
+const main: CSSProperties = {
+  backgroundColor: "#ffffff",
   fontFamily:
     '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
 };
 
-const container = {
-  margin: '0 auto',
-  padding: '40px 20px',
-  maxWidth: '560px',
+const container: CSSProperties = {
+  margin: "0 auto",
+  padding: "40px 20px",
+  maxWidth: "560px",
 };
 
-const h1 = {
-  color: '#333',
-  fontSize: '24px',
-  fontWeight: '600',
-  padding: '0',
-  margin: '30px 0',
-  textAlign: 'center' as const,
+const h1: CSSProperties = {
+  color: "#333",
+  fontSize: "24px",
+  fontWeight: 600,
+  padding: "0",
+  margin: "30px 0",
+  textAlign: "center",
 };
 
-const text = {
-  color: '#555',
-  fontSize: '16px',
-  lineHeight: '26px',
-  margin: '0',
+const text: CSSProperties = {
+  color: "#555",
+  fontSize: "16px",
+  lineHeight: "26px",
+  margin: "0",
 };
 
-const codeBox = {
-  background: '#f4f4f5',
-  borderRadius: '8px',
-  marginTop: '20px',
-  marginBottom: '20px',
-  padding: '24px',
-  textAlign: 'center' as const,
+const codeBox: CSSProperties = {
+  background: "#f4f4f5",
+  borderRadius: "8px",
+  marginTop: "20px",
+  marginBottom: "20px",
+  padding: "24px",
+  textAlign: "center",
 };
 
-const codeText = {
-  fontSize: '32px',
-  fontWeight: '700',
-  letterSpacing: '6px',
-  color: '#000',
-  margin: '0',
+const codeText: CSSProperties = {
+  fontSize: "32px",
+  fontWeight: 700,
+  letterSpacing: "6px",
+  color: "#000",
+  margin: "0",
 };
 
-const footer = {
-  color: '#9ca3af',
-  fontSize: '14px',
-  marginTop: '40px',
-  textAlign: 'center' as const,
+const footer: CSSProperties = {
+  color: "#9ca3af",
+  fontSize: "14px",
+  marginTop: "40px",
+  textAlign: "center",
 };
 
 export default VerificationEmail;

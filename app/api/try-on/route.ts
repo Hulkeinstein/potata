@@ -7,7 +7,11 @@ const replicate = new Replicate({
 
 export async function POST(req: Request) {
     try {
-        const { userImage, productImage, category, description } = await req.json();
+        const body = (await req.json()) as {
+            userImage?: string;
+            productImage?: string;
+        };
+        const { userImage, productImage } = body;
 
         if (!process.env.REPLICATE_API_TOKEN) {
             console.error("Error: REPLICATE_API_TOKEN is missing. Did you restart the server?");
@@ -44,10 +48,15 @@ export async function POST(req: Request) {
         );
 
         return NextResponse.json({ output });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Try-On Error:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to generate try-on image" },
+            {
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to generate try-on image",
+            },
             { status: 500 }
         );
     }
