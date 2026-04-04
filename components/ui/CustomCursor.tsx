@@ -1,10 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 
+function subscribeToFinePointer(callback: () => void) {
+    const mediaQuery = window.matchMedia("(pointer: fine)");
+    mediaQuery.addEventListener("change", callback);
+
+    return () => {
+        mediaQuery.removeEventListener("change", callback);
+    };
+}
+
+function getFinePointerSnapshot() {
+    return window.matchMedia("(pointer: fine)").matches;
+}
+
 export function CustomCursor() {
-    const [isVisible, setIsVisible] = useState(false);
+    const isVisible = useSyncExternalStore(
+        subscribeToFinePointer,
+        getFinePointerSnapshot,
+        () => false
+    );
     const [isHovering, setIsHovering] = useState(false);
 
     // Mouse position values
@@ -17,32 +34,27 @@ export function CustomCursor() {
     const cursorY = useSpring(mouseY, springConfig);
 
     useEffect(() => {
-        // Only show custom cursor on devices with fine pointers (mouse)
-        const mediaQuery = window.matchMedia("(pointer: fine)");
-        if (!mediaQuery.matches) return;
+        if (!isVisible) {
+            document.body.classList.remove("custom-cursor-active");
+            return;
+        }
 
-        setIsVisible(true);
         document.body.classList.add("custom-cursor-active");
 
         const moveCursor = (e: MouseEvent) => {
-            mouseX.set(e.clientX - 16); // Center the 32px cursor
+            mouseX.set(e.clientX - 16);
             mouseY.set(e.clientY - 16);
         };
 
         const handleMouseOver = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            // Check if hovering over clickable elements
-            if (
+            setIsHovering(
                 target.tagName === "BUTTON" ||
-                target.tagName === "A" ||
-                target.getAttribute("role") === "button" ||
-                target.closest("button") ||
-                target.closest("a")
-            ) {
-                setIsHovering(true);
-            } else {
-                setIsHovering(false);
-            }
+                    target.tagName === "A" ||
+                    target.getAttribute("role") === "button" ||
+                    Boolean(target.closest("button")) ||
+                    Boolean(target.closest("a"))
+            );
         };
 
         window.addEventListener("mousemove", moveCursor);
@@ -53,7 +65,7 @@ export function CustomCursor() {
             window.removeEventListener("mouseover", handleMouseOver);
             document.body.classList.remove("custom-cursor-active");
         };
-    }, [mouseX, mouseY]);
+    }, [isVisible, mouseX, mouseY]);
 
     if (!isVisible) return null;
 

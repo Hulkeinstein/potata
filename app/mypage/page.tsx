@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,19 +26,17 @@ const MY_MENU = [
 ];
 
 export default function MyPage() {
-    const { user, isLoggedIn, logout } = useAuthStore();
+    const { user, isLoggedIn, logout, hasHydrated } = useAuthStore();
     const router = useRouter();
-    const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
-        setIsClient(true);
-        if (!isLoggedIn) {
-            router.push("/login"); // Redirect if not logged in
+        if (hasHydrated && !isLoggedIn) {
+            router.replace("/login");
         }
-    }, [isLoggedIn, router]);
+    }, [hasHydrated, isLoggedIn, router]);
 
-    if (!isClient || !user) {
-        return <div className="min-h-screen bg-black" />; // Loading state
+    if (!hasHydrated || !isLoggedIn || !user) {
+        return <div className="min-h-screen bg-black" />;
     }
 
     return (
@@ -69,7 +67,7 @@ export default function MyPage() {
                             <span className="px-2 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-xs">
                                 VIP Member
                             </span>
-                            <span>{user.name.toLowerCase().replace(/\s+/g, '.')}@potata.com</span>
+                            <span>{user.email}</span>
                         </div>
                     </div>
                 </motion.div>

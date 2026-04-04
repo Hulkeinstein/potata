@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { PRODUCTS } from "@/data/dummy";
 import { ProductCard } from "@/components/ui/ProductCard";
@@ -9,17 +8,12 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 export default function LikedPage() {
-    const { items: likedIds } = useWishlistStore();
-    const [isClient, setIsClient] = useState(false);
+    const likedIds = useWishlistStore((state) => state.items);
+    const hasHydrated = useWishlistStore((state) => state.hasHydrated);
 
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    // Filter products
     const likedProducts = PRODUCTS.filter((p) => likedIds.includes(p.id));
 
-    if (!isClient) return <div className="min-h-screen bg-black" />;
+    if (!hasHydrated) return <div className="min-h-screen bg-black" />;
 
     return (
         <div className="min-h-screen bg-black pt-24 px-4 pb-20">

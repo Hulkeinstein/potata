@@ -6,15 +6,29 @@ import {
   isExpired,
   MAX_ATTEMPTS,
 } from "@/lib/verification-store";
+import {
+  extractErrorMessage,
+  normalizeEmail,
+  VERIFICATION_CODE_LENGTH,
+} from "@/lib/auth";
+import type { VerifyEmailRequest } from "@/types";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { email, code } = body;
+    const body = (await req.json()) as Partial<VerifyEmailRequest>;
+    const email = normalizeEmail(body.email ?? "");
+    const code = body.code?.trim() ?? "";
 
     if (!email || !code) {
       return NextResponse.json(
         { success: false, error: "이메일과 인증 코드를 입력해주세요." },
+        { status: 400 }
+      );
+    }
+
+    if (code.length !== VERIFICATION_CODE_LENGTH) {
+      return NextResponse.json(
+        { success: false, error: `${VERIFICATION_CODE_LENGTH}자리 인증 코드를 입력해주세요.` },
         { status: 400 }
       );
     }
@@ -28,7 +42,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 만료 체크
     if (isExpired(entry)) {
       deleteVerification(email);
       return NextResponse.json(
@@ -37,7 +50,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 시도 횟수 제한
     if (entry.attempts >= MAX_ATTEMPTS) {
       deleteVerification(email);
       return NextResponse.json(
@@ -46,8 +58,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 코드 검증
-    if (entry.code !== code.trim()) {
+    if (entry.code !== code) {
       incrementAttempts(email);
       const remaining = MAX_ATTEMPTS - (entry.attempts + 1);
       return NextResponse.json(
@@ -59,17 +70,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 인증 성공 — 계정 생성
     const user = {
       id: `user-${Date.now()}`,
       email: entry.email,
       name: entry.name,
     };
 
-    // TODO: 실제 서비스에서는 DB에 유저 저장
     console.log(`[AUTH] User verified and created: ${email}`);
-
-    // 인증 코드 삭제
     deleteVerification(email);
 
     return NextResponse.json({
@@ -80,7 +87,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[verify] error:", error);
     return NextResponse.json(
-      { success: false, error: "서버 오류가 발생했습니다." },
+      { success: false, error: extractErrorMessage(error) },
       { status: 500 }
     );
   }

@@ -4,26 +4,27 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const InitialLoader = () => {
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(() => {
+        if (typeof window === "undefined") {
+            return false;
+        }
+
+        return sessionStorage.getItem("potata-visit") !== "true";
+    });
 
     useEffect(() => {
-        // Check session storage to see if we've already shown the loader
-        const hasVisited = sessionStorage.getItem("potata-visit");
-
-        if (hasVisited) {
-            setIsLoading(false);
-        } else {
-            // Set visited flag
-            sessionStorage.setItem("potata-visit", "true");
-
-            // Allow animation to play then remove loader
-            const timer = setTimeout(() => {
-                setIsLoading(false);
-            }, 3500); // 3.5s total duration
-
-            return () => clearTimeout(timer);
+        if (!isLoading) {
+            return;
         }
-    }, []);
+
+        sessionStorage.setItem("potata-visit", "true");
+
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 3500);
+
+        return () => clearTimeout(timer);
+    }, [isLoading]);
 
     return (
         <AnimatePresence mode="wait">

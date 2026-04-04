@@ -11,17 +11,21 @@ export interface GeneratedImage {
 interface StudioState {
     gallery: GeneratedImage[];
     recents: string[]; // Product IDs
+    hasHydrated: boolean;
     addToGallery: (image: string, productId?: string) => void;
     removeFromGallery: (id: string) => void;
     addToRecents: (productId: string) => void;
     clearRecents: () => void;
+    setHasHydrated: (hasHydrated: boolean) => void;
 }
 
 export const useStudioStore = create<StudioState>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             gallery: [],
             recents: [],
+            hasHydrated: false,
+            setHasHydrated: (hasHydrated) => set({ hasHydrated }),
             addToGallery: (image, productId) => {
                 const newImage: GeneratedImage = {
                     id: crypto.randomUUID(),
@@ -44,6 +48,9 @@ export const useStudioStore = create<StudioState>()(
         }),
         {
             name: 'studio-storage',
+            onRehydrateStorage: () => (state) => {
+                state?.setHasHydrated(true);
+            },
         }
     )
 );

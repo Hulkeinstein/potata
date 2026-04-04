@@ -6,14 +6,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowRight, X, User, Lock } from "lucide-react";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
+import type { AuthApiResponse, SignupRequest } from "@/types";
+
+const INITIAL_FORM: SignupRequest & { confirmPassword: string } = {
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+};
 
 export default function SignupPage() {
     const router = useRouter();
     const [showEmailForm, setShowEmailForm] = useState(false);
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+    const [form, setForm] = useState(INITIAL_FORM);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -21,13 +27,13 @@ export default function SignupPage() {
         e.preventDefault();
         setError("");
 
-        if (password !== confirmPassword) {
+        if (form.password !== form.confirmPassword) {
             setError("비밀번호가 일치하지 않습니다.");
             return;
         }
 
-        if (password.length < 8) {
-            setError("비밀번호는 8자 이상이어야 합니다.");
+        if (form.password.length < MIN_PASSWORD_LENGTH) {
+            setError(`비밀번호는 ${MIN_PASSWORD_LENGTH}자 이상이어야 합니다.`);
             return;
         }
 
@@ -37,23 +43,31 @@ export default function SignupPage() {
             const res = await fetch("/api/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password, name }),
+                body: JSON.stringify({
+                    email: form.email,
+                    password: form.password,
+                    name: form.name,
+                } satisfies SignupRequest),
             });
 
-            const data = await res.json();
+            const data = (await res.json()) as AuthApiResponse;
 
             if (!res.ok || !data.success) {
-                setError(data.error || "회원가입에 실패했습니다.");
+                const errorMessage = data.success ? "회원가입에 실패했습니다." : data.error;
+                setError(errorMessage ?? "회원가입에 실패했습니다.");
                 return;
             }
 
-            // 인증 코드 입력 페이지로 이동
-            router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+            router.push(`/verify-email?email=${encodeURIComponent(form.email.trim())}`);
         } catch {
             setError("서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
         } finally {
             setLoading(false);
         }
+    };
+
+    const updateField = (field: keyof typeof INITIAL_FORM, value: string) => {
+        setForm((current) => ({ ...current, [field]: value }));
     };
 
     return (
@@ -157,8 +171,8 @@ export default function SignupPage() {
                                             <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
                                                 type="text"
-                                                value={name}
-                                                onChange={(e) => setName(e.target.value)}
+                                                value={form.name}
+                                                onChange={(e) => updateField("name", e.target.value)}
                                                 required
                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg pl-11 pr-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
                                                 placeholder="홍길동"
@@ -172,8 +186,8 @@ export default function SignupPage() {
                                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
                                                 type="email"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
+                                                value={form.email}
+                                                onChange={(e) => updateField("email", e.target.value)}
                                                 required
                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg pl-11 pr-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
                                                 placeholder="example@potata.com"
@@ -187,8 +201,8 @@ export default function SignupPage() {
                                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
                                                 type="password"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
+                                                value={form.password}
+                                                onChange={(e) => updateField("password", e.target.value)}
                                                 required
                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg pl-11 pr-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
                                                 placeholder="••••••••"
@@ -202,8 +216,8 @@ export default function SignupPage() {
                                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                                             <input
                                                 type="password"
-                                                value={confirmPassword}
-                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                value={form.confirmPassword}
+                                                onChange={(e) => updateField("confirmPassword", e.target.value)}
                                                 required
                                                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg pl-11 pr-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
                                                 placeholder="••••••••"

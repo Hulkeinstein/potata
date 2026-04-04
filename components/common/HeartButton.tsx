@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useAuthStore } from "@/store/auth-store";
 import { motion } from "framer-motion";
-import { useState } from "react";
 
 interface HeartButtonProps {
     productId: string;
@@ -19,7 +18,6 @@ export function HeartButton({ productId, className, iconSize = 20 }: HeartButton
     const { isLoggedIn } = useAuthStore();
     const { hasItem, toggleItem } = useWishlistStore();
     const isLiked = hasItem(productId);
-    const [showToast, setShowToast] = useState(false);
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();

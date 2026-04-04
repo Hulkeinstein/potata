@@ -39,7 +39,7 @@ export default function ForYouPage() {
                                 <span>AI ANALYSIS</span>
                             </div>
                             <h2 className="text-white text-2xl md:text-3xl font-black leading-tight mb-3">
-                                "You love <br /> <span className="text-purple-400">Minimal & Chic</span> vibes."
+                                &quot;You love <br /> <span className="text-purple-400">Minimal &amp; Chic</span> vibes.&quot;
                             </h2>
                             <p className="text-gray-300 text-xs tracking-wider">Based on 12 viewed items</p>
                         </div>

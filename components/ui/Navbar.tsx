@@ -187,7 +187,11 @@ export function Navbar() {
                     <div className="mt-4 pt-4 border-t border-white/10">
                         <button
                             onClick={() => {
-                                isLoggedIn ? logout() : router.push("/login");
+                                if (isLoggedIn) {
+                                    logout();
+                                } else {
+                                    router.push("/login");
+                                }
                                 closeMobileMenu();
                             }}
                             className={cn(

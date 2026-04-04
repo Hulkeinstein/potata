@@ -25,8 +25,8 @@ export function Footer() {
                 <div>
                     <h3 className="text-xl font-bold mb-4">POTATA</h3>
                     <p className="text-gray-400 text-sm">
-                        Linking Seoul's vibrancy to Dubai's modernize.<br />
-                        Premium K-Fashion & AI experience.
+                        Linking Seoul&apos;s vibrancy to Dubai&apos;s modern style.<br />
+                        Premium K-Fashion &amp; AI experience.
                     </p>
                 </div>
 
