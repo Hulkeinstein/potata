@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowRight, X } from "lucide-react";
+import { signIn } from "next-auth/react";
 import { useAuthStore } from "@/store/auth-store";
 
 export default function LoginPage() {
@@ -14,17 +15,30 @@ export default function LoginPage() {
     const [showEmailForm, setShowEmailForm] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Login Logic
-        const name = email.split("@")[0] || "Guest";
-        login({
-            id: email || "guest-user",
-            email: email || "guest@potata.com",
-            name,
+        setError("");
+        setIsLoading(true);
+
+        const result = await signIn("credentials", {
+            email,
+            password,
+            redirect: false,
         });
+
+        setIsLoading(false);
+
+        if (result?.error) {
+            setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+            return;
+        }
+
+        login({ id: "", email, name: email.split("@")[0] });
         router.push("/");
+        router.refresh();
     };
 
     return (
@@ -114,6 +128,11 @@ export default function LoginPage() {
                                 </div>
 
                                 <form onSubmit={handleLogin} className="space-y-4">
+                                    {error && (
+                                        <p className="text-red-400 text-xs text-center bg-red-400/10 rounded-lg px-3 py-2">
+                                            {error}
+                                        </p>
+                                    )}
                                     <div className="space-y-1">
                                         <label className="text-xs text-zinc-400 font-medium ml-1">이메일</label>
                                         <input
@@ -137,9 +156,10 @@ export default function LoginPage() {
 
                                     <button
                                         type="submit"
-                                        className="w-full h-12 bg-brand-neon text-black font-bold rounded-lg flex items-center justify-center gap-2 mt-6 hover:bg-brand-neon/90 transition-all shadow-[0_0_15px_rgba(204,243,129,0.4)]"
+                                        disabled={isLoading}
+                                        className="w-full h-12 bg-brand-neon text-black font-bold rounded-lg flex items-center justify-center gap-2 mt-6 hover:bg-brand-neon/90 transition-all shadow-[0_0_15px_rgba(204,243,129,0.4)] disabled:opacity-50"
                                     >
-                                        로그인
+                                        {isLoading ? "로그인 중..." : "로그인"}
                                     </button>
                                 </form>
 
