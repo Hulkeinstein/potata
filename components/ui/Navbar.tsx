@@ -3,20 +3,31 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { signOut, useSession } from "next-auth/react";
 import { ShoppingBag, Menu, User, Sparkles, X, Search, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/store/auth-store";
 import { NAV_LINKS } from "@/lib/constants";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
 
 export function Navbar() {
-    const { isLoggedIn, logout } = useAuthStore();
+    const { data: session, status } = useSession();
     const router = useRouter();
     const { toggleCart, items: cartItems } = useCartStore();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const isLoggedIn = status === "authenticated";
+
+    const handleAuthClick = async () => {
+        if (isLoggedIn) {
+            await signOut({ redirect: false });
+            router.refresh();
+            return;
+        }
+
+        router.push("/login");
+    };
 
     const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev);
     const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -80,7 +91,7 @@ export function Navbar() {
                             </Link>
 
                             <button
-                                onClick={() => isLoggedIn ? logout() : router.push("/login")}
+                                onClick={handleAuthClick}
                                 className={cn(
                                     "text-[10px] font-bold px-2 py-1 rounded-full border transition-all hidden sm:block",
                                     isLoggedIn
@@ -89,7 +100,7 @@ export function Navbar() {
                                 )}
                                 aria-label={isLoggedIn ? "Logout" : "Login"}
                             >
-                                {isLoggedIn ? "Guest" : "Login"}
+                                {isLoggedIn ? session?.user.name ?? "Account" : "Login"}
                             </button>
 
                             <Link
@@ -186,12 +197,8 @@ export function Navbar() {
                     {/* Mobile Auth Button */}
                     <div className="mt-4 pt-4 border-t border-white/10">
                         <button
-                            onClick={() => {
-                                if (isLoggedIn) {
-                                    logout();
-                                } else {
-                                    router.push("/login");
-                                }
+                            onClick={async () => {
+                                await handleAuthClick();
                                 closeMobileMenu();
                             }}
                             className={cn(

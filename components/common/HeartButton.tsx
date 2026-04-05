@@ -2,9 +2,9 @@
 
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useWishlistStore } from "@/store/wishlist-store";
-import { useAuthStore } from "@/store/auth-store";
 import { motion } from "framer-motion";
 
 interface HeartButtonProps {
@@ -15,9 +15,10 @@ interface HeartButtonProps {
 
 export function HeartButton({ productId, className, iconSize = 20 }: HeartButtonProps) {
     const router = useRouter();
-    const { isLoggedIn } = useAuthStore();
+    const { status } = useSession();
     const { hasItem, toggleItem } = useWishlistStore();
     const isLiked = hasItem(productId);
+    const isLoggedIn = status === "authenticated";
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();

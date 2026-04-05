@@ -5,9 +5,8 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowLeft, RefreshCw, CheckCircle } from "lucide-react";
-import { useAuthStore } from "@/store/auth-store";
 import { VERIFICATION_CODE_LENGTH } from "@/lib/auth";
-import type { AuthApiResponse, User } from "@/types";
+import type { AuthApiResponse } from "@/types";
 
 const EMPTY_CODES = Array.from({ length: VERIFICATION_CODE_LENGTH }, () => "");
 
@@ -15,7 +14,6 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
-  const login = useAuthStore((state) => state.login);
 
   const [codes, setCodes] = useState<string[]>(EMPTY_CODES);
   const [error, setError] = useState("");
@@ -118,17 +116,10 @@ export default function VerifyEmailPage() {
         return;
       }
 
-      const verifiedUser = data.user as User | undefined;
-      if (!verifiedUser) {
-        setError("인증 결과를 처리할 수 없습니다. 다시 시도해주세요.");
-        return;
-      }
-
       setSuccess(true);
-      login(verifiedUser);
 
       setTimeout(() => {
-        router.replace("/");
+        router.replace(`/login?verified=1&email=${encodeURIComponent(email)}`);
       }, 1800);
     } catch {
       setError("서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");

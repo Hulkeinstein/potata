@@ -1,16 +1,17 @@
 "use client";
 
-import { useAuthStore } from "@/store/auth-store";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, RefreshCcw, Check } from "lucide-react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 export function Hero() {
-    const { isLoggedIn } = useAuthStore();
+    const { data: session, status } = useSession();
+    const isLoggedIn = status === "authenticated";
 
     return (
         <section className="relative w-full h-[90vh] overflow-hidden bg-cinematic-900 text-white">
-            {isLoggedIn ? <LoggedInHero /> : <GuestHero />}
+            {isLoggedIn ? <LoggedInHero name={session?.user.name} /> : <GuestHero />}
         </section>
     );
 }
@@ -73,9 +74,7 @@ function GuestHero() {
     );
 }
 
-function LoggedInHero() {
-    const { user } = useAuthStore();
-
+function LoggedInHero({ name }: { name?: string | null }) {
     return (
         <div className="relative w-full h-full flex flex-col md:flex-row">
             {/* Left Panel: AI Control / Greeting */}
@@ -90,7 +89,7 @@ function LoggedInHero() {
                         <span className="text-sm font-bold tracking-wider">AI COORDINATOR</span>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-bold leading-tight">
-                        Hello, <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-neon to-white">{user?.name || "User"}</span>.
+                        Hello, <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-neon to-white">{name || "User"}</span>.
                         <br />
                         <span className="text-2xl md:text-3xl text-gray-400 font-light">Here is your Pick.</span>
                     </h1>

@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "node:crypto";
-import {
-  generateCode,
-  setVerification,
-  EXPIRY_MS,
-} from "@/lib/verification-store";
+import bcrypt from "bcryptjs";
 import { sendVerificationEmail } from "@/lib/email";
 import {
   extractErrorMessage,
+  generateVerificationCode,
   isValidEmail,
+  VERIFICATION_EXPIRY_MS,
   MIN_PASSWORD_LENGTH,
   normalizeEmail,
   normalizeName,
 } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import type { SignupRequest } from "@/types";
 
 export async function POST(req: NextRequest) {
@@ -43,17 +41,49 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const code = generateCode();
-    const expiresAt = Date.now() + EXPIRY_MS;
-    const passwordHash = createHash("sha256").update(password).digest("hex");
-
-    setVerification(email, {
-      code,
-      email,
-      name,
-      passwordHash,
-      expiresAt,
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
     });
+
+    if (existingUser?.emailVerified) {
+      return NextResponse.json(
+        { success: false, error: "이미 가입된 이메일입니다. 로그인해주세요." },
+        { status: 409 }
+      );
+    }
+
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + VERIFICATION_EXPIRY_MS);
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await prisma.$transaction([
+      prisma.user.upsert({
+        where: { email },
+        update: {
+          name,
+          passwordHash,
+          emailVerified: false,
+        },
+        create: {
+          email,
+          name,
+          passwordHash,
+          emailVerified: false,
+        },
+      }),
+      prisma.verificationCode.deleteMany({
+        where: { email },
+      }),
+      prisma.verificationCode.create({
+        data: {
+          email,
+          name,
+          passwordHash,
+          code,
+          expiresAt,
+        },
+      }),
+    ]);
 
     const emailResult = await sendVerificationEmail(email, name, code);
     if (!emailResult.success) {
