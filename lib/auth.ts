@@ -1,3 +1,5 @@
+import { randomInt } from "node:crypto";
+
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const MIN_PASSWORD_LENGTH = 8;
 export const VERIFICATION_CODE_LENGTH = 6;
@@ -17,7 +19,7 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function generateVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return randomInt(100000, 1000000).toString();
 }
 
 export function extractErrorMessage(

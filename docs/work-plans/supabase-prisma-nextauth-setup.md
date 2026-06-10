@@ -33,7 +33,7 @@
 
 ### Phase 1: 패키지 설치 `category:quick`
 
-- [ ] 패키지 설치 및 postinstall 스크립트 추가
+- [x] 패키지 설치 및 postinstall 스크립트 추가
 
 **명령어:**
 ```bash
@@ -73,10 +73,10 @@ npm install -D prisma @types/bcryptjs
 
 ### Phase 2: Prisma 설정 `category:quick`
 
-- [ ] `prisma/schema.prisma` 생성
-- [ ] `lib/prisma.ts` 생성
-- [ ] `npx prisma db push` 실행
-- [ ] `.env.example` 업데이트
+- [x] `prisma/schema.prisma` 생성
+- [x] `lib/prisma.ts` 생성
+- [x] `npx prisma db push` 실행
+- [x] `.env.example` 업데이트
 
 **파일: `prisma/schema.prisma`** (신규)
 ```prisma
@@ -167,7 +167,7 @@ npx prisma generate
 
 ### Phase 3: verification-store.ts 재작성 `category:ultrabrain`
 
-- [ ] `lib/verification-store.ts`를 Prisma async DB 기반으로 전면 재작성
+- [x] `lib/verification-store.ts`를 Prisma async DB 기반으로 전면 재작성
 
 **파일: `lib/verification-store.ts`** (전체 재작성)
 ```typescript
@@ -275,13 +275,15 @@ export function isExpired(entry: { expiresAt: number }): boolean {
 
 > **BREAKING CHANGE**: 모든 함수가 `async`로 변경됨. API 라우트에서 `await` 필수.
 
+> **NOTE**: verification-store.ts는 재작성 대신 삭제됨. API 라우트가 Prisma를 직접 사용하므로 중간 레이어 불필요.
+
 ---
 
 ### Phase 4: API 라우트 수정 (signup/verify/resend) `category:ultrabrain`
 
-- [ ] `app/api/auth/signup/route.ts` 수정 (base64 → bcrypt, async store)
-- [ ] `app/api/auth/verify/route.ts` 수정 (DB User 생성, async store)
-- [ ] `app/api/auth/resend/route.ts` 수정 (async store)
+- [x] `app/api/auth/signup/route.ts` 수정 (base64 → bcrypt, async store)
+- [x] `app/api/auth/verify/route.ts` 수정 (DB User 생성, async store)
+- [x] `app/api/auth/resend/route.ts` 수정 (async store)
 
 **파일: `app/api/auth/signup/route.ts`** (전체 수정)
 ```typescript
