@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    name: Lint + Typecheck + Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        # The committed package-lock.json is generated on Windows, which omits
+        # other-platform optional native bindings (npm bug #4828 — e.g.
+        # @rolldown/binding-linux-x64-gnu used by vitest 4). With the lock
+        # present, neither `npm ci` nor `npm install` installs the linux
+        # binding, so we drop the lock here to force a clean linux resolution
+        # (per the npm error's own guidance). Local dev keeps the lock.
+        run: rm -f package-lock.json && npm install
+      - name: Prisma generate
+        run: npx prisma generate
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm run test
