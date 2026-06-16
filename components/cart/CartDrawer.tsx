@@ -2,13 +2,15 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/lib/utils";
 
 export function CartDrawer() {
-    const { items, isOpen, closeCart, updateQuantity, removeItem } = useCartStore();
+    const { items, isOpen, closeCart, updateQuantity, removeItem, totalItems } = useCartStore();
+    const router = useRouter();
 
     // Prevent body scroll when cart is open
     useEffect(() => {
@@ -159,7 +161,14 @@ export function CartDrawer() {
                                     </div>
                                 </div>
 
-                                <button className="w-full py-4 bg-gradient-to-r from-brand-neon to-purple-500 text-black font-bold text-lg rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                                <button
+                                    onClick={() => {
+                                        closeCart();
+                                        router.push("/checkout");
+                                    }}
+                                    disabled={totalItems() === 0}
+                                    className="w-full py-4 bg-gradient-to-r from-brand-neon to-purple-500 text-black font-bold text-lg rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
                                     Checkout <ArrowRight className="w-5 h-5" />
                                 </button>
                             </div>
