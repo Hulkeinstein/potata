@@ -17,8 +17,31 @@ model User {
   avatar        String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  orders        Order[]
 
   @@index([email])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  items          Json
+  subtotal       Int
+  shipping       Int
+  total          Int
+  status         OrderStatus @default(PENDING)
+  idempotencyKey String?     @unique
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userId, createdAt])
 }
 
 model VerificationCode {

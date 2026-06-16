@@ -182,6 +182,42 @@ export interface NavLink {
   icon?: React.ComponentType<{ className?: string }>;
 }
 
+// 주문 관련 타입
+export interface OrderItemSnapshot {
+  productId: string;
+  name: string;
+  brand: string;
+  price: number; // AED 정수 (서버 재조회 값)
+  imageUrl: string;
+  size?: string;
+  color?: string;
+  quantity: number;
+}
+
+export type OrderStatus = 'PENDING' | 'PAID' | 'CANCELLED';
+
+export interface Order {
+  id: string;
+  userId: string;
+  items: OrderItemSnapshot[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+  status: OrderStatus;
+  idempotencyKey?: string | null;
+  createdAt: string;
+}
+
+export interface CreateOrderRequest {
+  items: {
+    productId: string;
+    quantity: number;
+    size?: string;
+    color?: string;
+  }[];
+  idempotencyKey?: string;
+}
+
 // AI Try-On 관련 타입
 export interface TryOnRequest {
   userImage: string;
