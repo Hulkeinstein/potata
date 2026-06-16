@@ -6,32 +6,28 @@
 
 ## 북극성 골
 
-potata = 한국→UAE 패션 커머스. 로그인 등 핵심 플로우 정상화 + BLF 검증 계층(테스트·CI) 정착이 현 단계 최우선.
+potata = 한국→UAE 패션 커머스. 인증·검증계층(테스트/CI)은 정착 완료. 현 단계 최우선 = 커머스 매출 경로(장바구니→체크아웃→주문) 완성.
 
 ---
 
 ## 지금 작업
 
-**Plan**: `docs/work-plans/blf-workflow-adoption.md`
+**Plan**: `docs/work-plans/commerce-checkout-mvp.md`
 
-**Objective**: BLF AX 워크플로우 right-sized 도입 + P0 인증 배선 버그 수정.
+**Objective**: 장바구니 → `/checkout` → `POST /api/orders`(로그인 필수, 서버 가격 재검증) → 주문 DB 저장(status=PENDING) → `/mypage/orders` 조회. 3-PR(A 백엔드 / B 체크아웃UI / C 주문조회).
 
-**진행 상태**:
-- PR#1 (`feat/workflow-infra`): vitest 셋업·최소 CI·AGENTS.md·CLAUDE.md·ADR·roadmap·session.md 작성 중.
-- PR#2 (`fix/auth-user-creation`): PR#1 머지 완료 후 진행.
+**진행 상태**: PR A(task 1~7) 실행 중 — types/Order 모델/POST·GET `/api/orders`/테스트/ADR.
 
 **완료 기준 (DoD)**:
-- PR#1: `tsc --noEmit` + `lint` + `test`(smoke) 전부 exit 0, CI job green.
-- PR#2: signup→verify→login 통합테스트(실 Postgres) GREEN, DB에 User row 생성 확인.
+- PR A: 통합테스트(주문 생성→DB row, status PENDING, 서버 재계산 total) GREEN + `tsc`/`lint`/`test` exit 0 + CI green.
+- 보안: 미인증 401, 클라 가격 조작 무시, IDOR 차단.
 
-**선결 조건**:
-- PR#1 머지 후 `fix/auth-user-creation` 브랜치에서 PR#2 진행.
-- P0 인증 수정 source: `docs/work-plans/supabase-prisma-nextauth-setup.md` Phase 3·4.
+**확정 결정**: 결제 분리(status enum 선반영) · JSON 스냅샷 · 로그인 필수 · 서버 가격 재검증. 카탈로그는 dummy.ts(P3). PR A 머지 후 B→C.
 
 ---
 
-## 핵심 버그 (P0)
+## 최근 완료 (참고)
 
-- `app/api/auth/verify/route.ts:73-77` — 가짜 user 반환, `prisma.user.create` 없음 → 모든 유저 로그인 불가.
-- `app/api/auth/signup/route.ts:48` — sha256 해시 (login은 bcrypt) → 해시 불일치.
-- `lib/verification-store.ts` — sync 인메모리 Map → 서버 재시작 시 코드 유실.
+- 인증: signup→verify→login 정상(bcrypt+Prisma, 실 DB 검증됨) — #11/#12/2c47833.
+- 워크플로우 인프라(vitest+CI+SSoT) #14, try-on 보안 가드 #15.
+- DATABASE_URL `?pgbouncer=true` 적용(로컬). Vercel env·Resend 도메인은 roadmap "로그인 실유저 가용성" 참조.
