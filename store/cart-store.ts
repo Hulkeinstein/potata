@@ -4,9 +4,11 @@ import type { CartItem, CartState } from '@/types';
 
 interface CartStore extends CartState {
     isOpen: boolean;
+    hasHydrated: boolean;
     toggleCart: () => void;
     openCart: () => void;
     closeCart: () => void;
+    setHasHydrated: (v: boolean) => void;
 }
 
 const isSameCartItem = (left: CartItem, right: CartItem) =>
@@ -19,6 +21,8 @@ export const useCartStore = create<CartStore>()(
         (set, get) => ({
             items: [],
             isOpen: false,
+            hasHydrated: false,
+            setHasHydrated: (v) => set({ hasHydrated: v }),
             addItem: (newItem) => set((state) => {
                 const existingItem = state.items.find((item) => isSameCartItem(item, newItem));
                 if (existingItem) {
@@ -55,6 +59,9 @@ export const useCartStore = create<CartStore>()(
         {
             name: 'cart-storage',
             skipHydration: true, // Handle hydration manually if needed, or default behavior
+            onRehydrateStorage: () => (state) => {
+                state?.setHasHydrated(true);
+            },
         }
     )
 );

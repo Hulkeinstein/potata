@@ -218,7 +218,7 @@
 
 ### Wave B1
 
-- [ ] 8. `CartDrawer` Checkout 버튼 → `/checkout` 배선 `category:visual-engineering`
+- [x] 8. `CartDrawer` Checkout 버튼 → `/checkout` 배선 `category:visual-engineering`
   **Goal**: `components/cart/CartDrawer.tsx:162` Checkout 버튼에 `onClick`(또는 `Link`)으로 `/checkout` 이동 + 드로어 닫기 추가. 빈 장바구니 시 비활성/숨김.
   **References**:
   - `components/cart/CartDrawer.tsx:162` — Checkout 버튼(현재 onClick 없음).
@@ -229,7 +229,7 @@
   - Happy path: 항목 있는 카트에서 Checkout 클릭 → `/checkout` 이동 + 드로어 닫힘.
   - Edge case: 빈 카트에서 버튼 비활성(또는 클릭 무동작).
 
-- [ ] 9. `/checkout` 페이지 — cart 수동 hydration + 주문 요약 + 주문 생성 `category:visual-engineering`
+- [x] 9. `/checkout` 페이지 — cart 수동 hydration + 주문 요약 + 주문 생성 `category:visual-engineering`
   **Goal**: `app/checkout/page.tsx`(또는 `app/[locale]/checkout/page.tsx` 라우팅 컨벤션 준수)에서 cart-store 수동 hydration 후 주문 요약 표시, "주문하기" 클릭 시 `POST /api/orders` 호출, 성공 시 cart clear + `/mypage/orders` 리다이렉트.
   **References**:
   - `store/cart-store.ts:57` — `skipHydration:true` → `useCartStore.persist.rehydrate()` 수동 호출(`useEffect`)로 SSR/CSR 가격 불일치 방지.
