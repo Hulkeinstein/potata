@@ -26,23 +26,36 @@
 
 ---
 
-## P1 — try-on API 보안 (최우선 — 진행 예정)
+## 🔧 로그인 실유저 가용성 — 선결 (config/ops, 코드 아님)
 
-**목표**: `app/api/try-on` 라우트 인증·입력 검증 부재 해소.
+> 로그인 *로직*은 실 DB로 검증 완료(signup→verify→login). 단 **실유저가 실제로 로그인**하려면 아래 env/ops 선결 필요 (코드 변경 아님 — 대시보드/환경 작업).
 
-**주요 작업** (미정):
-- try-on API 엔드포인트 NextAuth 세션 인증 게이트 추가
-- 입력 검증(이미지 URL, 파라미터 범위) 서버측 추가
-- Replicate API 키 노출 여부 점검
-
-**관련 문서**:
-- [supabase-prisma-nextauth-setup.md](./supabase-prisma-nextauth-setup.md) (인증 패턴 참조)
+- [x] 로컬 `.env.local` `DATABASE_URL`에 `?pgbouncer=true` 적용 (42P05 prepared-statement 오류 해소 확인)
+- [ ] **Vercel `DATABASE_URL`에도 `?pgbouncer=true` 필수** — 누락 시 프로덕션에서 동일 간헐 오류 재발
+- [ ] Vercel 환경변수 6종: `DATABASE_URL` `DIRECT_URL` `NEXTAUTH_SECRET` `NEXTAUTH_URL` `RESEND_API_KEY` `REPLICATE_API_TOKEN` (현재 Vercel 배포 실패 = 이 미설정)
+- [ ] Resend 도메인 인증 — 실 신규 유저 인증 코드 메일 발송 (미설정 시 샌드박스라 미수신 → verify 불가)
+- [ ] (선택) 풀러 URL `&connection_limit=1` — 서버리스 커넥션 튜닝 (Supabase 권장)
 
 ---
 
-## P2 — UX 완성 (예정)
+## ✅ P1 — try-on API 보안 (완료)
 
-**목표**: 결제 플로우, 검색, mypage 하위 라우트, 리뷰 등 미완성 UX 완성.
+**목표**: `app/api/try-on` 라우트 인증·입력 검증 부재 해소.
+
+**완료 내용** (#15):
+- `auth()` 세션 게이트 (미인증 → 401, 다른 체크보다 먼저 — 서버 설정 노출 방지)
+- 입력 검증: userImage/productImage는 `data:image/*` 또는 https URL, ~10MB 상한
+- Replicate 토큰 서버측 전용 확인
+- 회귀 테스트 4종 ([route.test.ts](../../app/api/try-on/route.test.ts)) — 미인증→401 등 CI 보장
+
+**Near-term 후보**:
+- 영속 per-user rate limit (`@upstash/ratelimit`) — in-memory는 서버리스 콜드스타트에 무용, 현재 `auth()`가 실질 방어선
+
+---
+
+## P2 — UX 완성 / 커머스 체크아웃 (다음 — `/plan` 착수 예정)
+
+**목표**: 결제 플로우, 검색, mypage 하위 라우트, 리뷰 등 미완성 UX 완성. 최우선 = 체크아웃→주문 생성(매출 경로). 권장 순서: Prisma `Order` 모델 → `POST /api/orders` → `/checkout` → `/mypage/orders`. (카탈로그 DB화는 P3, MVP는 dummy.ts로 선출시 가능.)
 
 **주요 작업** (미정):
 - 결제 플로우 (결제 게이트웨이 미정)
