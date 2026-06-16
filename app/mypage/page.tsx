@@ -13,13 +13,13 @@ import {
 
 // Mock Data
 const MY_STATS = [
-    { label: "Delivery", value: "0", icon: Package, href: "/orders" },
+    { label: "Delivery", value: "0", icon: Package, href: "/mypage/orders" },
     { label: "Coupons", value: "3", icon: Ticket, href: "/coupons" },
     { label: "Points", value: "1,200P", icon: Coins, href: "/points" },
 ];
 
 const MY_MENU = [
-    { label: "Order History", icon: FileText, href: "/orders" },
+    { label: "Order History", icon: FileText, href: "/mypage/orders" },
     { label: "Wishlist", icon: Heart, href: "/wishlist" },
     { label: "Notifications", icon: Bell, href: "/notifications" },
     { label: "Settings", icon: Settings, href: "/settings" },

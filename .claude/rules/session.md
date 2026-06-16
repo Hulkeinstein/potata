@@ -16,7 +16,7 @@ potata = 한국→UAE 패션 커머스. 인증·검증계층(테스트/CI)은 �
 
 **Objective**: 장바구니 → `/checkout` → `POST /api/orders`(로그인 필수, 서버 가격 재검증) → 주문 DB 저장(status=PENDING) → `/mypage/orders` 조회. 3-PR(A 백엔드 / B 체크아웃UI / C 주문조회).
 
-**진행 상태**: PR A(task 1~7) 완료·머지(#17, main 493b007). **PR B(task 8~9, `/checkout` UI) 진행 중** → 이후 PR C(`/mypage/orders`).
+**진행 상태**: PR A(#17)·PR B(#18) 완료·머지. **PR C(task 10~11, `/mypage/orders`) 진행 중 — 마지막**. 완료 시 커머스 MVP end-to-end(장바구니→체크아웃→주문→내역).
 
 **완료 기준 (DoD)**:
 - PR A: 통합테스트(주문 생성→DB row, status PENDING, 서버 재계산 total) GREEN + `tsc`/`lint`/`test` exit 0 + CI green.

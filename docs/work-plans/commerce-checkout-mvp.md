@@ -257,7 +257,7 @@
 
 ### Wave C1
 
-- [ ] 10. `mypage/page.tsx` 깨진 `/orders` 링크 정정 (2곳) `category:quick`
+- [x] 10. `mypage/page.tsx` 깨진 `/orders` 링크 정정 (2곳) `category:quick`
   **Goal**: `app/mypage/page.tsx`의 `/orders` 링크를 `/mypage/orders`로 정정 — `MY_STATS`(line 16)와 `MY_MENU` "Order History"(line 22) **둘 다**(현재 미존재 경로로 깨짐).
   **References**:
   - `app/mypage/page.tsx:16` — `MY_STATS` `href:"/orders"`(정정 대상 1). `useSession` 사용 컴포넌트.
@@ -267,7 +267,7 @@
   **QA Scenarios**:
   - Happy path: 마이페이지에서 주문 stat 클릭 → `/mypage/orders` 이동(404 아님).
 
-- [ ] 11. `/mypage/orders` 페이지 — 본인 주문 목록 표시 `category:visual-engineering`
+- [x] 11. `/mypage/orders` 페이지 — 본인 주문 목록 표시 `category:visual-engineering`
   **Goal**: `app/mypage/orders/page.tsx`에서 본인 주문 목록을 조회(`GET /api/orders` 또는 서버 컴포넌트 직접 Prisma 조회)해 JSON 스냅샷(items) 렌더. 주문번호/일시/항목/total/status 표시. 빈 상태 처리.
   **References**:
   - PR A `GET /api/orders` 또는 `Order` 모델 — 데이터 소스.
@@ -290,12 +290,12 @@
 
 ## Final Verification Wave
 
-- [ ] F1. `npx tsc --noEmit` → exit 0 (전 PR 변경 타입 안전).
-- [ ] F2. `npm run lint` → exit 0.
-- [ ] F3. `npm run test` → 단위 + 통합(`/api/orders`) 전부 green.
-- [ ] F4. CI job green (PR별).
-- [ ] F5. 수동 E2E: 로그인 → 상품 담기 → CartDrawer Checkout → `/checkout` 주문하기 → `/mypage/orders`에 주문(PENDING) 표시.
-- [ ] F6. 보안 확인: (a) 미인증 `POST /api/orders` → 401, (b) 클라 가격 조작 시 서버 total 무시, (c) 없는 productId → 400, (d) user A가 user B 주문 조회 불가.
+- [x] F1. `npx tsc --noEmit` → exit 0 (전 PR 변경 타입 안전).
+- [x] F2. `npm run lint` → exit 0 (errors 0; 기존 next-auth.d.ts warning 1).
+- [x] F3. `npm run test` → 단위 + 통합(`/api/orders`) 전부 green (31 passed).
+- [ ] F4. CI job green (PR별) — PR A(#17)·B(#18) green 확인. PR C는 push 후.
+- [ ] F5. 수동 E2E: 로그인 → 상품 담기 → CartDrawer Checkout → `/checkout` 주문하기 → `/mypage/orders`에 주문(PENDING) 표시. (앱 실행 필요 — 코드 경로는 단위+통합으로 커버.)
+- [x] F6. 보안 확인: (a) 미인증 `POST /api/orders` → 401, (b) 클라 가격 조작 시 서버 total 무시, (c) 없는 productId → 400, (d) user A가 user B 주문 조회 불가. — 단위+통합 테스트로 검증됨.
 
 ---
 
