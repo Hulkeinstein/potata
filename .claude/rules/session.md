@@ -6,28 +6,23 @@
 
 ## 북극성 골
 
-potata = 한국→UAE 패션 커머스. 인증·검증계층(테스트/CI)은 정착 완료. 현 단계 최우선 = 커머스 매출 경로(장바구니→체크아웃→주문) 완성.
+potata = 한국→UAE 패션 커머스. 인증·검증계층(테스트/CI)·커머스 MVP(장바구니→주문→내역) 정착 완료. 다음 = 배포·실유저 가동(Vercel env·Resend) + UX/결제 확장.
 
 ---
 
 ## 지금 작업
 
-**Plan**: `docs/work-plans/commerce-checkout-mvp.md`
+**활성 개발 트랙 없음** — 커머스/체크아웃 MVP 완료(#17·#18·#19 머지, plan은 `docs/work-plans/archive/`).
 
-**Objective**: 장바구니 → `/checkout` → `POST /api/orders`(로그인 필수, 서버 가격 재검증) → 주문 DB 저장(status=PENDING) → `/mypage/orders` 조회. 3-PR(A 백엔드 / B 체크아웃UI / C 주문조회).
+**다음 후보** (`/plan`으로 착수):
+- **로그인 실유저 가용성 선결** (ops): Vercel env 6종 + `DATABASE_URL ?pgbouncer=true` + Resend 도메인 인증 — roadmap "🔧 로그인 실유저 가용성" 참조. (배포·실유저 로그인 차단 해소)
+- **결제 게이트웨이**(커머스 후속) 또는 P2b 나머지 UX(검색·mypage 하위·리뷰).
+- 우선순위 인덱스: `docs/work-plans/roadmap.md`.
 
-**진행 상태**: PR A(#17)·PR B(#18) 완료·머지. **PR C(task 10~11, `/mypage/orders`) 진행 중 — 마지막**. 완료 시 커머스 MVP end-to-end(장바구니→체크아웃→주문→내역).
-
-**완료 기준 (DoD)**:
-- PR A: 통합테스트(주문 생성→DB row, status PENDING, 서버 재계산 total) GREEN + `tsc`/`lint`/`test` exit 0 + CI green.
-- 보안: 미인증 401, 클라 가격 조작 무시, IDOR 차단.
-
-**확정 결정**: 결제 분리(status enum 선반영) · JSON 스냅샷 · 로그인 필수 · 서버 가격 재검증. 카탈로그는 dummy.ts(P3). PR A 머지 후 B→C.
+**미검증 잔여**: F5 수동 E2E(로그인→담기→체크아웃→주문→`/mypage/orders`) — 앱 실행 클릭 확인(`/verify`) 권장. 코드 경로는 단위+통합 테스트로 커버됨.
 
 ---
 
 ## 최근 완료 (참고)
 
-- 인증: signup→verify→login 정상(bcrypt+Prisma, 실 DB 검증됨) — #11/#12/2c47833.
-- 워크플로우 인프라(vitest+CI+SSoT) #14, try-on 보안 가드 #15.
-- DATABASE_URL `?pgbouncer=true` 적용(로컬). Vercel env·Resend 도메인은 roadmap "로그인 실유저 가용성" 참조.
+- 인증 복구(#11/#12/2c47833) · 워크플로우 인프라 vitest+CI+SSoT(#14) · try-on 보안(#15) · 커머스 MVP A/B/C(#17·#18·#19).
