@@ -14,11 +14,10 @@ export default function CheckoutPage() {
     const router = useRouter();
     const { items, clearCart } = useCartStore();
 
-    // skipHydration 대응: 수동 hydration 후 렌더
-    const [hasHydrated, setHasHydrated] = useState(false);
+    // skipHydration 대응: 수동 rehydrate 트리거 — 완료 여부는 store의 onRehydrateStorage가 판단
+    const hasHydrated = useCartStore((s) => s.hasHydrated);
     useEffect(() => {
         useCartStore.persist.rehydrate();
-        setHasHydrated(true);
     }, []);
 
     // 멱등성 키 — 페이지 진입 시 1회 생성
