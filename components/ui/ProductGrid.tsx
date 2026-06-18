@@ -1,9 +1,13 @@
 "use client";
 
-import { PRODUCTS } from "@/data/dummy";
+import type { Product } from "@/types";
 import { ProductCard } from "./ProductCard";
 
-export function ProductGrid() {
+interface ProductGridProps {
+    products: Product[];
+}
+
+export function ProductGrid({ products }: ProductGridProps) {
     return (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div className="flex items-center justify-between mb-6">
@@ -12,11 +16,11 @@ export function ProductGrid() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
-                {PRODUCTS.map((product) => (
+                {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                 ))}
                 {/* Duplicate for demo volume */}
-                {PRODUCTS.map((product) => (
+                {products.map((product) => (
                     <ProductCard key={`${product.id}-copy`} product={{ ...product, id: `${product.id}-copy` }} />
                 ))}
             </div>

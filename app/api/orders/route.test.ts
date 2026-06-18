@@ -31,10 +31,15 @@ vi.mock("@/lib/prisma", () => ({
 
 import { type NextRequest } from "next/server";
 import { POST, GET } from "./route";
-import { PRODUCTS } from "@/data/dummy";
 
-// 테스트에 사용할 실제 상품 (하드코딩 금지 — PRODUCTS에서 동적 참조)
-const p = PRODUCTS[0]; // id="1", price=719
+// 테스트 fixture: PRODUCTS[0] 값과 동일 (id="1", price=719)
+const p = {
+  id: "1",
+  name: "Kalix T Jacket Black - 26SS",
+  brand: "The North Face White Label",
+  price: 719,
+  imageUrl: "https://kream-phinf.pstatic.net/MjAyNjAxMjJfMTY5/MDAxNzY5MDU5OTg1NDYw.5pHBpFjHOVcZNCXV6ztANvhSF8iN1YR-NKgntgy4soYg.Rfk67XmSl-1tcOF4wT-hPNyxyl7dr3mmgltZqs4zSBwg.PNG/a_fe5a41998e644efb82dd74b30e400d85.png",
+};
 
 function makeReq(
   method: "POST" | "GET",

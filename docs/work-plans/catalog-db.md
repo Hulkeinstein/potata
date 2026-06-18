@@ -216,7 +216,7 @@ model Product {
 
 ### PR2 — 리드(읽기) 경로 전환
 
-- [ ] 7. 공유 데이터 접근 헬퍼 + Product 타입 정합 (`lib/products.ts`) `category:ultrabrain`
+- [x] 7. 공유 데이터 접근 헬퍼 + Product 타입 정합 (`lib/products.ts`) `category:ultrabrain`
   **무엇을**: `lib/products.ts`에 서버 전용 헬퍼 추가: `getAllProducts()`(전체 findMany), `getProductById(id)`(findUnique). Prisma `Product`(category String) → 앱 `Product` 타입(`category?: ProductCategory`) 매핑 어댑터 포함.
   **왜**: 8개 화면이 각자 prisma를 직접 부르면 중복·불일치. 단일 헬퍼로 통일하고, Prisma category(String)와 앱 타입(enum) 차이를 한 곳에서 흡수한다.
   **References**:
@@ -232,7 +232,7 @@ model Product {
   - 타입: `npx tsc --noEmit` → 매핑 후 에러 0(category string→enum 처리 확인).
   - Negative: 클라 컴포넌트에서 `lib/products.ts` import 시 빌드 에러(서버 전용 의도 확인) — prisma import가 클라 번들에 안 들어가야 함.
 
-- [ ] 8. `ProductGrid` + 홈(`app/page.tsx`) server 분리 `category:ultrabrain`
+- [x] 8. `ProductGrid` + 홈(`app/page.tsx`) server 분리 `category:ultrabrain`
   **무엇을**: `components/ui/ProductGrid.tsx`를 server에서 데이터를 받도록 분리. `app/page.tsx`(server)에서 `getAllProducts()` 호출 → `<ProductGrid products={...} />`. 기존 `-copy` 데모 복제 로직은 클라 표시 로직이므로 props 받은 배열에 대해 유지.
   **왜**: 홈 첫 화면이 DB에서 상품을 읽게 함.
   **References**:
@@ -246,7 +246,7 @@ model Product {
   - 검증: `npx tsc --noEmit` 에러 0, `npm run build` 성공.
   - Negative: PRODUCTS import가 남아 있으면 안 됨(Task 15에서 export 제거되면 빌드 깨짐 → 미리 끊는다).
 
-- [ ] 9. `app/for-you` + `app/brands` server 분리 `category:ultrabrain`
+- [x] 9. `app/for-you` + `app/brands` server 분리 `category:ultrabrain`
   **무엇을**: 두 화면을 server wrapper(데이터 fetch) + client child(인터랙션) 패턴으로 분리. `getAllProducts()` → props.
   **왜**: 두 화면 모두 전체 상품을 단순 표시(for-you 전체, brands는 line 143에서 PRODUCTS.map). 묶어서 처리하면 효율적.
   **References**:
@@ -260,7 +260,7 @@ model Product {
   - 검증: 두 파일에서 `import { PRODUCTS } from "@/data/dummy"` 제거됨.
   - `npx tsc --noEmit` 에러 0.
 
-- [ ] 10. `app/ranking` server 분리 (price 정렬) `category:ultrabrain`
+- [x] 10. `app/ranking` server 분리 (price 정렬) `category:ultrabrain`
   **무엇을**: server에서 `getAllProducts()` 후 price 내림차순 정렬한 배열을 client child에 props. 또는 `prisma.product.findMany({ orderBy: { price: "desc" } })`로 DB 정렬.
   **왜**: 랭킹은 price 내림차순 정렬 표시. DB 정렬이 더 정확/효율적.
   **References**:
@@ -273,7 +273,7 @@ model Product {
   - Happy path: `/ranking` 접속 → 가격 높은 순으로 상품 표시(맨 위가 최고가 719).
   - 검증: PRODUCTS import 제거, `npx tsc --noEmit` 에러 0.
 
-- [ ] 11. `app/shop` server 분리 (category 필터+페이지네이션+searchParams) `category:ultrabrain`
+- [x] 11. `app/shop` server 분리 (category 필터+페이지네이션+searchParams) `category:ultrabrain`
   **무엇을**: server page에서 `getAllProducts()` → client child(`ShopContent`)에 props. 기존 category 필터 / `PAGE_SIZE=8` 페이지네이션 / `useSearchParams` 인터랙션은 client child에서 props 받은 배열로 유지.
   **왜**: shop은 인터랙션(필터/Load More/searchParams)이 많아 client 유지가 필요. 데이터만 server fetch로 교체.
   **References**:
@@ -288,7 +288,7 @@ model Product {
   - 빈 결과: 없는 카테고리 → "No products found" empty state.
   - 검증: PRODUCTS import 제거, `npx tsc --noEmit` 에러 0.
 
-- [ ] 12. `app/try-on` server 분리 (category 필터+선택) `category:ultrabrain`
+- [x] 12. `app/try-on` server 분리 (category 필터+선택) `category:ultrabrain`
   **무엇을**: server page에서 상품 목록 fetch → client child에 props. category 필터/상품 선택/탭(wardrobe/gallery/recents)/`useStudioStore` 인터랙션은 client 유지.
   **왜**: try-on은 상품 선택 후 AI 가상 피팅. 상품 목록 데이터만 DB로 교체.
   **References**:
@@ -302,7 +302,7 @@ model Product {
   - Happy path: `/try-on` → wardrobe 탭에 상품 목록 렌더, 카테고리 필터 동작, 상품 선택 가능.
   - 검증: PRODUCTS import 제거, `npx tsc --noEmit` 에러 0.
 
-- [ ] 13. `app/liked` server 분리 (Zustand wishlist ∩ DB — 까다로움) `category:ultrabrain`
+- [x] 13. `app/liked` server 분리 (Zustand wishlist ∩ DB — 까다로움) `category:ultrabrain`
   **무엇을**: server page에서 `getAllProducts()` → client child(`LikedClient`)에 전체 상품 props. client에서 `useWishlistStore`의 `items`(문자열 id 배열) ∩ props 상품으로 필터(`products.filter(p => likedIds.includes(p.id))`). `hasHydrated` 가드 유지.
   **왜**: wishlist는 클라 전용 상태(localStorage)라 server에서 알 수 없음. server는 전체 상품만 주고, 교집합은 client에서. **이 부분이 가장 까다로움** — server/client 경계 분리 주의.
   **References**:
@@ -319,7 +319,7 @@ model Product {
   - Hydration: 새로고침 직후 깜빡임/mismatch 없음(`hasHydrated` 가드 동작).
   - 검증: PRODUCTS import 제거, `npx tsc --noEmit` 에러 0.
 
-- [ ] 14. `app/product/[id]` ISR 전환 (`generateStaticParams` DB + `revalidate`/`dynamicParams`) `category:ultrabrain`
+- [x] 14. `app/product/[id]` ISR 전환 (`generateStaticParams` DB + `revalidate`/`dynamicParams`) `category:ultrabrain`
   **무엇을**: `app/product/[id]/page.tsx`를 server component로 두고 `export const revalidate = 3600; export const dynamicParams = true;` 추가. `generateStaticParams`는 `getAllProducts()` 기반 id 목록(또는 빈 배열) 반환. 상품 조회는 `getProductById(id)` → 없으면 `notFound()`. `<ProductDetailClient product={...} />` 유지.
   **왜**: 상품 추가가 재배포 없이 반영되게(ISR). 빌드타임 정적생성이 DB로 깨지는 문제를 `dynamicParams=true`로 해결.
   **References**:
@@ -336,7 +336,7 @@ model Product {
   - 추가 반영: (개념 검증) 새 상품을 DB에 넣으면 `dynamicParams=true`로 `/product/<newid>` 접근 시 on-demand 생성.
   - 검증: PRODUCTS import 제거, `npx tsc --noEmit` 에러 0.
 
-- [ ] 15. `data/dummy.ts`에서 `PRODUCTS` export 제거 (TRENDS만 잔존) `category:quick`
+- [x] 15. `data/dummy.ts`에서 `PRODUCTS` export 제거 (TRENDS만 잔존) `category:quick`
   **무엇을**: `data/dummy.ts`에서 `PRODUCTS` 배열 정의/export를 삭제. `TRENDS`만 남긴다. `import { Product }` 등 PRODUCTS 전용 미사용 import 정리.
   **왜**: dummy 카탈로그 의존을 영구 제거(CLAUDE.md Forbidden: dummy.ts PRODUCTS 신규 의존 금지의 최종 완수). 잔존 시 두 소스(DB/dummy) 불일치 위험.
   **References**:
@@ -359,11 +359,11 @@ model Product {
   **검증**: `npx prisma generate` (exit 0) → `npm run test app/api/orders` (단위+통합 통과) → `npx tsc --noEmit` (에러 0). DB에 Product 8개 시드 확인(id "1" → price 719). 주문 생성이 DB 가격으로 재검증되는지 통합 테스트로 확인.
   **기대결과**: PR1 머지 가능 상태(화면은 아직 dummy.ts 사용 중이어도 OK — PRODUCTS export는 PR2 Task 15까지 살아 있음).
 
-- [ ] F2. PR2 빌드 검증 체인 (ISR 동작 포함)
+- [x] F2. PR2 빌드 검증 체인 (ISR 동작 포함)
   **검증**: `npx tsc --noEmit` (에러 0) → `npm run build` 성공. 빌드 로그에서 `/product/[id]`가 ISR(revalidate)로 처리되고 정적생성 실패 없음. `npm run dev`로 8개 화면(`/`, `/shop`, `/ranking`, `/for-you`, `/liked`, `/brands`, `/try-on`, `/product/1`) 수동 클릭 확인.
   **기대결과**: 모든 화면이 DB 상품을 렌더, 빈 화면/에러 없음.
 
-- [ ] F3. 전체 회귀 — dummy.ts PRODUCTS 참조 잔존 0건 확인
+- [x] F3. 전체 회귀 — dummy.ts PRODUCTS 참조 잔존 0건 확인
   **검증**: `grep -rn "PRODUCTS" app components data` → `data/dummy.ts`에 정의 0건, 어떤 파일도 PRODUCTS import 안 함(TRENDS만 허용). `npm run test` 전체 통과 + `npm run build` 성공.
   **기대결과**: Success Criteria 전부 충족.
 
