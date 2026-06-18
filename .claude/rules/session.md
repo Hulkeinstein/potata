@@ -6,20 +6,20 @@
 
 ## 북극성 골
 
-potata = 한국→UAE 패션 커머스. 인증·검증계층(테스트/CI)·커머스 MVP(장바구니→주문→내역) 정착 완료. 다음 = 배포·실유저 가동(Vercel env·Resend) + UX/결제 확장.
+potata = 한국→UAE 패션 커머스. 인증·검증계층(테스트/CI)·커머스 MVP·카탈로그 DB까지 정착 완료. 다음 = 배포·실유저 가동(Vercel env·Resend) + 상세페이지/관리자/결제 등 확장.
 
 ---
 
 ## 지금 작업
 
-**P3 카탈로그 DB화 진행 중** — plan `docs/work-plans/catalog-db.md`. dummy.ts 상품 8개 → Prisma `Product` 모델. **PR1(#21) 머지 완료. PR2(task 7~15: lib/products 헬퍼 → 8화면 client→server → dummy PRODUCTS 제거) 실행 중.** 배포는 사용자 결정으로 보류(모든 시스템 구현 후). 결제 게이트웨이는 카탈로그 후 트랙.
+**활성 개발 트랙 없음** — P3 카탈로그 DB화 완료(#21·#22 머지). 인증·검증계층·커머스 MVP·카탈로그 DB 모두 정착.
 
-**핵심 주의**: Product.id=String 유지("1"~"8" 시드), seed=DIRECT_URL, 상세=ISR, dummy PRODUCTS 제거는 PR2 마지막.
+**다음 작업 (다음 세션)**: **상품 상세 페이지 구현 skill 생성** — `별다른 명령 없이 "스킬 + 상세 정보"만 주면 상품 상세 페이지를 자동 구현`하는 재사용 Claude Code skill. 착수 전 handoff 정독: `docs/work-plans/handoff/2026-06-16-product-detail-skill.md` (미정 설계 5가지 인터뷰로 확정). `agent-skill-creator` 또는 `/plan`으로.
 
-**미검증 잔여**: F5 수동 E2E(로그인→담기→체크아웃→주문→`/mypage/orders`) — 앱 실행 클릭 확인(`/verify`) 권장. 코드 경로는 단위+통합 테스트로 커버됨.
+**참고**: 배포는 보류(사용자 결정 — 모든 시스템 구현 후). 그 외 후보 = 관리자 상품 등록·이미지 업로드·검색·리뷰·결제 (roadmap 참조).
 
 ---
 
 ## 최근 완료 (참고)
 
-- 인증 복구(#11/#12/2c47833) · 워크플로우 인프라 vitest+CI+SSoT(#14) · try-on 보안(#15) · 커머스 MVP A/B/C(#17·#18·#19).
+- 인증 복구(#11/#12/2c47833) · 워크플로우 인프라 vitest+CI+SSoT(#14) · try-on 보안(#15) · 커머스 MVP A/B/C(#17·#18·#19) · 문서정리(#20) · 카탈로그 DB화 PR1·PR2(#21·#22).
