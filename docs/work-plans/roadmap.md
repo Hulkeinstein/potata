@@ -43,6 +43,12 @@
 
 ---
 
+## ▶ 다음 작업 (다음 세션) — 상품 상세 페이지 구현 skill
+
+`별도 명령 없이 "스킬 + 상세 정보"만 주면 상품 상세 페이지를 자동 구현`하는 재사용 Claude Code skill 생성. 카탈로그 DB(P3) 토대 위에서. 경위·미정 설계·시작 절차: [handoff/2026-06-16-product-detail-skill.md](./handoff/2026-06-16-product-detail-skill.md).
+
+---
+
 ## P2b — 나머지 UX (예정)
 
 - 검색 기능 (`SearchOverlay` → 실 필터/결과 페이지)
@@ -54,8 +60,8 @@
 
 ---
 
-## P3 — 상품 카탈로그 DB화 (예정)
+## ✅ P3 — 상품 카탈로그 DB화 (완료, #21·#22)
 
-`data/dummy.ts` 정적 목업 → Prisma `Product` 모델 + DB 카탈로그. 검색·리뷰·재고·주문 서버 재검증 소스를 통합 해소.
+`data/dummy.ts` 정적 상품 → Prisma `Product` 모델. 8개 화면 DB 조회(서버 fetch→클라 props), 상세 ISR, orders 가격 재검증 DB화, dummy PRODUCTS 제거(TRENDS만 잔존). `lib/products.ts` 헬퍼.
 
-**관련**: ADR [adr-003](../adr/adr-003-test-db-strategy.md)
+**관련**: ADR [adr-005](../adr/adr-005-product-model.md) · [archive/catalog-db.md](./archive/catalog-db.md)
