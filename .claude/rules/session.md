@@ -12,12 +12,9 @@ potata = 한국→UAE 패션 커머스. 인증·검증계층(테스트/CI)·커�
 
 ## 지금 작업
 
-**활성 개발 트랙 없음** — 커머스/체크아웃 MVP 완료(#17·#18·#19 머지, plan은 `docs/work-plans/archive/`).
+**P3 카탈로그 DB화 진행 중** — plan `docs/work-plans/catalog-db.md`. dummy.ts 상품 8개 → Prisma `Product` 모델. **PR1(task 1~6: 스키마+seed+orders DB재검증+테스트+ADR) 실행 중**, PR1 머지 후 PR2(8화면 전환). 배포는 사용자 결정으로 보류(모든 시스템 구현 후). 결제 게이트웨이는 카탈로그 후 트랙.
 
-**다음 후보** (`/plan`으로 착수):
-- **로그인 실유저 가용성 선결** (ops): Vercel env 6종 + `DATABASE_URL ?pgbouncer=true` + Resend 도메인 인증 — roadmap "🔧 로그인 실유저 가용성" 참조. (배포·실유저 로그인 차단 해소)
-- **결제 게이트웨이**(커머스 후속) 또는 P2b 나머지 UX(검색·mypage 하위·리뷰).
-- 우선순위 인덱스: `docs/work-plans/roadmap.md`.
+**핵심 주의**: Product.id=String 유지("1"~"8" 시드), seed=DIRECT_URL, 상세=ISR, dummy PRODUCTS 제거는 PR2 마지막.
 
 **미검증 잔여**: F5 수동 E2E(로그인→담기→체크아웃→주문→`/mypage/orders`) — 앱 실행 클릭 확인(`/verify`) 권장. 코드 경로는 단위+통합 테스트로 커버됨.
 

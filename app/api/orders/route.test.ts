@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // vi.hoisted: mock 참조를 vi.mock 호이스팅보다 먼저 초기화 (TDZ 회피)
-const { authMock, orderCreate, orderFindUnique, orderFindMany, txOrderCreate } =
+const { authMock, orderCreate, orderFindUnique, orderFindMany, txOrderCreate, productFindUnique } =
   vi.hoisted(() => ({
     authMock: vi.fn(),
     orderCreate: vi.fn(),
     orderFindUnique: vi.fn(),
     orderFindMany: vi.fn(),
     txOrderCreate: vi.fn(),
+    productFindUnique: vi.fn(),
   }));
 
 vi.mock("@/auth", () => ({ auth: authMock }));
@@ -17,6 +18,9 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: orderFindUnique,
       findMany: orderFindMany,
       create: orderCreate,
+    },
+    product: {
+      findUnique: productFindUnique,
     },
     // route가 prisma.$transaction(async tx => tx.order.create(...)) 사용
     $transaction: vi.fn(async (fn: (tx: unknown) => unknown) =>
@@ -64,6 +68,7 @@ describe("POST /api/orders", () => {
   // 3. POST 정상 — 가격 재계산·총계·상태·userId 검증
   it("정상 요청 시 200, txOrderCreate 호출 인자에 서버 재계산 값 포함", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
+    productFindUnique.mockResolvedValue(p);
     const mockOrder = { id: "order1", userId: "u1", status: "PENDING" };
     txOrderCreate.mockResolvedValue(mockOrder);
 
@@ -99,9 +104,10 @@ describe("POST /api/orders", () => {
     expect(callArg.data.shipping).toBe(expectedShipping);
   });
 
-  // 4. 가격 조작 무시 — 클라이언트가 보낸 price:1은 무시, 서버 PRODUCTS 가격 사용
+  // 4. 가격 조작 무시 — 클라이언트가 보낸 price:1은 무시, 서버 DB 가격 사용
   it("클라이언트가 보낸 price 필드는 무시하고 서버 PRODUCTS 가격을 사용한다", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
+    productFindUnique.mockResolvedValue(p);
     txOrderCreate.mockResolvedValue({ id: "order2" });
 
     // items에 조작된 price:1 포함
@@ -123,6 +129,7 @@ describe("POST /api/orders", () => {
   // 5. 없는 productId → 400, create 미호출
   it("존재하지 않는 productId는 400을 반환하고 DB를 호출하지 않는다", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
+    productFindUnique.mockResolvedValue(null);
 
     const res = await POST(
       makeReq("POST", { items: [{ productId: "nonexistent", quantity: 1 }] })
@@ -162,6 +169,7 @@ describe("POST /api/orders", () => {
   // 7. 무료배송 경계 — subtotal > 50000 이면 shipping 0
   it("subtotal이 50000 초과이면 배송비 0(무료배송)", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
+    productFindUnique.mockResolvedValue(p);
     txOrderCreate.mockResolvedValue({ id: "order3" });
 
     // p.price=719, 70개 → 50330 > 50000
@@ -186,6 +194,7 @@ describe("POST /api/orders", () => {
   // 7b. subtotal <= 50000 이면 배송비 3000
   it("subtotal이 50000 이하이면 배송비 3000", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
+    productFindUnique.mockResolvedValue(p);
     txOrderCreate.mockResolvedValue({ id: "order4" });
 
     // 1개 → 719 < 50000
@@ -203,6 +212,7 @@ describe("POST /api/orders", () => {
   // 8. 멱등성 — idempotencyKey가 기존 주문과 일치하면 create 없이 기존 주문 반환
   it("idempotencyKey가 기존 주문과 일치하면 기존 주문을 반환하고 create를 호출하지 않는다", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
+    productFindUnique.mockResolvedValue(p);
     const existingOrder = { id: "existing-order", userId: "u1", status: "PENDING" };
     orderFindUnique.mockResolvedValue(existingOrder);
 
