@@ -13,10 +13,18 @@ vi.mock("@/auth", () => ({ auth: authMock }));
 
 import { POST, GET } from "./route";
 import { prisma } from "@/lib/prisma";
-import { PRODUCTS } from "@/data/dummy";
 import type { NextRequest } from "next/server";
 
 const TEST_EMAIL = "order-itest@example.test";
+// CI는 seed를 실행하지 않으므로 테스트용 Product를 직접 upsert
+const TEST_PRODUCT = {
+  id: "itest-prod",
+  name: "Integration Test Product",
+  brand: "Test Brand",
+  price: 719,
+  imageUrl: "https://example.com/test.png",
+  category: "Outer",
+};
 
 // 요청 헬퍼
 function makeReq(method: "POST" | "GET", body?: unknown): NextRequest {
@@ -39,6 +47,13 @@ beforeAll(async () => {
     await prisma.user.deleteMany({ where: { email: TEST_EMAIL } });
   }
 
+  // CI는 seed를 실행하지 않으므로 테스트용 Product를 직접 upsert
+  await prisma.product.upsert({
+    where: { id: TEST_PRODUCT.id },
+    create: TEST_PRODUCT,
+    update: {},
+  });
+
   // 테스트 유저 생성
   const user = await prisma.user.create({
     data: {
@@ -57,20 +72,20 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.order.deleteMany({ where: { userId } });
   await prisma.user.deleteMany({ where: { email: TEST_EMAIL } });
+  await prisma.product.deleteMany({ where: { id: TEST_PRODUCT.id } });
   await prisma.$disconnect();
 });
 
 describe("POST /api/orders (통합 — 실 DB)", () => {
   it("테스트 1 (생성): 주문이 DB에 올바른 값으로 생성된다", async () => {
-    const p = PRODUCTS[0]; // id="1", price=719
     const quantity = 2;
-    const expectedSubtotal = p.price * quantity; // 719 * 2 = 1438
+    const expectedSubtotal = TEST_PRODUCT.price * quantity; // 719 * 2 = 1438
     const expectedShipping = expectedSubtotal > 50000 ? 0 : 3000; // 3000
     const expectedTotal = expectedSubtotal + expectedShipping; // 4438
 
     const res = await POST(
       makeReq("POST", {
-        items: [{ productId: p.id, quantity }],
+        items: [{ productId: TEST_PRODUCT.id, quantity }],
         idempotencyKey: "itest-key-1",
       })
     );
@@ -94,18 +109,16 @@ describe("POST /api/orders (통합 — 실 DB)", () => {
       quantity: number;
     }>;
     expect(Array.isArray(items)).toBe(true);
-    expect(items[0].productId).toBe(p.id);
-    expect(items[0].price).toBe(p.price);
+    expect(items[0].productId).toBe(TEST_PRODUCT.id);
+    expect(items[0].price).toBe(TEST_PRODUCT.price);
     expect(items[0].quantity).toBe(quantity);
   });
 
   it("테스트 2 (멱등성): 동일 idempotencyKey 재호출 시 주문이 중복 생성되지 않는다", async () => {
-    const p = PRODUCTS[0];
-
     // 동일 idempotencyKey "itest-key-1"로 재호출
     const res = await POST(
       makeReq("POST", {
-        items: [{ productId: p.id, quantity: 1 }],
+        items: [{ productId: TEST_PRODUCT.id, quantity: 1 }],
         idempotencyKey: "itest-key-1",
       })
     );

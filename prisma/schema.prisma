@@ -57,3 +57,28 @@ model VerificationCode {
   @@index([email])
   @@index([expiresAt])
 }
+
+model Product {
+  id            String   @id            // 기존 "1"~"8" 시드값, @default 없음 (수동 지정)
+  name          String
+  brand         String
+  price         Int                      // AED, Int
+  originalPrice Int?
+  discountRate  Int?
+  imageUrl      String                   // 외부 URL
+  images        String[] @default([])
+  category      String                   // enum 정규화 안 함 (YAGNI)
+  description   String?
+  sizes         String[] @default([])
+  colors        String[] @default([])
+  rating        Float?
+  reviewCount   Int?
+  isNew         Boolean  @default(false)
+  isBest        Boolean  @default(false)
+  isHot         Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([brand])
+}

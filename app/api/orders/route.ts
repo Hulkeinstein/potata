@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractErrorMessage } from "@/lib/auth";
-import { PRODUCTS } from "@/data/dummy";
 import type { CreateOrderRequest, OrderItemSnapshot } from "@/types";
 import type { Prisma } from "@prisma/client";
 
@@ -51,10 +50,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. 서버 가격 재검증 — 클라이언트가 보낸 price/name 무시
+    // 3. 서버 가격 재검증 — 클라이언트가 보낸 price/name 무시, DB에서 직접 조회
     const snapshots: OrderItemSnapshot[] = [];
     for (const item of items) {
-      const product = PRODUCTS.find((p) => p.id === item.productId);
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+      });
       if (!product) {
         return NextResponse.json(
           { success: false, error: `존재하지 않는 상품: ${item.productId}` },
