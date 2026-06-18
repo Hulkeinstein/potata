@@ -175,7 +175,7 @@ const PRODUCTS = [
 ];
 
 async function main() {
-  console.log("시드 시작: 상품 8개 upsert...");
+  console.log(`시드 시작: 상품 ${PRODUCTS.length}개 upsert...`);
 
   for (const product of PRODUCTS) {
     const data = {
