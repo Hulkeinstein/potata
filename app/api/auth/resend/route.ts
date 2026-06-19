@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    if (!user || user.emailVerified || !entry) {
+    // passwordHash 없는 유저(OAuth 전용)는 이메일 인증 재발송 대상이 아님
+    if (!user || user.emailVerified || !user.passwordHash || !entry) {
       return NextResponse.json(
         { success: false, error: "인증 요청을 찾을 수 없습니다. 다시 회원가입을 시도해주세요." },
         { status: 404 }

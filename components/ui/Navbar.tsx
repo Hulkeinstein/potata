@@ -90,18 +90,14 @@ export function Navbar() {
                                 </div>
                             </Link>
 
-                            <button
-                                onClick={handleAuthClick}
-                                className={cn(
-                                    "text-[10px] font-bold px-2 py-1 rounded-full border transition-all hidden sm:block",
-                                    isLoggedIn
-                                        ? "border-purple-500 text-purple-400"
-                                        : "border-gray-600 text-gray-400 hover:text-white hover:border-white"
-                                )}
-                                aria-label={isLoggedIn ? "Logout" : "Login"}
-                            >
-                                {isLoggedIn ? session?.user.name ?? "Account" : "Login"}
-                            </button>
+                            {isLoggedIn && (
+                                <span
+                                    className="text-[10px] font-bold px-2 py-1 rounded-full border border-purple-500 text-purple-400 hidden sm:block"
+                                    aria-label="Account name"
+                                >
+                                    {session?.user.name ?? "Account"}
+                                </span>
+                            )}
 
                             <Link
                                 href={isLoggedIn ? "/mypage" : "/login"}
