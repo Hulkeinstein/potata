@@ -1,6 +1,8 @@
 # Handoff: 상품 상세 페이지 구현 skill (다음 세션)
 
 > 작성: 2026-06-16 (세션 종료 handoff) · 다음 세션이 이 문서를 정독하고 착수.
+>
+> **✅ 완료 (2026-06-18)**: 인터뷰로 설계 확정 후 `product-detail` 스킬 구현. 출력=DB 콘텐츠 주입(템플릿 재사용), 입력=자유 텍스트/마크다운, 동작=plan→실행→검증. 산출물: `.claude/skills/product-detail/SKILL.md` + `prisma/check-product.ts`. 브랜치 `feat/product-detail-skill`(PR 대기). 자세한 현황은 `.claude/rules/session.md`.
 
 ---
 

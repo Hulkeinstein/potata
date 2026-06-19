@@ -172,10 +172,31 @@ const PRODUCTS = [
     colors: ["White"],
     description: "The legend lives on in the Nike Air Force 1 '07. detailed with the clean, crisp finishes and nothing-but-net style. The stitched leather overlays on the upper add heritage style, durability and support.",
   },
+  {
+    id: "9",
+    name: "MOZCLUB Signature Series Overfit T-Shirt",
+    brand: "MOZMOZCLUB",
+    price: 80,
+    originalPrice: undefined,
+    discountRate: undefined,
+    imageUrl: "/products/mozclub-signature-overfit.png",
+    images: [
+      "/products/mozclub-signature-overfit.png"
+    ],
+    category: "Top",
+    isNew: true,
+    isBest: false,
+    isHot: false,
+    rating: undefined,
+    reviewCount: undefined,
+    sizes: ["S", "M", "L", "XL"],
+    colors: ["Black", "White"],
+    description: "A 1+1 signature-series set of oversized short-sleeve tees from MOZMOZCLUB. Each shirt pairs a heavyweight, drop-shoulder overfit silhouette with bold monochrome artwork — the 'Surfing Cat' wave graphic, the 'Research Lab' butterfly study, and concert-stage line work. Delivered as a two-piece set so you can mix the black and white colorways.",
+  },
 ];
 
 async function main() {
-  console.log("시드 시작: 상품 8개 upsert...");
+  console.log(`시드 시작: 상품 ${PRODUCTS.length}개 upsert...`);
 
   for (const product of PRODUCTS) {
     const data = {
