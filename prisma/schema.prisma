@@ -12,7 +12,7 @@ model User {
   id            String   @id @default(cuid())
   email         String   @unique
   name          String
-  passwordHash  String
+  passwordHash  String?               // nullable: OAuth(Google) 유저는 비밀번호 없음
   emailVerified Boolean  @default(false)
   avatar        String?
   createdAt     DateTime @default(now())

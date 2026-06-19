@@ -101,7 +101,10 @@ export default function LoginPage() {
                                 </p>
 
                                 {/* Google */}
-                                <button className="w-full h-12 bg-white text-black font-bold rounded-lg flex items-center justify-center gap-2 border border-zinc-200 transition-transform hover:scale-[1.02]">
+                                <button
+                                    onClick={() => signIn("google", { callbackUrl: "/" })}
+                                    className="w-full h-12 bg-white text-black font-bold rounded-lg flex items-center justify-center gap-2 border border-zinc-200 transition-transform hover:scale-[1.02]"
+                                >
                                     <span className="text-lg">G</span> Google로 계속하기
                                 </button>
 
