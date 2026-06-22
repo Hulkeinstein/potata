@@ -9,6 +9,7 @@ interface WishlistState {
     hasItem: (id: string) => boolean;
     toggleItem: (id: string) => void;
     setHasHydrated: (hasHydrated: boolean) => void;
+    loadFromServer: (ids: string[]) => void;
 }
 
 export const useWishlistStore = create<WishlistState>()(
@@ -28,6 +29,8 @@ export const useWishlistStore = create<WishlistState>()(
                     set({ items: [...items, id] });
                 }
             },
+            // 로그인 시 서버 위시리스트로 store를 덮어쓴다(서버가 진실의 원천)
+            loadFromServer: (ids) => set({ items: ids }),
         }),
         {
             name: 'wishlist-storage',

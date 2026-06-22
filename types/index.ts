@@ -140,6 +140,13 @@ export interface CartState {
   totalPrice: () => number;
 }
 
+// 위시리스트(좋아요) API 계약 타입 — DB 영속화
+export type WishlistGetData = { productIds: string[] };
+export interface WishlistToggleRequest {
+  productId: string;
+}
+export type WishlistToggleData = { productId: string; liked: boolean };
+
 // API 응답 타입
 export interface ApiResponse<T> {
   success: boolean;

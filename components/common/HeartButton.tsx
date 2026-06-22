@@ -33,7 +33,21 @@ export function HeartButton({ productId, className, iconSize = 20 }: HeartButton
             return;
         }
 
+        // 낙관적 토글 — UI 즉시 반영
         toggleItem(productId);
+        // 백그라운드 저장(fire-and-forget) — 실패 시 조용히 롤백
+        void fetch("/api/wishlist", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ productId }),
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error(`wishlist save failed: ${res.status}`);
+            })
+            .catch((err) => {
+                console.warn("[HeartButton] 위시리스트 저장 실패, 롤백:", err);
+                toggleItem(productId); // 원복
+            });
     };
 
     return (
