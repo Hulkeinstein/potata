@@ -104,8 +104,14 @@ export function TryOnContent({ products }: TryOnContentProps) {
             return;
         }
 
-        // Add to Recents
+        // Add to Recents (로컬 즉시 반영)
         addToRecents(product.id);
+        // 로그인 사용자는 서버에도 저장 — fire-and-forget(실패해도 로컬 동작 유지)
+        void fetch("/api/recents", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ productId: product.id }),
+        }).catch(() => {});
 
         try {
             const response = await fetch("/api/try-on", {
