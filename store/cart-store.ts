@@ -9,6 +9,7 @@ interface CartStore extends CartState {
     openCart: () => void;
     closeCart: () => void;
     setHasHydrated: (v: boolean) => void;
+    loadFromServer: (items: CartItem[]) => void;
 }
 
 const isSameCartItem = (left: CartItem, right: CartItem) =>
@@ -53,6 +54,8 @@ export const useCartStore = create<CartStore>()(
             openCart: () => set({ isOpen: true }),
             closeCart: () => set({ isOpen: false }),
             clearCart: () => set({ items: [] }),
+            // 로그인 시 서버 장바구니로 store를 덮어쓴다(서버가 진실의 원천)
+            loadFromServer: (items) => set({ items }),
             totalItems: () => get().items.reduce((total, item) => total + item.quantity, 0),
             totalPrice: () => get().items.reduce((total, item) => total + item.product.price * item.quantity, 0),
         }),

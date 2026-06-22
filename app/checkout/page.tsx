@@ -75,6 +75,12 @@ export default function CheckoutPage() {
 
             if (res.ok && data.success) {
                 clearCart();
+                // 서버 장바구니도 비움 — 재로그인/다른 기기에서 주문 완료한 cart가 되살아나지 않게
+                void fetch("/api/cart", {
+                    method: "PUT",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ items: [] }),
+                }).catch(() => {});
                 router.push("/mypage/orders");
                 return;
             }
