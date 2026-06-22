@@ -17,6 +17,7 @@ interface StudioState {
     addToRecents: (productId: string) => void;
     clearRecents: () => void;
     setHasHydrated: (hasHydrated: boolean) => void;
+    loadRecentsFromServer: (ids: string[]) => void;
 }
 
 export const useStudioStore = create<StudioState>()(
@@ -45,6 +46,8 @@ export const useStudioStore = create<StudioState>()(
                     return { recents: newRecents.slice(0, 20) }; // Keep last 20
                 }),
             clearRecents: () => set({ recents: [] }),
+            // 로그인 시 서버 최근목록으로 덮어쓴다(서버가 진실의 원천)
+            loadRecentsFromServer: (ids) => set({ recents: ids }),
         }),
         {
             name: 'studio-storage',

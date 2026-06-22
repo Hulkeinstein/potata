@@ -161,6 +161,12 @@ export interface CartSyncRequest {
 // GET 응답: store가 그대로 쓰는 CartItem[](product 재조립)
 export type CartGetData = { items: CartItem[] };
 
+// AI Studio Recents(최근 try-on 상품) API 계약 타입 — DB 영속화
+export type RecentsGetData = { productIds: string[] }; // 최신순(최대 20)
+export interface RecentAddRequest {
+  productId: string;
+}
+
 // API 응답 타입
 export interface ApiResponse<T> {
   success: boolean;

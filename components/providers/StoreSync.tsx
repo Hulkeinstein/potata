@@ -4,7 +4,8 @@ import { useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useCartStore } from "@/store/cart-store";
-import type { ApiResponse, WishlistGetData, CartGetData, CartSyncLine } from "@/types";
+import { useStudioStore } from "@/store/studio-store";
+import type { ApiResponse, WishlistGetData, CartGetData, CartSyncLine, RecentsGetData } from "@/types";
 
 /**
  * 로그인/로그아웃 시 클라이언트 store(wishlist·cart)를 서버 DB와 동기화하는 전역 컴포넌트.
@@ -19,9 +20,11 @@ export function StoreSync() {
     const { status } = useSession();
     const loadWishlist = useWishlistStore((s) => s.loadFromServer);
     const loadCart = useCartStore((s) => s.loadFromServer);
+    const loadRecents = useStudioStore((s) => s.loadRecentsFromServer);
 
     const wlLoadedRef = useRef(false);
     const cartLoadedRef = useRef(false);
+    const recentsLoadedRef = useRef(false);
     const cartSyncEnabledRef = useRef(false); // 초기 로드 완료 후에만 PUT 허용(echo 방지)
 
     // 로그인/로그아웃 → 초기 로드 / 클리어
@@ -63,10 +66,28 @@ export function StoreSync() {
                     }
                 })();
             }
+            // AI Studio Recents 로드(1회)
+            if (!recentsLoadedRef.current) {
+                recentsLoadedRef.current = true;
+                (async () => {
+                    try {
+                        const res = await fetch("/api/recents");
+                        if (!res.ok) {
+                            recentsLoadedRef.current = false;
+                            return;
+                        }
+                        const json = (await res.json()) as ApiResponse<RecentsGetData>;
+                        if (json.success && json.data) loadRecents(json.data.productIds);
+                    } catch {
+                        recentsLoadedRef.current = false;
+                    }
+                })();
+            }
         } else if (status === "unauthenticated") {
             // 로그아웃: 다음 사용자에게 잔존하지 않게 클리어
             loadWishlist([]);
             loadCart([]);
+            loadRecents([]); // gallery는 유지(범위 밖) — recents만 비움(persist가 studio-storage에 반영)
             try {
                 localStorage.removeItem("wishlist-storage");
                 localStorage.removeItem("cart-storage");
@@ -75,9 +96,10 @@ export function StoreSync() {
             }
             wlLoadedRef.current = false;
             cartLoadedRef.current = false;
+            recentsLoadedRef.current = false;
             cartSyncEnabledRef.current = false;
         }
-    }, [status, loadWishlist, loadCart]);
+    }, [status, loadWishlist, loadCart, loadRecents]);
 
     // cart 변경 → 디바운스 PUT(전체 동기화). 로그인 + 초기 로드 완료 시에만.
     useEffect(() => {
