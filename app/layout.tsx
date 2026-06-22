@@ -7,6 +7,7 @@ import { InitialLoader } from "@/components/ui/InitialLoader";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { Footer } from "@/components/ui/Footer";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { StoreSync } from "@/components/providers/StoreSync";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -35,6 +36,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={cn(outfit.variable, notoSansKr.variable, "font-sans min-h-screen bg-background text-foreground")}>
         <AuthProvider>
+          <StoreSync />
           <InitialLoader />
           <CustomCursor />
           <Navbar />
