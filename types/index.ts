@@ -147,6 +147,20 @@ export interface WishlistToggleRequest {
 }
 export type WishlistToggleData = { productId: string; liked: boolean };
 
+// 장바구니(cart) API 계약 타입 — DB 영속화
+// PUT 요청: 가벼운 라인 배열(product 객체 미포함 — 서버가 재조회·재조립)
+export interface CartSyncLine {
+  productId: string;
+  size: string;
+  color: string;
+  quantity: number;
+}
+export interface CartSyncRequest {
+  items: CartSyncLine[];
+}
+// GET 응답: store가 그대로 쓰는 CartItem[](product 재조립)
+export type CartGetData = { items: CartItem[] };
+
 // API 응답 타입
 export interface ApiResponse<T> {
   success: boolean;

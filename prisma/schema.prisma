@@ -19,6 +19,7 @@ model User {
   updatedAt     DateTime @updatedAt
   orders        Order[]
   wishlistItems WishlistItem[]
+  cartItems     CartItem[]
 
   @@index([email])
 }
@@ -80,6 +81,7 @@ model Product {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   wishlistItems WishlistItem[]
+  cartItems     CartItem[]
 
   @@index([category])
   @@index([brand])
@@ -94,5 +96,21 @@ model WishlistItem {
   createdAt DateTime @default(now())
 
   @@unique([userId, productId]) // 동일 유저가 같은 상품을 중복 좋아요 불가
+  @@index([userId])
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      String   @default("") // NOT NULL — NULL이면 @@unique에서 NULL끼리 충돌 안 나 중복 행 발생
+  color     String   @default("")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId, size, color]) // 동일 (상품·옵션)은 1행(수량만 갱신)
   @@index([userId])
 }
