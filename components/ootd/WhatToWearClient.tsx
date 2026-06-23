@@ -44,6 +44,8 @@ export function WhatToWearClient({ products }: { products: Product[] }) {
   }, []);
 
   useEffect(() => {
+    // 마운트 시 1회 피드 로드. setState는 fetch await 이후(동기 아님)라 규칙 false positive.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadFeed();
   }, [loadFeed]);
 
