@@ -48,7 +48,8 @@ OOTD(오늘의 착장) 피드를 실제 작동하게 만들려면 사용자가 �
 **모든 결정 A 채택.**
 
 - **버킷**: Supabase Storage `ootd-images` **public** 버킷 1개. OOTD 이미지 전용.
-- **업로드 경로**: 서버 전용 모듈 `lib/supabase-storage.ts`(최상단 `import "server-only"`)에서 `service_role` 키로 인증된 클라이언트만 사용. 클라이언트 컴포넌트에서 import 금지(빌드 단계에서 차단). env(`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`)는 호출 시점에 lazy 로드(키 없이도 빌드/테스트 통과).
+- **업로드 경로**: 서버 전용 모듈 `lib/supabase-storage.ts`(최상단 `import "server-only"`)에서 `service_role` 키로 **Storage REST API를 fetch로 직접 호출**한다. 클라이언트 컴포넌트에서 import 금지(빌드 단계에서 차단). env(`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`)는 호출 시점에 lazy 로드(키 없이도 빌드/테스트 통과).
+  - **SDK(`@supabase/supabase-js`) 대신 REST 채택 이유**: SDK의 `createClient`가 realtime(WebSocket) 클라이언트를 초기화하는데, Node 20 서버 런타임은 전역 WebSocket이 없어 에러가 난다. Storage는 realtime이 불필요하므로, REST 엔드포인트(`/storage/v1/object/...`)를 fetch로 호출하는 것이 더 견고하고 의존성도 가볍다(SDK 미설치).
 - **흐름**: 인증(`auth()`) → 서버에서 파일 MIME 화이트리스트(image/jpeg|png|webp)·크기 상한(5MB)·장수 상한 검증 → `storage.upload` → `getPublicUrl` → 그 public URL을 `OOTDPost.imageUrls`(String[])에 저장.
 - **삭제 동기화**: 게시물 삭제 시 DB 행 삭제 후 Storage 파일 동기 삭제(`removeOOTDImagesByUrl`). 업로드 성공 후 DB 생성 실패 시 업로드분 보상 삭제(Storage는 Prisma 트랜잭션 밖이므로 인라인 보상).
 - **next.config**: `images.remotePatterns`에 `<project-ref>.supabase.co` + `/storage/v1/object/public/**` 추가(미등록 시 `next/image`가 업로드 이미지 렌더 거부).
