@@ -21,6 +21,11 @@ const nextConfig: NextConfig = {
         hostname: "ptosrqkdatrygksyuvpm.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        // Google 계정 프로필 사진(OAuth 로그인 유저 아바타)
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
     ],
   },
 };
