@@ -52,17 +52,6 @@ export interface Trend {
   imageUrl: string;
 }
 
-// OOTD 관련 타입
-export interface OOTD {
-  id: number;
-  user: string;
-  image: string;
-  likes: number;
-  desc: string;
-  product: string;
-  createdAt?: string;
-}
-
 // 사용자 관련 타입
 export interface User {
   id: string;
