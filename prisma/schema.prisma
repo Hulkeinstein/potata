@@ -21,6 +21,8 @@ model User {
   wishlistItems WishlistItem[]
   cartItems     CartItem[]
   recentTryOns  RecentTryOn[]
+  ootdPosts     OOTDPost[]
+  ootdLikes     OOTDLike[]
 
   @@index([email])
 }
@@ -84,6 +86,7 @@ model Product {
   wishlistItems WishlistItem[]
   cartItems     CartItem[]
   recentTryOns  RecentTryOn[]
+  ootdTags      OOTDPostProduct[]
 
   @@index([category])
   @@index([brand])
@@ -127,4 +130,41 @@ model RecentTryOn {
 
   @@unique([userId, productId]) // 동일 상품은 1행(중복 없이 최신순 갱신)
   @@index([userId])
+}
+
+model OOTDPost {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageUrls String[] @default([]) // Supabase Storage public URL 배열(슬라이드) — Product.images 패턴
+  caption   String?
+  createdAt DateTime @default(now())
+
+  likes    OOTDLike[]
+  products OOTDPostProduct[]
+
+  @@index([createdAt]) // 피드 최신순 cursor 정렬 키
+}
+
+model OOTDLike {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      OOTDPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId]) // 한 유저가 한 게시물에 좋아요 1회(멱등)
+  @@index([postId])          // _count.likes 집계 인덱스
+}
+
+model OOTDPostProduct {
+  id        String   @id @default(cuid())
+  postId    String
+  post      OOTDPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, productId]) // 동일 게시물에 같은 상품 중복 태그 불가
+  @@index([productId])
 }

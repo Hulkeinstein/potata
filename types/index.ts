@@ -167,6 +167,29 @@ export interface RecentAddRequest {
   productId: string;
 }
 
+// OOTD 피드 API 계약 타입 — DB(Supabase Storage 이미지) 기반 UGC 피드
+export interface OOTDFeedItem {
+  id: string;
+  imageUrls: string[];
+  caption: string | null;
+  createdAt: string;
+  author: { id: string; name: string; avatar: string | null };
+  products: Pick<Product, "id" | "name" | "brand" | "imageUrl">[]; // 태그 상품(SHOP 링크용)
+  likeCount: number;
+  isLiked: boolean; // 현재 로그인 유저 기준
+}
+export interface OOTDFeedData {
+  items: OOTDFeedItem[];
+  nextCursor: string | null; // cursor pagination(없으면 마지막 페이지)
+}
+// 게시 요청은 multipart/form-data(파일). 본 타입은 비파일 메타 참고용
+export interface OOTDCreateMeta {
+  caption?: string;
+  productIds: string[];
+}
+// 좋아요 토글 응답
+export type OOTDLikeData = { postId: string; liked: boolean; likeCount: number };
+
 // API 응답 타입
 export interface ApiResponse<T> {
   success: boolean;
