@@ -35,9 +35,13 @@ function makeReq(method: "POST" | "GET", body?: unknown): NextRequest {
   }) as unknown as NextRequest;
 }
 
+// 통합 테스트는 실 DB(CI postgres)에서만 실행 — 로컬 npm run test는 건너뜀(라이브 Supabase 오염·42P05 방지).
+const RUN_INTEGRATION = !!process.env.CI || !!process.env.RUN_INTEGRATION;
+
 let userId: string;
 
 beforeAll(async () => {
+  if (!RUN_INTEGRATION) return;
   // 이메일 충돌 방지: 이전 테스트 잔존 데이터 먼저 삭제
   const existingUser = await prisma.user.findUnique({
     where: { email: TEST_EMAIL },
@@ -70,13 +74,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (!RUN_INTEGRATION) return;
   await prisma.order.deleteMany({ where: { userId } });
   await prisma.user.deleteMany({ where: { email: TEST_EMAIL } });
   await prisma.product.deleteMany({ where: { id: TEST_PRODUCT.id } });
   await prisma.$disconnect();
 });
 
-describe("POST /api/orders (통합 — 실 DB)", () => {
+describe.skipIf(!RUN_INTEGRATION)("POST /api/orders (통합 — 실 DB)", () => {
   it("테스트 1 (생성): 주문이 DB에 올바른 값으로 생성된다", async () => {
     const quantity = 2;
     const expectedSubtotal = TEST_PRODUCT.price * quantity; // 719 * 2 = 1438
@@ -130,7 +135,7 @@ describe("POST /api/orders (통합 — 실 DB)", () => {
   });
 });
 
-describe("GET /api/orders (통합 — 실 DB)", () => {
+describe.skipIf(!RUN_INTEGRATION)("GET /api/orders (통합 — 실 DB)", () => {
   it("테스트 3 (GET): 인증 유저의 주문 목록이 반환된다", async () => {
     const res = await GET();
 
