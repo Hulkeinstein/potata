@@ -84,9 +84,11 @@ const getCachedProductRows = unstable_cache(
  * 전체 상품 목록 반환 (createdAt asc — 시드 순서 유지)
  * raw rows 캐시와 HOT 랭킹 캐시를 캐시 밖에서 병렬 조회 후 merge.
  * → 신규 상품 등록 시 revalidateTag("products") 한 번으로 카탈로그 전부 즉시 반영.
- * → HOT 랭킹은 시간 기반(revalidate:1800)으로만 갱신 — 조회 라우트는 의도적으로
- *    revalidateTag를 호출하지 않음(매 조회마다 무효화하면 캐시 thrash 발생).
- *    "hot-products" 태그는 향후 수동/배치 강제 갱신용 예약(현재 미사용).
+ * → HOT 랭킹은 조회 시 즉시 갱신 + 시간기반 백업:
+ *    - view 라우트(POST /api/products/[id]/view)가 조회수 increment 성공 후
+ *      revalidateTag("hot-products")를 호출 → 다음 렌더에서 top-4 재계산.
+ *    - revalidate:1800(30분) 시간기반 백업은 view 라우트 미도달 시 보정.
+ *    - "products" 캐시(카탈로그 rows)는 무영향 — rows 재쿼리 없음.
  */
 export async function getAllProducts(): Promise<Product[]> {
   const [rows, hotIds] = await Promise.all([getCachedProductRows(), getHotProductIds()]);
