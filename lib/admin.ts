@@ -15,7 +15,7 @@
  *   - `getAdminEmails()`를 호출 시점마다 읽어 테스트 격리를 보장한다.
  */
 
-import { normalizeEmail } from "@/lib/auth";
+import { normalizeEmail } from "@/lib/normalize";
 
 /**
  * `ADMIN_EMAILS` env(콤마 구분)를 **호출 시점**에 읽어 정규화한 admin 이메일 Set 반환.

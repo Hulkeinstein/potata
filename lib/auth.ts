@@ -1,22 +1,12 @@
 import { randomInt } from "node:crypto";
 
-export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// 순수 정규화 유틸은 lib/normalize로 분리(Edge 런타임 안전) — 하위호환 위해 재노출
+export { EMAIL_REGEX, normalizeEmail, normalizeName, isValidEmail } from "./normalize";
+
 export const MIN_PASSWORD_LENGTH = 8;
 export const VERIFICATION_CODE_LENGTH = 6;
 export const VERIFICATION_EXPIRY_MS = 10 * 60 * 1000;
 export const MAX_VERIFICATION_ATTEMPTS = 5;
-
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-export function normalizeName(name: string): string {
-  return name.trim().replace(/\s+/g, " ");
-}
-
-export function isValidEmail(email: string): boolean {
-  return EMAIL_REGEX.test(normalizeEmail(email));
-}
 
 export function generateVerificationCode(): string {
   return randomInt(100000, 1000000).toString();
