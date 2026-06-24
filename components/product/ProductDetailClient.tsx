@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Heart, Share2, Plus, Minus, X } from "lucide-react";
@@ -18,6 +18,22 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
     const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || "Default");
     const [activeTab, setActiveTab] = useState("detail");
     const { addItem } = useCartStore();
+
+    // HOT 랭킹용 조회수 트래킹 — 세션당 1회, fire-and-forget
+    const viewTracked = useRef(false);
+    useEffect(() => {
+        if (viewTracked.current) return;            // dev StrictMode 이중 마운트 방지
+        viewTracked.current = true;
+        const key = `viewed:${product.id}`;
+        try {
+            if (sessionStorage.getItem(key)) return;  // 같은 세션 중복 방지
+            sessionStorage.setItem(key, "1");
+        } catch {
+            // sessionStorage 불가 환경(사생활 모드 등) — 무시하고 카운트 시도
+        }
+        // fire-and-forget — 렌더/네비 블록 없음, 실패 조용히
+        fetch(`/api/products/${product.id}/view`, { method: "POST" }).catch(() => {});
+    }, [product.id]);
 
     // Fallback values for optional fields
     const productImages = product.images && product.images.length > 0 ? product.images : [product.imageUrl];

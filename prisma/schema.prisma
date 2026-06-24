@@ -78,6 +78,7 @@ model Product {
   colors        String[] @default([])
   rating        Float?
   reviewCount   Int?
+  viewCount     Int      @default(0)      // 상품 조회수(HOT 랭킹용)
   isNew         Boolean  @default(false)
   isBest        Boolean  @default(false)
   isHot         Boolean  @default(false)
@@ -90,6 +91,7 @@ model Product {
 
   @@index([category])
   @@index([brand])
+  @@index([viewCount])
 }
 
 model WishlistItem {

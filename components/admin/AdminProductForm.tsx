@@ -59,8 +59,6 @@ export function AdminProductForm() {
   const [description, setDescription] = useState("");
   const [sizes, setSizes] = useState("");
   const [colors, setColors] = useState("");
-  const [isHot, setIsHot] = useState(false); // NEW·BEST는 자동 파생 — HOT만 수동 유지
-
   // 제출 상태
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,9 +127,6 @@ export function AdminProductForm() {
       if (description.trim()) fd.append("description", description.trim());
       if (sizes.trim()) fd.append("sizes", sizes.trim());
       if (colors.trim()) fd.append("colors", colors.trim());
-      // HOT 체크박스: true인 경우에만 "true" append (NEW·BEST는 toAppProduct에서 자동 파생)
-      if (isHot) fd.append("isHot", "true");
-
       const res = await fetch("/api/admin/products", {
         method: "POST",
         body: fd,
@@ -371,25 +366,14 @@ export function AdminProductForm() {
             />
           </div>
 
-          {/* 배지 — NEW·BEST는 자동 파생, HOT만 수동 설정 */}
+          {/* 배지 — 모두 자동 부여 */}
           <div className="space-y-2">
             <label className="text-xs text-zinc-400 font-medium ml-1">
               배지
             </label>
             <p className="text-xs text-zinc-500 ml-1">
-              NEW(등록 1주일 이내)·BEST(별점 4.8+, 리뷰 100+)는 자동 적용됩니다.
+              NEW(등록 1주일 이내)·BEST(별점 4.8+, 리뷰 100+)·HOT(조회수 상위 4개 자동)는 모두 자동 부여됩니다.
             </p>
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={isHot}
-                onChange={(e) => setIsHot(e.target.checked)}
-                className="w-4 h-4 accent-brand-neon cursor-pointer"
-              />
-              <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                HOT
-              </span>
-            </label>
           </div>
         </div>
 
