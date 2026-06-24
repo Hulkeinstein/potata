@@ -179,6 +179,26 @@ export interface OOTDCreateMeta {
 // 좋아요 토글 응답
 export type OOTDLikeData = { postId: string; liked: boolean; likeCount: number };
 
+// 관리자 상품 등록 입력 — createProduct 헬퍼 + POST /api/admin/products 폼 필드
+export interface CreateProductInput {
+  name: string;
+  brand: string;
+  price: number;             // AED 정수 > 0
+  category: ProductCategory; // 'All' 제외 6종(Outer/Top/Bottom/Dress/Acc/Shoes)
+  imageUrl: string;          // 업로드된 public URL
+  images?: string[];
+  originalPrice?: number;
+  discountRate?: number;
+  description?: string;
+  sizes?: string[];
+  colors?: string[];
+  isNew?: boolean;
+  isBest?: boolean;
+  isHot?: boolean;
+}
+// POST /api/admin/products 성공 데이터
+export type AdminProductCreateData = { id: string };
+
 // API 응답 타입
 export interface ApiResponse<T> {
   success: boolean;

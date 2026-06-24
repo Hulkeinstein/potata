@@ -12,13 +12,17 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 
 ## 지금 작업
 
-**관리자 상품 등록 + 이미지 업로드** 트랙. 운영자가 보호된 UI에서 신상품(필수 필드 + 이미지)을 등록 → 카탈로그/상세에 즉시 노출. ADR-007 Supabase Storage 인프라 재사용.
+**Plan**: admin-product-upload (`docs/work-plans/admin-product-upload.md`) — momus OKAY, 실행 중.
+**Objective**: 운영자가 보호된 admin UI에서 신상품(필수 필드 + 이미지)을 등록 → `product-images` Storage 업로드 + `Product` DB 생성 → 카탈로그/상세 즉시 노출. ADR-007 인프라 재사용.
 
-**Goal/DoD**: admin 게이트로 보호된 등록 폼 → 이미지 Storage 업로드 + `Product` DB 생성 → 목록/상세 반영. `tsc`·`lint`·`test` green + Tier 2 적대검증 통과.
+**선결 3결정 확정**(2026-06-24 인터뷰): ① 상품 SSoT = **DB(런타임/admin), seed = 부트스트랩**(ADR-008), admin id=`crypto.randomUUID()`. ② admin 권한 = **env `ADMIN_EMAILS` allowlist**(스키마 무변경), middleware+API 이중 게이트. ③ Storage = **신규 `product-images` 버킷 + 헬퍼 bucket 파라미터화**(OOTD 래퍼 유지). → 스키마/next.config/의존성 변경 0.
 
-**선결 결정 3가지(코딩 전 `/plan`에서 확정 — cross-check 실측 기반)**: ① **상품 SSoT 충돌** — `product-detail` 스킬은 `seed.ts`를 상품 SSoT로 보는데(직접 DB write 금지), admin UI의 DB 직접 write는 재시드 시 소실 → ADR-008 후보. ② **admin 권한** — `User`에 `role`/`isAdmin` 없음 → role 필드 추가 vs env 이메일 allowlist. ③ **Storage 헬퍼 일반화** — `lib/supabase-storage.ts`가 "ootd-images" 하드코딩 → 상품용 버킷/일반화.
+**PR 분할**: PR1(권한+헬퍼+ADR, 현 브랜치 `feat/admin-product-upload`) → PR2(Storage 일반화+API) → PR3(UI).
+**진행 상태**: **PR1 완료**(Task 1~6 + F1). Tier1(tsc/lint/test green, 22 단위테스트) + Tier2(validator APPROVED · oracle PASS) 통과. **미커밋 — 리뷰/커밋 대기.**
+**남은 작업**: PR2(`feat/admin-product-api`) Storage 일반화 + `POST /api/admin/products` → PR3(`feat/admin-product-ui`) 등록 폼. PR2 선결: PR1 머지 + 사용자 사전작업.
+**사용자 사전작업(PR2/PR3용)**: Supabase `product-images` public 버킷 생성 + `.env.local`·Vercel `ADMIN_EMAILS` 설정.
 
-**브랜치**: `feat/admin-product-upload`(최신 main 기반 생성됨). 경위·재사용 패턴·시작 절차: `docs/work-plans/handoff/2026-06-24-admin-product-upload.md`.
+**브랜치**: `feat/admin-product-upload`. 경위: `docs/work-plans/handoff/2026-06-24-admin-product-upload.md`.
 
 ---
 

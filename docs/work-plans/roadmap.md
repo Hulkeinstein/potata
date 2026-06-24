@@ -76,11 +76,8 @@ P3(카탈로그 DB) 이후 머지된 트랙들:
 
 ---
 
-## ▶ 다음 작업 (다음 세션) — 관리자 상품 등록 + 이미지 업로드
+## 🔄 진행 중 (본 트랙) — 관리자 상품 등록 + 이미지 업로드
 
-운영자가 UI에서 실상품을 등록(이미지 업로드 포함)할 수 있게 한다. ADR-007 Supabase Storage 인프라 재사용. 검색·리뷰·배포 모두의 상류(실 카탈로그 콘텐츠 선행). **선결 결정 3가지**(handoff 참조):
-1. **상품 SSoT 충돌**: product-detail 스킬은 `seed.ts`를 SSoT로 보는데(직접 DB write 금지), admin UI는 DB 직접 write → 재시드 시 소실. seed.ts SSoT를 "부트스트랩"으로 완화할지 ADR 필요.
-2. **admin 권한 게이트**: User에 `role`/`isAdmin` 없음 → role 필드 추가 vs env 이메일 allowlist.
-3. **Storage 헬퍼 일반화**: `lib/supabase-storage.ts`가 "ootd-images" 하드코딩 → 상품용 버킷/일반화.
+운영자가 UI에서 실상품을 등록(이미지 업로드 포함)할 수 있게 한다. ADR-007 Supabase Storage 인프라 재사용. 검색·리뷰·배포 모두의 상류(실 카탈로그 콘텐츠 선행). **선결 결정 3가지 확정**: 상품 SSoT = DB(런타임/admin), seed = 부트스트랩 한정([ADR-008](../adr/adr-008-product-ssot.md)); admin 권한 = env ADMIN_EMAILS allowlist; Storage 헬퍼 일반화.
 
-경위·확정 설계·시작 절차: [handoff/2026-06-24-admin-product-upload.md](./handoff/2026-06-24-admin-product-upload.md).
+work-plan: [admin-product-upload.md](./admin-product-upload.md) · 경위·설계 상세: [handoff/2026-06-24-admin-product-upload.md](./handoff/2026-06-24-admin-product-upload.md).
