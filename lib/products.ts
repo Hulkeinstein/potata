@@ -96,13 +96,17 @@ export async function getAllProducts(): Promise<Product[]> {
   return rows.map((r) => toAppProduct(r, hotSet));
 }
 
-/** 단건 상품 조회. HOT 랭킹을 병렬 조회해 isHot 세팅. 존재하지 않으면 null 반환 */
+/**
+ * 단건 상품 조회. 존재하지 않으면 null 반환.
+ *
+ * getProductById는 unstable_cache 미사용 — cart/ootd 라우트가 Next 요청 컨텍스트 밖
+ * (통합테스트)에서 핸들러를 직접 호출하므로 incrementalCache가 없어 invariant throw.
+ * isHot은 getAllProducts(목록)에서만 파생하며, 상세/cart/ootd 소비처는 isHot 불필요.
+ */
 export async function getProductById(id: string): Promise<Product | null> {
-  const [row, hotIds] = await Promise.all([
-    prisma.product.findUnique({ where: { id } }),
-    getHotProductIds(),
-  ]);
-  return row ? toAppProduct(row, new Set(hotIds)) : null;
+  const row = await prisma.product.findUnique({ where: { id } });
+  // hotIds 미전달 → isHot false (상세 소비처는 HOT 배지 미사용)
+  return row ? toAppProduct(row) : null;
 }
 
 // ADR-005: DB에 저장 가능한 실제 카테고리 6종('All'은 필터 전용 — 저장 금지)
