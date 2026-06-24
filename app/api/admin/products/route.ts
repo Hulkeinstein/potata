@@ -82,7 +82,6 @@ export async function POST(req: NextRequest) {
       v === "true" || v === "on" || v === "1";
     const isNew = toBool(form.get("isNew"));
     const isBest = toBool(form.get("isBest"));
-    const isHot = toBool(form.get("isHot"));
 
     // 3. 필드 검증 — Zero Trust, Storage 업로드 前 실행
     if (!name) {
@@ -200,7 +199,6 @@ export async function POST(req: NextRequest) {
         colors,
         isNew,
         isBest,
-        isHot,
       };
       const product = await createProduct(productInput);
 

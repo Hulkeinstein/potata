@@ -59,6 +59,12 @@ export function ProductCard({ product }: ProductCardProps) {
                             New
                         </span>
                     )}
+                    {/* 조회수 랭킹 기반 자동 산출 — HOT 배지 */}
+                    {product.isHot && (
+                        <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider">
+                            Hot
+                        </span>
+                    )}
                 </div>
 
                 {/* Quick Actions (Hover) */}

@@ -21,14 +21,33 @@ const BEST_MIN_RATING = 4.8;   // BEST: 별점 임계값(조정 가능)
 const BEST_MIN_REVIEWS = 100;  // BEST: 최소 리뷰수(소수 리뷰 5점 배제)
 
 /**
+ * HOT 랭킹: 조회수 상위 4개 id.
+ * products 캐시와 독립(30분 주기 갱신) — 조회 증가가 카탈로그 캐시를 깨지 않게 분리.
+ * unstable_cache는 직렬화 가능 값만 반환 가능하므로 string[] 반환(Set 불가).
+ */
+const getHotProductIds = unstable_cache(
+  async (): Promise<string[]> => {
+    const rows = await prisma.product.findMany({
+      where: { viewCount: { gte: 1 } },
+      orderBy: { viewCount: "desc" },
+      take: 4,
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  },
+  ["hot-product-ids"],
+  { revalidate: 1800, tags: ["hot-products"] }
+);
+
+/**
  * Prisma Product → 앱 Product 변환
  * - null 옵셔널 필드 → undefined (Prisma는 null, 앱 타입은 ?: undefined)
  * - category String → ProductCategory (DB에 'All' 없음, 실제 6개 카테고리만 저장됨)
  * - stock: 앱 타입에 있으나 DB 컬럼 없음 → 매핑하지 않음(undefined)
  * - isNew/isBest: DB 저장값 무시 — createdAt·rating·reviewCount 기반 자동 파생
- * - isHot: DB 저장값 유지 (추후 조회수 상위 자동 트랙으로 이관 예정)
+ * - isHot: hotIds Set 멤버십으로 파생 — viewCount 상위 4개가 HOT (독립 캐시 기반)
  */
-function toAppProduct(p: PrismaProduct): Product {
+function toAppProduct(p: PrismaProduct, hotIds?: Set<string>): Product {
   return {
     id: p.id,
     name: p.name,
@@ -44,29 +63,49 @@ function toAppProduct(p: PrismaProduct): Product {
     description: p.description ?? undefined,
     rating: p.rating ?? undefined,
     reviewCount: p.reviewCount ?? undefined,
-    isNew: Date.now() - p.createdAt.getTime() < NEW_WINDOW_MS,
+    // unstable_cache JSON 직렬화 후 재역직렬화 시 createdAt이 ISO 문자열이 될 수 있음 → new Date()로 정규화
+    isNew: Date.now() - new Date(p.createdAt).getTime() < NEW_WINDOW_MS,
     isBest: p.rating != null && p.rating >= BEST_MIN_RATING && (p.reviewCount ?? 0) >= BEST_MIN_REVIEWS,
-    isHot: p.isHot, // HOT은 수동 유지(추후 조회수 상위 자동 트랙)
+    isHot: hotIds ? hotIds.has(p.id) : false,
   };
 }
 
 /**
- * 전체 상품 목록 반환 (createdAt asc — 시드 순서 유지)
- * unstable_cache로 래핑 — 8개 소비 페이지가 동일 캐시를 공유하고,
- * 신규 상품 등록 시 revalidateTag("products") 한 번으로 전부 즉시 반영.
+ * 전체 상품 raw rows 캐시 (카탈로그 캐시 — revalidateTag("products") 대상)
+ * HOT 랭킹 캐시(hot-products)와 독립 분리: 조회수 갱신이 이 캐시를 건드리지 않음.
  */
-export const getAllProducts = unstable_cache(
-  async (): Promise<Product[]> => {
-    const rows = await prisma.product.findMany({ orderBy: { createdAt: "asc" } });
-    return rows.map(toAppProduct);
-  },
-  ["all-products"],
+const getCachedProductRows = unstable_cache(
+  async () => prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
+  ["all-product-rows"],
   { tags: ["products"] }
 );
 
-/** 단건 상품 조회. 존재하지 않으면 null 반환 */
+/**
+ * 전체 상품 목록 반환 (createdAt asc — 시드 순서 유지)
+ * raw rows 캐시와 HOT 랭킹 캐시를 캐시 밖에서 병렬 조회 후 merge.
+ * → 신규 상품 등록 시 revalidateTag("products") 한 번으로 카탈로그 전부 즉시 반영.
+ * → HOT 랭킹은 조회 시 즉시 갱신 + 시간기반 백업:
+ *    - view 라우트(POST /api/products/[id]/view)가 조회수 increment 성공 후
+ *      revalidateTag("hot-products")를 호출 → 다음 렌더에서 top-4 재계산.
+ *    - revalidate:1800(30분) 시간기반 백업은 view 라우트 미도달 시 보정.
+ *    - "products" 캐시(카탈로그 rows)는 무영향 — rows 재쿼리 없음.
+ */
+export async function getAllProducts(): Promise<Product[]> {
+  const [rows, hotIds] = await Promise.all([getCachedProductRows(), getHotProductIds()]);
+  const hotSet = new Set(hotIds);
+  return rows.map((r) => toAppProduct(r, hotSet));
+}
+
+/**
+ * 단건 상품 조회. 존재하지 않으면 null 반환.
+ *
+ * getProductById는 unstable_cache 미사용 — cart/ootd 라우트가 Next 요청 컨텍스트 밖
+ * (통합테스트)에서 핸들러를 직접 호출하므로 incrementalCache가 없어 invariant throw.
+ * isHot은 getAllProducts(목록)에서만 파생하며, 상세/cart/ootd 소비처는 isHot 불필요.
+ */
 export async function getProductById(id: string): Promise<Product | null> {
   const row = await prisma.product.findUnique({ where: { id } });
+  // hotIds 미전달 → isHot false (상세 소비처는 HOT 배지 미사용)
   return row ? toAppProduct(row) : null;
 }
 
