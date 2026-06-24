@@ -76,8 +76,20 @@ P3(카탈로그 DB) 이후 머지된 트랙들:
 
 ---
 
-## 🔄 진행 중 (본 트랙) — 관리자 상품 등록 + 이미지 업로드
+## ✅ 관리자 상품 등록 + 배지 자동화 (완료, #35~40)
 
-운영자가 UI에서 실상품을 등록(이미지 업로드 포함)할 수 있게 한다. ADR-007 Supabase Storage 인프라 재사용. 검색·리뷰·배포 모두의 상류(실 카탈로그 콘텐츠 선행). **선결 결정 3가지 확정**: 상품 SSoT = DB(런타임/admin), seed = 부트스트랩 한정([ADR-008](../adr/adr-008-product-ssot.md)); admin 권한 = env ADMIN_EMAILS allowlist; Storage 헬퍼 일반화.
+운영자가 보호된 admin UI에서 실상품(이미지 포함)을 등록하고, 배지가 데이터 기반 자동 부여된다.
+- **#35 권한 게이트**: env `ADMIN_EMAILS` allowlist + `isAdmin` + middleware `/admin` + `createProduct`(randomUUID). 상품 SSoT = DB(런타임/admin), seed = 부트스트랩 한정 ([ADR-008](../adr/adr-008-product-ssot.md)).
+- **#36 Storage + API**: `lib/supabase-storage` bucket 일반화(신규 `product-images`) + `POST /api/admin/products`(검증·업로드·보상 삭제·revalidate).
+- **#37 등록 폼**: `/admin/products/new`(필드+이미지, 동기 useRef 제출 잠금).
+- **#38 fix**: middleware Edge `node:crypto` 회귀 제거(`lib/normalize` 분리).
+- **#39 가격·배지**: 정가+할인율→판매가 자동 계산. NEW(등록 1주일)·BEST(별점≥4.8·리뷰≥100) 자동 파생.
+- **#40 HOT 자동화**: 조회수 추적(`Product.viewCount`, `POST /api/products/[id]/view`) → 상위 4개 HOT(별도 캐시 + 조회 시 `revalidateTag`).
 
-work-plan: [admin-product-upload.md](./admin-product-upload.md) · 경위·설계 상세: [handoff/2026-06-24-admin-product-upload.md](./handoff/2026-06-24-admin-product-upload.md).
+**관련**: [archive/admin-product-upload.md](./archive/admin-product-upload.md) · [archive/hot-auto-views.md](./archive/hot-auto-views.md) · ADR [adr-008](../adr/adr-008-product-ssot.md)
+
+---
+
+## ▶ 다음 작업 — 상품 리뷰 작성
+
+로그인 유저가 상품 리뷰(별점+코멘트)를 작성·조회. `components/product/ProductDetailClient.tsx`에 **Review 탭·"Write a Review" UI 골격이 이미 존재(비작동)** → 백엔드(Review 모델·작성/조회 API) 연결 + `Product.rating`/`reviewCount` 재집계(→ BEST 배지 자동 연동). **선결(다음 `/plan`)**: Review 스키마(별점/코멘트/@@unique) · rating/reviewCount 집계 방식 · 리뷰 권한(전체 로그인 vs 구매자만). 경위·시작절차: [handoff/2026-06-24-product-reviews.md](./handoff/2026-06-24-product-reviews.md).
