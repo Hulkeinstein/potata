@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Heart, Plus, X, Trash2, Loader2, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { ProductTagPicker } from "@/components/ootd/ProductTagPicker";
 import type {
   ApiResponse,
   OOTDFeedData,
@@ -280,9 +281,6 @@ function PostForm({
     setFiles(picked);
   };
 
-  const toggleProduct = (id: string) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
-
   const submit = async () => {
     if (files.length === 0) {
       setError("사진을 최소 1장 선택해주세요.");
@@ -353,24 +351,10 @@ function PostForm({
           className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white mb-4 focus:outline-none focus:border-purple-500"
         />
 
-        {/* 상품 태그 */}
+        {/* 상품 태그 — 검색 + 최근 구매 + 썸네일 그리드 */}
         <div className="mb-5">
-          <span className="text-sm text-zinc-300 font-medium">상품 태그 (선택)</span>
-          <div className="mt-2 max-h-32 overflow-y-auto space-y-1 border border-white/5 rounded-lg p-2">
-            {products.map((p) => (
-              <label key={p.id} className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer py-1">
-                <input
-                  type="checkbox"
-                  checked={selected.includes(p.id)}
-                  onChange={() => toggleProduct(p.id)}
-                  className="accent-purple-500"
-                />
-                <span className="truncate">
-                  {p.brand} · {p.name}
-                </span>
-              </label>
-            ))}
-          </div>
+          <span className="text-sm text-zinc-300 font-medium mb-2 block">상품 태그 (선택)</span>
+          <ProductTagPicker products={products} selected={selected} onChange={setSelected} />
         </div>
 
         {error && (
