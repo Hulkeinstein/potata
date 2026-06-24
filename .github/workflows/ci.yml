@@ -1,15 +1,21 @@
 name: CI
 
+# PR 머지 시 중복 실행을 막기 위해 push 트리거 없이 pull_request만 사용.
+# (main 직접 push는 hook으로 차단 + squash merge라 PR CI가 곧 main 코드 검증)
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+
+# 같은 ref의 진행 중 옛 실행을 취소해 중복 비용 절감 — PR 이벤트에만 적용
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   ci:
     name: Lint + Typecheck + Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16-alpine
@@ -35,13 +41,11 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install dependencies
-        # The committed package-lock.json is generated on Windows, which omits
-        # other-platform optional native bindings (npm bug #4828 — e.g.
-        # @rolldown/binding-linux-x64-gnu used by vitest 4). With the lock
-        # present, neither `npm ci` nor `npm install` installs the linux
-        # binding, so we drop the lock here to force a clean linux resolution
-        # (per the npm error's own guidance). Local dev keeps the lock.
-        run: rm -f package-lock.json && npm install
+        # package-lock.json은 npm 11.3.0+로 재생성되어 모든 플랫폼의 optional
+        # 네이티브 바인딩(@rolldown/binding-linux-x64-gnu 등)을 포함한다
+        # (npm bug #4828 수정본). 따라서 linux 러너에서 `npm ci`가 결정론적으로
+        # 설치되고, setup-node의 npm 캐시도 정상 동작한다.
+        run: npm ci
       - name: Prisma generate
         run: npx prisma generate
       - name: Type check
