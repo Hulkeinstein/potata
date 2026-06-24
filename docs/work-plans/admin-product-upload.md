@@ -245,7 +245,7 @@
 
 ### PR2 Wave 1 (Storage 일반화 — API 선행 의존)
 
-- [ ] 7. [PR2] `lib/supabase-storage.ts` bucket 파라미터화(제네릭 코어 + OOTD 래퍼 유지 + product 래퍼) `category:ultrabrain`
+- [x] 7. [PR2] `lib/supabase-storage.ts` bucket 파라미터화(제네릭 코어 + OOTD 래퍼 유지 + product 래퍼) `category:ultrabrain`
   **Goal**: `lib/supabase-storage.ts`를 bucket 파라미터화. 제네릭 코어(`uploadImage(bucket, pathPrefix, file)`, `removeImagesByUrl(bucket, urls)`, `publicUrlToPath(bucket, url)`) 추출 + 기존 `uploadOOTDImage`/`removeOOTDImagesByUrl`를 `"ootd-images"` 바인딩 **래퍼로 유지**(ootd 라우트 무수정) + 신규 `uploadProductImage`/`removeProductImagesByUrl`(`"product-images"` 바인딩).
   **References**:
   - `lib/supabase-storage.ts:14`(BUCKET)·`:34-53`(upload)·`:59-72`(remove)·`:75-79`(publicUrlToPath)·`:16-25`(getEnv lazy). **bucket을 인자로 받도록 추출.**
@@ -265,7 +265,7 @@
 
 ### PR2 Wave 2 (등록 API — Storage 헬퍼 의존)
 
-- [ ] 8. [PR2] `POST /api/admin/products` — admin 게이트 + 필드/이미지 검증 + 업로드 + create + 보상 `category:ultrabrain`
+- [x] 8. [PR2] `POST /api/admin/products` — admin 게이트 + 필드/이미지 검증 + 업로드 + create + 보상 `category:ultrabrain`
   **Goal**: `app/api/admin/products/route.ts` 신규(라우트 구조 Ask First 승인 후). `auth()` 401 → `isAdmin(session.user.email)` 403(Zero Trust) → multipart/form-data 수신 → 필드/이미지 검증 → `uploadProductImage` → `createProduct` → 실패 시 `removeProductImagesByUrl` 보상. 성공 시 `revalidatePath`(목록) + `{success,data:{id}}`.
   **References**:
   - `app/api/ootd/route.ts:18-97` — **업로드+검증+보상 정본**(1장 버전으로 축소). ALLOWED_TYPES(9-13)/MAX_SIZE(14)/formData(27)/검증(35-55)/업로드(68-75)/create+보상(78-92)/catch(93-96).
@@ -291,7 +291,7 @@
 
 ### PR2 Wave 3 (테스트)
 
-- [ ] 9. [PR2] 단위테스트 — admin products 라우트(게이트/검증/업로드/보상, mock) `category:ultrabrain`
+- [x] 9. [PR2] 단위테스트 — admin products 라우트(게이트/검증/업로드/보상, mock) `category:ultrabrain`
   **Goal**: `app/api/admin/products/route.test.ts` 신규. `vi.mock("@/auth")`/`vi.mock("@/lib/admin")`/`vi.mock("@/lib/products")`/`vi.mock("@/lib/supabase-storage")`. 게이트(401/403)·검증·업로드·보상 케이스. `npm run test` 그린.
   **References**:
   - `app/api/ootd/route.test.ts`(존재 시 — 업로드/보상 mock 골격) + `app/api/wishlist/route.test.ts:1-36`.
@@ -308,10 +308,10 @@
 
 ### PR2 Final Verification Wave
 
-- [ ] F2. [PR2] tsc·lint·test 그린(mock, 키 불요) + OOTD 무회귀
+- [x] F2. [PR2] tsc·lint·test 그린(mock, 키 불요) + OOTD 무회귀
   **검증 단계**: `npx tsc --noEmit`(0) → `npm run lint`(0) → `npm run test`(신규 admin 테스트 + 기존 ootd/wishlist/orders 전부 그린) → `app/api/ootd/route.ts` import diff 0(OOTD 래퍼 무수정 확인). 기대결과: 키 없이 통과, OOTD 회귀 0.
 
-- [ ] F3. [PR2] 실 업로드 수동 검증 (사용자 사전작업 완료 후)
+- [x] F3. [PR2] 실 업로드 수동 검증 (사용자 사전작업 완료 후) — product-images 라운드트립(업로드/서빙/삭제) 200 확인. 풀 UI E2E는 PR3 폼에서.
   **검증 단계**: 버킷·env 완료 확인 → `npm run dev` → admin 로그인 → `curl`/임시 폼으로 `POST /api/admin/products`(jpg 1장 + 필드) → Supabase `product-images`에 파일 생성 + DB Product 행 확인(`prisma/check-product.ts <id>` 또는 `/product/<id>` 방문) → 비admin/비로그인 호출 403/401 확인. 기대결과: end-to-end 등록 정상.
 
 ---

@@ -9,6 +9,7 @@
  * 주의: "use client" 금지 — prisma가 클라이언트 번들에 포함되면 안 됨
  */
 
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { Product, ProductCategory, CreateProductInput } from "@/types";
 import type { Product as PrismaProduct } from "@prisma/client";
@@ -41,11 +42,19 @@ function toAppProduct(p: PrismaProduct): Product {
   };
 }
 
-/** 전체 상품 목록 반환 (createdAt asc — 시드 순서 유지) */
-export async function getAllProducts(): Promise<Product[]> {
-  const rows = await prisma.product.findMany({ orderBy: { createdAt: "asc" } });
-  return rows.map(toAppProduct);
-}
+/**
+ * 전체 상품 목록 반환 (createdAt asc — 시드 순서 유지)
+ * unstable_cache로 래핑 — 8개 소비 페이지가 동일 캐시를 공유하고,
+ * 신규 상품 등록 시 revalidateTag("products") 한 번으로 전부 즉시 반영.
+ */
+export const getAllProducts = unstable_cache(
+  async (): Promise<Product[]> => {
+    const rows = await prisma.product.findMany({ orderBy: { createdAt: "asc" } });
+    return rows.map(toAppProduct);
+  },
+  ["all-products"],
+  { tags: ["products"] }
+);
 
 /** 단건 상품 조회. 존재하지 않으면 null 반환 */
 export async function getProductById(id: string): Promise<Product | null> {
