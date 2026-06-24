@@ -32,9 +32,13 @@ function makeReq(method: "PUT" | "GET", body?: unknown): NextRequest {
   }) as unknown as NextRequest;
 }
 
+// 통합 테스트는 실 DB(CI postgres)에서만 실행 — 로컬 npm run test는 건너뜀(라이브 Supabase 오염·42P05 방지).
+const RUN_INTEGRATION = !!process.env.CI || !!process.env.RUN_INTEGRATION;
+
 let userId: string;
 
 beforeAll(async () => {
+  if (!RUN_INTEGRATION) return;
   const existingUser = await prisma.user.findUnique({ where: { email: TEST_EMAIL } });
   if (existingUser) {
     await prisma.cartItem.deleteMany({ where: { userId: existingUser.id } });
@@ -55,13 +59,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (!RUN_INTEGRATION) return;
   await prisma.cartItem.deleteMany({ where: { userId } });
   await prisma.user.deleteMany({ where: { email: TEST_EMAIL } });
   await prisma.product.deleteMany({ where: { id: TEST_PRODUCT.id } });
   await prisma.$disconnect();
 });
 
-describe("/api/cart (통합 — 실 DB)", () => {
+describe.skipIf(!RUN_INTEGRATION)("/api/cart (통합 — 실 DB)", () => {
   it("테스트 1 (PUT→GET 왕복): 저장·product 재조립·size/color 정규화", async () => {
     const putRes = await PUT(
       makeReq("PUT", { items: [{ productId: TEST_PRODUCT.id, size: "M", quantity: 2 }] })

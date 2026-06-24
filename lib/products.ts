@@ -10,7 +10,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type { Product, ProductCategory } from "@/types";
+import type { Product, ProductCategory, CreateProductInput } from "@/types";
 import type { Product as PrismaProduct } from "@prisma/client";
 
 /**
@@ -51,4 +51,50 @@ export async function getAllProducts(): Promise<Product[]> {
 export async function getProductById(id: string): Promise<Product | null> {
   const row = await prisma.product.findUnique({ where: { id } });
   return row ? toAppProduct(row) : null;
+}
+
+// ADR-005: DB에 저장 가능한 실제 카테고리 6종('All'은 필터 전용 — 저장 금지)
+const VALID_CATEGORIES = ["Outer", "Top", "Bottom", "Dress", "Acc", "Shoes"] as const;
+
+/**
+ * 관리자 등록 상품을 DB에 생성한다(ADR-008: admin 상품은 DB가 SSoT).
+ * id는 @default가 없으므로 crypto.randomUUID()로 서버에서 공급(시드의 숫자 id와 분리).
+ * category는 6종만 허용('All'/임의값 저장 금지 — ADR-005). 위반 시 throw → 라우트 최상위 catch가 400/500 변환.
+ */
+export async function createProduct(input: CreateProductInput): Promise<Product> {
+  if (!VALID_CATEGORIES.includes(input.category as (typeof VALID_CATEGORIES)[number])) {
+    throw new Error("유효하지 않은 카테고리입니다.");
+  }
+  // DB 정합 가드(defense-in-depth) — 라우트(PR2)도 검증하지만 헬퍼가 최종 불변식 보장.
+  if (!Number.isInteger(input.price) || input.price <= 0) {
+    throw new Error("가격은 0보다 큰 정수여야 합니다.");
+  }
+  if (input.originalPrice != null && (!Number.isInteger(input.originalPrice) || input.originalPrice <= 0)) {
+    throw new Error("정가는 0보다 큰 정수여야 합니다.");
+  }
+  if (input.discountRate != null && (!Number.isInteger(input.discountRate) || input.discountRate < 0)) {
+    throw new Error("할인율은 0 이상의 정수여야 합니다.");
+  }
+  const row = await prisma.product.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: input.name,
+      brand: input.brand,
+      price: input.price,
+      originalPrice: input.originalPrice ?? null,
+      discountRate: input.discountRate ?? null,
+      imageUrl: input.imageUrl,
+      images: input.images ?? [input.imageUrl],
+      category: input.category,
+      description: input.description ?? null,
+      sizes: input.sizes ?? [],
+      colors: input.colors ?? [],
+      rating: null,
+      reviewCount: null,
+      isNew: input.isNew ?? false,
+      isBest: input.isBest ?? false,
+      isHot: input.isHot ?? false,
+    },
+  });
+  return toAppProduct(row);
 }

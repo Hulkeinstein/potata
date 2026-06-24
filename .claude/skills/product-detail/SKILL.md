@@ -13,7 +13,7 @@ user-invocable: true
 
 potata는 상세 페이지 템플릿([components/product/ProductDetailClient.tsx])과 DB 파이프라인([app/product/[id]/page.tsx] → [lib/products.ts] `getProductById` → ISR)이 **이미 완성**되어 있다. 즉 **DB `Product` 행만 채우면 `/product/[id]` 상세 페이지가 자동으로 렌더**된다.
 
-따라서 이 스킬의 일은 "코드를 짜는 것"이 아니라 **상세 정보를 Product 데이터로 구조화해 DB에 주입**하는 것이다. 재현성·버전관리를 위해 직접 DB write 대신 **[prisma/seed.ts]의 `PRODUCTS` 배열을 SSoT로 보고 항목을 추가/갱신한 뒤 `npx prisma db seed`(idempotent upsert)로 DB에 반영**한다. seed.ts가 진실의 원천, DB는 파생물 — DB 리셋/재시드해도 콘텐츠가 보존된다.
+따라서 이 스킬의 일은 "코드를 짜는 것"이 아니라 **상세 정보를 Product 데이터로 구조화해 DB에 주입**하는 것이다. 재현성·버전관리를 위해 직접 DB write 대신 **[prisma/seed.ts]의 `PRODUCTS` 배열을 SSoT로 보고 항목을 추가/갱신한 뒤 `npx prisma db seed`(idempotent upsert)로 DB에 반영**한다. seed.ts가 진실의 원천, DB는 파생물 — DB 리셋/재시드해도 콘텐츠가 보존된다. (주의: 이 SSoT는 **스킬이 관리하는 큐레이션 상품 한정**이다. 런타임 admin 등록 상품은 DB가 SSoT — ADR-008.)
 
 ## 입력
 
