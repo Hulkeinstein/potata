@@ -37,20 +37,29 @@ export function AdminProductForm() {
   // 필수 필드
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
-  const [price, setPrice] = useState("");
   const [category, setCategory] = useState<Exclude<ProductCategory, "All"> | "">("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // 선택 필드
+  // 가격 필드: 정가(필수) + 할인율(선택) → 판매가 자동 계산
   const [originalPrice, setOriginalPrice] = useState("");
   const [discountRate, setDiscountRate] = useState("");
+
+  // 판매가 자동 계산 — 정가·할인율 변경 시마다 즉시 반영
+  const listPrice = Number.parseInt(originalPrice, 10);
+  const rate = discountRate ? Number.parseInt(discountRate, 10) : 0;
+  const salePrice =
+    Number.isInteger(listPrice) && listPrice > 0
+      ? rate > 0
+        ? Math.round(listPrice * (1 - rate / 100))
+        : listPrice
+      : null;
+
+  // 선택 필드
   const [description, setDescription] = useState("");
   const [sizes, setSizes] = useState("");
   const [colors, setColors] = useState("");
-  const [isNew, setIsNew] = useState(false);
-  const [isBest, setIsBest] = useState(false);
-  const [isHot, setIsHot] = useState(false);
+  const [isHot, setIsHot] = useState(false); // NEW·BEST는 자동 파생 — HOT만 수동 유지
 
   // 제출 상태
   const [submitting, setSubmitting] = useState(false);
@@ -91,6 +100,11 @@ export function AdminProductForm() {
       setError("상품 이미지를 선택해주세요.");
       return;
     }
+    // 판매가 검증: 정가 미입력 또는 계산 결과가 1 미만이면 차단
+    if (salePrice == null || salePrice < 1) {
+      setError("정가/할인율을 확인해주세요(판매가는 1 이상).");
+      return;
+    }
 
     submittingRef.current = true; // 락 획득(동기)
     setSubmitting(true);          // UI용 상태
@@ -98,22 +112,24 @@ export function AdminProductForm() {
 
     try {
       const fd = new FormData();
-      // 필수 필드
+      // 필수 필드 — price는 자동 계산된 판매가(salePrice)를 전송
       fd.append("name", name.trim());
       fd.append("brand", brand.trim());
-      fd.append("price", price);
+      fd.append("price", String(salePrice));
       fd.append("category", category);
       fd.append("image", imageFile);
 
+      // 할인이 있을 때만 정가·할인율 전송 (0% 할인이면 미전송 — 가짜 할인 표시 방지)
+      if (rate > 0) {
+        fd.append("originalPrice", String(listPrice));
+        fd.append("discountRate", String(rate));
+      }
+
       // 선택 필드 — 값이 있을 때만 append
-      if (originalPrice) fd.append("originalPrice", originalPrice);
-      if (discountRate) fd.append("discountRate", discountRate);
       if (description.trim()) fd.append("description", description.trim());
       if (sizes.trim()) fd.append("sizes", sizes.trim());
       if (colors.trim()) fd.append("colors", colors.trim());
-      // 체크박스: true인 경우에만 "true" append
-      if (isNew) fd.append("isNew", "true");
-      if (isBest) fd.append("isBest", "true");
+      // HOT 체크박스: true인 경우에만 "true" append (NEW·BEST는 toAppProduct에서 자동 파생)
       if (isHot) fd.append("isHot", "true");
 
       const res = await fetch("/api/admin/products", {
@@ -186,20 +202,20 @@ export function AdminProductForm() {
             />
           </div>
 
-          {/* 가격 + 카테고리 (나란히) */}
+          {/* 정가 + 카테고리 (나란히) */}
           <div className="grid grid-cols-2 gap-4">
-            {/* 가격 */}
+            {/* 정가 (필수) */}
             <div className="space-y-1">
               <label className="text-xs text-zinc-400 font-medium ml-1">
-                가격 (AED) *
+                정가 (AED) *
               </label>
               <input
                 type="number"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                value={originalPrice}
+                onChange={(e) => setOriginalPrice(e.target.value)}
                 required
                 min={1}
-                placeholder="예) 299"
+                placeholder="예) 399"
                 className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
               />
             </div>
@@ -226,6 +242,53 @@ export function AdminProductForm() {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* 할인율 + 판매가 미리보기 */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* 할인율 (선택) */}
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-400 font-medium ml-1">
+                할인율 (%)
+              </label>
+              <input
+                type="number"
+                value={discountRate}
+                onChange={(e) => setDiscountRate(e.target.value)}
+                min={0}
+                max={100}
+                placeholder="예) 25"
+                className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
+              />
+            </div>
+
+            {/* 판매가 자동 계산 (읽기 전용 표시) */}
+            <div className="space-y-1">
+              <label className="text-xs text-zinc-400 font-medium ml-1">
+                판매가 (자동 계산)
+              </label>
+              <div className="w-full h-12 bg-black/30 border border-white/5 rounded-lg px-4 flex items-center gap-2">
+                {salePrice != null ? (
+                  <>
+                    <span className="text-brand-neon font-bold">
+                      {salePrice} AED
+                    </span>
+                    {rate > 0 && (
+                      <>
+                        <span className="text-zinc-500 text-sm line-through">
+                          {listPrice}
+                        </span>
+                        <span className="text-xs text-red-400 font-semibold">
+                          -{rate}%
+                        </span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-zinc-600 text-sm">정가 입력 시 표시</span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -265,38 +328,6 @@ export function AdminProductForm() {
           <h2 className="text-sm font-bold text-zinc-300 uppercase tracking-widest mb-4">
             추가 정보 (선택)
           </h2>
-
-          {/* 정가 + 할인율 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-medium ml-1">
-                정가 (AED)
-              </label>
-              <input
-                type="number"
-                value={originalPrice}
-                onChange={(e) => setOriginalPrice(e.target.value)}
-                min={1}
-                placeholder="예) 399"
-                className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-medium ml-1">
-                할인율 (%)
-              </label>
-              <input
-                type="number"
-                value={discountRate}
-                onChange={(e) => setDiscountRate(e.target.value)}
-                min={0}
-                max={100}
-                placeholder="예) 25"
-                className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
-              />
-            </div>
-          </div>
 
           {/* 사이즈 */}
           <div className="space-y-1">
@@ -340,33 +371,25 @@ export function AdminProductForm() {
             />
           </div>
 
-          {/* 뱃지 체크박스 */}
+          {/* 배지 — NEW·BEST는 자동 파생, HOT만 수동 설정 */}
           <div className="space-y-2">
             <label className="text-xs text-zinc-400 font-medium ml-1">
-              뱃지
+              배지
             </label>
-            <div className="flex gap-6">
-              {[
-                { state: isNew, setter: setIsNew, label: "NEW" },
-                { state: isBest, setter: setIsBest, label: "BEST" },
-                { state: isHot, setter: setIsHot, label: "HOT" },
-              ].map(({ state, setter, label }) => (
-                <label
-                  key={label}
-                  className="flex items-center gap-2 cursor-pointer group"
-                >
-                  <input
-                    type="checkbox"
-                    checked={state}
-                    onChange={(e) => setter(e.target.checked)}
-                    className="w-4 h-4 accent-brand-neon cursor-pointer"
-                  />
-                  <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                    {label}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <p className="text-xs text-zinc-500 ml-1">
+              NEW(등록 1주일 이내)·BEST(별점 4.8+, 리뷰 100+)는 자동 적용됩니다.
+            </p>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={isHot}
+                onChange={(e) => setIsHot(e.target.checked)}
+                className="w-4 h-4 accent-brand-neon cursor-pointer"
+              />
+              <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
+                HOT
+              </span>
+            </label>
           </div>
         </div>
 
