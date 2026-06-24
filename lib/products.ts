@@ -14,11 +14,19 @@ import { prisma } from "@/lib/prisma";
 import type { Product, ProductCategory, CreateProductInput } from "@/types";
 import type { Product as PrismaProduct } from "@prisma/client";
 
+// NEW 배지: 등록 후 이 기간 이내인 상품을 자동으로 NEW 처리
+const NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 등록 1주일 이내 = NEW
+// BEST 배지: 별점·리뷰 수 양쪽을 동시에 충족해야 BEST (소수 리뷰 고점 방지)
+const BEST_MIN_RATING = 4.8;   // BEST: 별점 임계값(조정 가능)
+const BEST_MIN_REVIEWS = 100;  // BEST: 최소 리뷰수(소수 리뷰 5점 배제)
+
 /**
  * Prisma Product → 앱 Product 변환
  * - null 옵셔널 필드 → undefined (Prisma는 null, 앱 타입은 ?: undefined)
  * - category String → ProductCategory (DB에 'All' 없음, 실제 6개 카테고리만 저장됨)
  * - stock: 앱 타입에 있으나 DB 컬럼 없음 → 매핑하지 않음(undefined)
+ * - isNew/isBest: DB 저장값 무시 — createdAt·rating·reviewCount 기반 자동 파생
+ * - isHot: DB 저장값 유지 (추후 조회수 상위 자동 트랙으로 이관 예정)
  */
 function toAppProduct(p: PrismaProduct): Product {
   return {
@@ -36,9 +44,9 @@ function toAppProduct(p: PrismaProduct): Product {
     description: p.description ?? undefined,
     rating: p.rating ?? undefined,
     reviewCount: p.reviewCount ?? undefined,
-    isNew: p.isNew,
-    isBest: p.isBest,
-    isHot: p.isHot,
+    isNew: Date.now() - p.createdAt.getTime() < NEW_WINDOW_MS,
+    isBest: p.rating != null && p.rating >= BEST_MIN_RATING && (p.reviewCount ?? 0) >= BEST_MIN_REVIEWS,
+    isHot: p.isHot, // HOT은 수동 유지(추후 조회수 상위 자동 트랙)
   };
 }
 
