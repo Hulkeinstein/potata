@@ -1,6 +1,6 @@
 # potata Master Roadmap
 
-> 마지막 업데이트: 2026-06-16
+> 마지막 업데이트: 2026-06-24
 > 목적: P0~P3 작업 인덱스. 각 항목의 상세 plan은 링크된 문서 참조.
 > 이 파일은 인덱스만 — 상세 plan 작성 금지.
 
@@ -43,9 +43,17 @@
 
 ---
 
-## ▶ 다음 작업 (다음 세션) — 상품 상세 페이지 구현 skill
+## ✅ 상품상세 skill · OAuth · UX · 영속화 · OOTD · CI (완료, #24~#34)
 
-`별도 명령 없이 "스킬 + 상세 정보"만 주면 상품 상세 페이지를 자동 구현`하는 재사용 Claude Code skill 생성. 카탈로그 DB(P3) 토대 위에서. 경위·미정 설계·시작 절차: [handoff/2026-06-16-product-detail-skill.md](./handoff/2026-06-16-product-detail-skill.md).
+P3(카탈로그 DB) 이후 머지된 트랙들:
+
+- **#24 product-detail 스킬**: 자유 텍스트 → `prisma/seed.ts` PRODUCTS 추가/갱신 → `db seed` upsert. **seed.ts = 상품 SSoT, DB는 파생물**. (`.claude/skills/product-detail/SKILL.md`)
+- **#25 Google OAuth**: NextAuth v5 Google + Credentials 병행, JWT no-adapter. ADR [adr-006](../adr/adr-006-oauth-jwt-no-adapter.md).
+- **#26 AI COORDINATOR 팝업화**: 홈 패널 → 팝업(끄기 / 하루 동안 보지 않기).
+- **#27·#28·#29 좋아요·장바구니·Recents 계정 DB 영속화**: 로그아웃/재로그인/타기기에서 보존. `WishlistItem`/`CartItem`/`RecentTryOn` + `StoreSync`. (`persist-cart-wishlist.md`)
+- **#30·#31·#32 OOTD 피드 실작동**: Supabase Storage 업로드 + 피드 GET + 좋아요 + 본인 삭제 + 상품 태그. ADR [adr-007](../adr/adr-007-supabase-storage.md). (`ootd-feed.md`)
+- **#33 OOTD 상품 태그 피커**: 검색 + 최근 구매 + 썸네일 그리드.
+- **#34 CI 비용 절감**: lockfile 크로스플랫폼 재생성(npm 11.3.0+, npm bug #4828) → `npm ci` + 캐시 복원 / `push:main` 트리거 제거(중복 실행 제거) / concurrency·timeout 가드레일.
 
 ---
 
@@ -65,3 +73,14 @@
 `data/dummy.ts` 정적 상품 → Prisma `Product` 모델. 8개 화면 DB 조회(서버 fetch→클라 props), 상세 ISR, orders 가격 재검증 DB화, dummy PRODUCTS 제거(TRENDS만 잔존). `lib/products.ts` 헬퍼.
 
 **관련**: ADR [adr-005](../adr/adr-005-product-model.md) · [archive/catalog-db.md](./archive/catalog-db.md)
+
+---
+
+## ▶ 다음 작업 (다음 세션) — 관리자 상품 등록 + 이미지 업로드
+
+운영자가 UI에서 실상품을 등록(이미지 업로드 포함)할 수 있게 한다. ADR-007 Supabase Storage 인프라 재사용. 검색·리뷰·배포 모두의 상류(실 카탈로그 콘텐츠 선행). **선결 결정 3가지**(handoff 참조):
+1. **상품 SSoT 충돌**: product-detail 스킬은 `seed.ts`를 SSoT로 보는데(직접 DB write 금지), admin UI는 DB 직접 write → 재시드 시 소실. seed.ts SSoT를 "부트스트랩"으로 완화할지 ADR 필요.
+2. **admin 권한 게이트**: User에 `role`/`isAdmin` 없음 → role 필드 추가 vs env 이메일 allowlist.
+3. **Storage 헬퍼 일반화**: `lib/supabase-storage.ts`가 "ootd-images" 하드코딩 → 상품용 버킷/일반화.
+
+경위·확정 설계·시작 절차: [handoff/2026-06-24-admin-product-upload.md](./handoff/2026-06-24-admin-product-upload.md).
