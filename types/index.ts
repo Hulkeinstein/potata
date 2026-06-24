@@ -277,6 +277,31 @@ export interface CreateOrderRequest {
   idempotencyKey?: string;
 }
 
+// 리뷰 관련 타입
+export interface Review {
+  id: string;
+  userId: string;
+  userName: string;        // 작성자 표시용 (User.name) — GET에서 join select하여 채움
+  productId: string;
+  rating: number;          // 개별 별점 1~5
+  comment: string | null;  // optional (별점만 남기는 리뷰 허용)
+  createdAt: string;       // ISO
+  updatedAt: string;       // ISO
+}
+
+export interface CreateReviewRequest {
+  rating: number;          // 1~5 (서버 검증)
+  comment?: string;        // optional
+  // productId는 URL [id] param에서 취득 — body 불포함 (보안: 클라 입력 불신)
+  // userId는 session.user.id만 신뢰 — body 불포함
+}
+
+export interface ReviewListResponse {
+  reviews: Review[];
+  averageRating: number | null;  // 리뷰 0건이면 null
+  reviewCount: number;
+}
+
 // AI Try-On 관련 타입
 export interface TryOnRequest {
   userImage: string;

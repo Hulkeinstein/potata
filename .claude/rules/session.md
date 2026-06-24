@@ -12,13 +12,15 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 
 ## 지금 작업
 
-**상품 리뷰 작성** 트랙. 로그인 유저가 상품에 별점+코멘트 리뷰를 남기고 조회한다. `components/product/ProductDetailClient.tsx`에 **Review 탭·"Write a Review" UI 골격이 이미 존재(비작동)** → 백엔드(Review 모델·작성/조회 API) 연결이 핵심.
+**상품 리뷰 작성** 트랙 — `/plan`+momus 검증 완료, **PR1(스키마+API) 실행 중**. Plan: `docs/work-plans/product-reviews.md`.
 
-**Goal/DoD**: Review 모델 + 작성/조회 API(`auth()` 게이트) + 기존 Review 탭 UI 연결 + 리뷰 작성 시 `Product.rating`(평균)·`reviewCount` 재집계(`$transaction`). 이 재집계가 BEST 배지(별점≥4.8 & 리뷰≥100, `lib/products.ts toAppProduct`)를 자동으로 채운다. `tsc`·`lint`·`test` green + Tier2 적대검증 통과.
+**Objective**: 로그인 구매자가 상품에 별점(1~5)+코멘트 리뷰를 작성·수정·삭제·조회, 변경 시 `Product.rating`(평균)·`reviewCount`를 `$transaction` 원자 재집계 → BEST 배지(별점≥4.8 & 리뷰≥100, `lib/products.ts:68`) 자동 충족.
 
-**선결 결정(코딩 전 `/plan`에서 확정)**: ① Review 스키마(별점 1~5·코멘트·`@@unique([userId,productId])` 1인1상품 — 🟡 Ask First) ② rating/reviewCount 집계 방식(`$transaction` denormalized) ③ 리뷰 권한(전체 로그인 vs 구매자만 — Order 연동) ④ 수정/삭제 범위(MVP = 작성+조회).
+**선결 4결정(전부 확정)**: ① `@@unique([userId,productId])` 채택(upsert) ② 매번 `aggregate(_avg,_count)` 재계산($transaction) ③ 권한=**구매자만**(ADR-004 Json → 유저 Order fetch+JS 필터, status 무관) ④ 작성+조회+수정+삭제.
 
-**브랜치**: `feat/product-reviews`(최신 main 기반 생성됨). 경위·재사용 패턴·시작 절차: `docs/work-plans/handoff/2026-06-24-product-reviews.md`.
+**진행**: PR1 = TODO 1~8(Review 모델·타입·집계헬퍼·구매자게이트·GET/POST upsert/DELETE·테스트·db push). PR2 = TODO 9~12(StarRating·ReviewSection·연동·테스트). 검증 F1~F8.
+
+**브랜치**: `feat/product-reviews`. 경위·재사용 패턴: `docs/work-plans/handoff/2026-06-24-product-reviews.md`.
 
 ---
 
