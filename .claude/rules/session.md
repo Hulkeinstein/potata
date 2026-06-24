@@ -18,8 +18,8 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 **선결 3결정 확정**(2026-06-24 인터뷰): ① 상품 SSoT = **DB(런타임/admin), seed = 부트스트랩**(ADR-008), admin id=`crypto.randomUUID()`. ② admin 권한 = **env `ADMIN_EMAILS` allowlist**(스키마 무변경), middleware+API 이중 게이트. ③ Storage = **신규 `product-images` 버킷 + 헬퍼 bucket 파라미터화**(OOTD 래퍼 유지). → 스키마/next.config/의존성 변경 0.
 
 **PR 분할**: PR1(권한+헬퍼+ADR, 현 브랜치 `feat/admin-product-upload`) → PR2(Storage 일반화+API) → PR3(UI).
-**진행 상태**: **PR1 머지 완료**(#35, ad3a7d2). 사용자 사전작업(`product-images` public 버킷 · `ADMIN_EMAILS`) 완료. **PR2 실행 중**(`feat/admin-product-api`).
-**남은 작업(PR2)**: 7.Storage 헬퍼 일반화(`product-images`, OOTD 래퍼 유지) · 8.`POST /api/admin/products`(Ask First: 신규 라우트) · 9.단위테스트 · F2/F3 검증. 이후 PR3 등록 폼 UI.
+**진행 상태**: **PR1(#35) + PR2(#36) 머지 완료.** PR3(등록 폼 UI) 구현 완료 — 리뷰/머지 대기(`feat/admin-product-ui`). 백엔드(권한·Storage·API) + UI 전 구간 완성.
+**남은 것**: PR3 머지 + 사용자 풀 UI e2e 수동 확인(로그인→`/admin/products/new`→등록→노출). 추후 follow-up: OOTD MIME-sniff, admin 상품 수정/삭제, node:crypto edge 경고.
 **사용자 사전작업(PR2/PR3용)**: Supabase `product-images` public 버킷 생성 + `.env.local`·Vercel `ADMIN_EMAILS` 설정.
 
 **브랜치**: `feat/admin-product-upload`. 경위: `docs/work-plans/handoff/2026-06-24-admin-product-upload.md`.

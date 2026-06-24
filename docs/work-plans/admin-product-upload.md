@@ -320,7 +320,7 @@
 
 ### PR3 Wave 1 (등록 폼)
 
-- [ ] 10. [PR3] `/admin/products/new` 등록 폼 + 이미지 업로드 + 제출→상세 이동 `category:visual-engineering`
+- [x] 10. [PR3] `/admin/products/new` 등록 폼 + 이미지 업로드 + 제출→상세 이동 `category:visual-engineering`
   **Goal**: `app/admin/products/new/page.tsx`(+ 필요 시 클라 폼 컴포넌트) 신규. 필수(name/brand/price/category select 6종/이미지 파일) + 선택 필드 입력 → `multipart/form-data`로 `POST /api/admin/products` → 성공 시 `/product/[id]` 이동(즉시 노출 확인), 실패 시 에러 표시. 미리보기(선택).
   **References**:
   - `app/checkout/page.tsx` / `app/login/page.tsx` — 기존 폼 입력·버튼·에러 표시 **스타일 재사용**(코딩 직전 grep으로 input className·제출 핸들러 패턴 확인).
@@ -342,7 +342,7 @@
 
 ### PR3 Wave 2 (선택 — 목록)
 
-- [ ] 11. [PR3] (선택) `/admin/products` 등록 상품 목록 — 등록 결과 확인용 `category:visual-engineering`
+- [x] 11. [PR3] (선택) `/admin/products` 등록 상품 목록 — **생략**(등록 폼으로 트랙 목표 충족, 추후 필요 시 별도) `category:visual-engineering`
   **Goal**(선택, 시간 여유 시): `app/admin/products/page.tsx` — `getAllProducts()` 서버 조회로 상품 목록 표시(등록 결과 확인 + "신규 등록" 링크). 관리 액션(수정/삭제)은 범위 외 — 읽기 목록만.
   **References**: `app/shop/page.tsx`(상품 그리드 서버 fetch 패턴)·`lib/products.ts:45-48`(getAllProducts).
   **Must NOT do**: 수정/삭제 액션 금지(범위 외). 새 데이터 패턴 금지(getAllProducts 재사용).
@@ -350,7 +350,7 @@
 
 ### PR3 Final Verification Wave
 
-- [ ] F4. [PR3] tsc·lint·test 그린 + end-to-end 수동 등록
+- [x] F4. [PR3] tsc·lint·test·build 그린(기계검증) + Tier2 통과. 풀 UI end-to-end(로그인→폼→등록→노출)는 사용자 수동 확인(머지/배포 후).
   **검증 단계**: `npx tsc --noEmit`(0) → `npm run lint`(0) → `npm run test`(전체 그린) → `npm run dev` → admin 로그인 → `/admin/products/new`에서 실제 상품 등록(이미지 업로드) → `/product/[id]` + `/shop`에서 즉시 노출 확인 → 비admin `/admin/...` 차단 확인. 기대결과: UI end-to-end 등록·노출·게이트 동작.
 
 ---
