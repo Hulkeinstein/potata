@@ -197,7 +197,7 @@
 
 ### Wave 6 (병렬 — UI 공유 컴포넌트 먼저)
 
-- [ ] 9. 별점 표시/선택 컴포넌트 `StarRating` `category:visual-engineering`
+- [x] 9. 별점 표시/선택 컴포넌트 `StarRating` `category:visual-engineering`
   **Goal**: `components/product/StarRating.tsx` 신규. 읽기모드(평점 표시) + 인터랙티브 모드(1~5 선택, hover preview) 겸용. 작성 폼·목록 양쪽 재사용.
   **References** (WHY):
   - `components/product/ProductDetailClient.tsx:6` — `import { Star } from "lucide-react"` 동일 아이콘 사용(일관성).
@@ -212,7 +212,7 @@
 
 ### Wave 7 (Wave 6 완료 후)
 
-- [ ] 10. 리뷰 목록 + 작성/수정 폼 컴포넌트 `ReviewSection` `category:visual-engineering`
+- [x] 10. 리뷰 목록 + 작성/수정 폼 컴포넌트 `ReviewSection` `category:visual-engineering`
   **Goal**: `components/product/ReviewSection.tsx` 신규(client). productId prop으로 GET `/api/products/[id]/reviews` client fetch → 목록 렌더 + 평균/카운트 + (로그인 구매자면) 작성/수정 폼(StarRating + comment textarea) + 본인 리뷰 삭제 버튼. POST/DELETE 호출 후 목록 재fetch.
   **References** (WHY):
   - `components/product/ProductDetailClient.tsx:22-36` — wishlist/view client fetch 선례 패턴(`fetch(...).catch`). 같은 client fetch 흐름.
@@ -229,7 +229,7 @@
 
 ### Wave 8 (Wave 7 완료 후)
 
-- [ ] 11. ProductDetailClient Review 탭 연동 `category:visual-engineering`
+- [x] 11. ProductDetailClient Review 탭 연동 `category:visual-engineering`
   **Goal**: `components/product/ProductDetailClient.tsx:288-303`의 정적 Review 탭을 `<ReviewSection productId={product.id} />`로 교체. 탭 카운트(:258)는 기존 `productReviewCount`(SSR prop) 유지 + ReviewSection가 동적 카운트 표시.
   **References** (WHY):
   - `components/product/ProductDetailClient.tsx:288-303` — 교체 대상(정적 Review 탭 블록 전체). 하드코딩 "No reviews yet"·중복 "Write a Review" 버튼(:293·:299) 제거.
@@ -241,7 +241,7 @@
   - Edge: 탭 카운트 SSR 초기값 표시 후 ReviewSection가 실제 데이터 fetch.
   - Negative: Q&A 탭 클릭 → 기존 정적 UI 그대로(미변경 확인).
 
-- [ ] 12. ReviewSection 컴포넌트 테스트 `category:writing`
+- [x] 12. ReviewSection 컴포넌트 테스트 `category:writing`
   **Goal**: `components/product/ReviewSection.test.tsx` 신규(@testing-library/react + jsdom). fetch mock으로 목록 렌더·빈 상태·폼 노출 조건(구매자/비구매자) 검증.
   **References** (WHY):
   - 기존 컴포넌트 테스트 선례(있으면 `components/**/*.test.tsx` 패턴 차용) + `CLAUDE.md` — Vitest + @testing-library/react + jsdom.

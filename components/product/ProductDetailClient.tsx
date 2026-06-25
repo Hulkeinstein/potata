@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cart-store";
 import type { Product } from "@/types";
 import { formatPrice } from "@/lib/utils";
+import { ReviewSection } from "@/components/product/ReviewSection";
 
 interface ProductDetailClientProps {
     product: Product;
@@ -102,7 +103,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 <div className="flex items-center gap-2 text-sm text-zinc-400">
                                     <div className="flex items-center text-yellow-500">
                                         <Star className="w-4 h-4 fill-current" />
-                                        <span className="ml-1 font-bold text-white">{productRating}</span>
+                                        <span className="ml-1 font-bold text-white">{productRating.toFixed(1)}</span>
                                     </div>
                                     <span className="w-1 h-1 bg-zinc-700 rounded-full" />
                                     <span className="underline decoration-zinc-700 hover:text-white cursor-pointer">
@@ -287,19 +288,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             {/* Review Tab */}
                             {activeTab === "review" && (
-                                <div className="pt-4">
-                                    <h3 className="text-xl font-bold mb-6 flex justify-between items-center">
-                                        Reviews
-                                        <span className="text-sm font-normal text-brand-neon cursor-pointer">Write a Review</span>
-                                    </h3>
-                                    <div className="py-20 flex flex-col items-center justify-center text-center gap-3 bg-zinc-900/20 rounded-xl border border-white/5">
-                                        <Star className="w-10 h-10 text-zinc-700" />
-                                        <p className="text-zinc-400 font-medium">No reviews yet. Be the first to review!</p>
-                                        <button className="mt-2 px-6 py-2 rounded-full border border-brand-neon text-brand-neon text-sm font-medium hover:bg-brand-neon hover:text-black transition-colors">
-                                            Write a Review
-                                        </button>
-                                    </div>
-                                </div>
+                                <ReviewSection productId={product.id} />
                             )}
 
                             {/* Q&A Tab */}
