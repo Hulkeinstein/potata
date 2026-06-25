@@ -287,8 +287,10 @@ export interface Review {
   comment: string | null;  // optional (별점만 남기는 리뷰 허용)
   createdAt: string;       // ISO
   updatedAt: string;       // ISO
+  imageUrls: string[];     // 첨부 이미지 public URL 배열(0~3장)
 }
 
+// NOTE: POST는 multipart/form-data로 전송 — rating/comment/images[]는 FormData로 파싱(이 타입은 의미 참조용).
 export interface CreateReviewRequest {
   rating: number;          // 1~5 (서버 검증)
   comment?: string;        // optional

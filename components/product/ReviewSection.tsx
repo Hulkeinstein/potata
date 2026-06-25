@@ -3,8 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Star, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { StarRating } from "@/components/product/StarRating";
 import type { Review, ReviewListResponse } from "@/types";
+
+const MAX_IMAGES = 3;
+const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
+const MAX_SIZE = 5 * 1024 * 1024;
 
 interface ReviewSectionProps {
   productId: string;
@@ -21,10 +26,31 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
   // 폼 상태
   const [myRating, setMyRating] = useState(0);
   const [myComment, setMyComment] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormError(null);
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length > MAX_IMAGES) {
+      setFormError(`사진은 최대 ${MAX_IMAGES}장`);
+      return;
+    }
+    for (const f of picked) {
+      if (!ALLOWED.includes(f.type)) {
+        setFormError("jpg/png/webp만 올릴 수 있습니다.");
+        return;
+      }
+      if (f.size > MAX_SIZE) {
+        setFormError("각 사진은 5MB 이하여야 합니다.");
+        return;
+      }
+    }
+    setFiles(picked);
+  };
 
   const loadReviews = useCallback(async () => {
     setLoading(true);
@@ -74,10 +100,14 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
 
     setSubmitting(true);
     try {
+      const fd = new FormData();
+      fd.append("rating", String(myRating));
+      if (myComment) fd.append("comment", myComment);
+      files.forEach((f) => fd.append("images", f));
+
       const res = await fetch(`/api/products/${productId}/reviews`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating: myRating, comment: myComment }),
+        body: fd,
       });
       const json = await res.json();
 
@@ -98,6 +128,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
         return;
       }
 
+      setFiles([]);
       setNotice(myReview ? "리뷰가 수정되었습니다." : "리뷰가 등록되었습니다.");
       await loadReviews();
     } catch {
@@ -210,6 +241,24 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
             </p>
           </div>
 
+          {/* 사진 첨부 (선택) */}
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400" htmlFor="review-images">
+              사진 (선택, 최대 3장)
+            </label>
+            <input
+              id="review-images"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={onFileChange}
+              className="mt-1 block w-full text-sm text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-white file:text-black file:font-bold file:text-xs hover:file:bg-gray-200"
+            />
+            {files.length > 0 && (
+              <p className="text-xs text-brand-neon">{files.length}장 선택됨</p>
+            )}
+          </div>
+
           {/* 오류/알림 메시지 */}
           {formError && (
             <p className="text-sm text-red-400">{formError}</p>
@@ -280,6 +329,20 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                 <p className="text-sm text-zinc-400 whitespace-pre-wrap">
                   {review.comment}
                 </p>
+              )}
+              {review.imageUrls?.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {review.imageUrls.map((url) => (
+                    <Image
+                      key={url}
+                      src={url}
+                      width={80}
+                      height={80}
+                      alt="리뷰 이미지"
+                      className="rounded-lg object-cover"
+                    />
+                  ))}
+                </div>
               )}
             </li>
           ))}

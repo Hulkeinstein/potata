@@ -23,6 +23,15 @@ vi.mock("next/navigation", () => ({
   usePathname: vi.fn(() => "/"),
 }));
 
+// --- next/image mock (리뷰 이미지 썸네일 렌더 대비) ---
+vi.mock("next/image", () => ({
+  default: (props: { src: string; alt: string; [key: string]: unknown }) => {
+    const { src, alt } = props;
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} />;
+  },
+}));
+
 import { useSession } from "next-auth/react";
 
 // --- 픽스처 ---
@@ -209,14 +218,13 @@ describe("ReviewSection", () => {
     const submitBtn = screen.getByRole("button", { name: "리뷰 등록" });
     fireEvent.click(submitBtn);
 
-    // POST fetch 호출 검증
+    // POST fetch 호출 검증 — FormData 전송(headers 없음)
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/products/p1/reviews",
         expect.objectContaining({
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rating: 4, comment: "테스트 코멘트" }),
+          body: expect.any(FormData),
         }),
       );
     });
@@ -259,5 +267,34 @@ describe("ReviewSection", () => {
         screen.queryByText("이미 리뷰가 처리되었습니다. 새로고침 후 다시 시도해 주세요."),
       ).not.toBeNull();
     });
+  });
+
+  // 케이스 ⑥: 파일 input에 File 2개 change → "2장 선택됨" 텍스트 렌더
+  it("파일 input에 File 2개 선택 → '2장 선택됨' 텍스트 렌더", async () => {
+    setAuth(true);
+    const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
+
+    // 초기 GET (빈 목록 — 폼 노출용)
+    fetchMock.mockResolvedValueOnce(makeGetResponse([]));
+
+    render(<ReviewSection productId="p1" />);
+
+    // 폼 노출 대기
+    await waitFor(() => {
+      expect(
+        screen.queryByPlaceholderText("상품에 대한 솔직한 리뷰를 남겨 주세요."),
+      ).not.toBeNull();
+    });
+
+    // 파일 input 찾기
+    const fileInput = screen.getByLabelText("사진 (선택, 최대 3장)");
+    const file1 = new File(["img1"], "photo1.jpg", { type: "image/jpeg" });
+    const file2 = new File(["img2"], "photo2.jpg", { type: "image/jpeg" });
+
+    // 파일 2개 change 이벤트
+    fireEvent.change(fileInput, { target: { files: [file1, file2] } });
+
+    // "2장 선택됨" 텍스트 렌더 확인
+    expect(screen.queryByText("2장 선택됨")).not.toBeNull();
   });
 });
