@@ -181,6 +181,7 @@ model Review {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   rating    Int // 개별 별점 1~5 (서버 검증). Product.rating(Float 평균)과 다름
   comment   String? // optional — 별점만 남기는 리뷰 허용
+  imageUrls String[] @default([]) // 첨부 이미지 Supabase Storage public URL 배열(최대 3장) — OOTDPost.imageUrls 패턴
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

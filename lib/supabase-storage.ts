@@ -129,3 +129,23 @@ export function uploadProductImage(
 export function removeProductImagesByUrl(publicUrls: string[]): Promise<void> {
   return removeImagesByUrl(PRODUCT_BUCKET, publicUrls);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Review 래퍼 — review-images 버킷 바인딩
+// ─────────────────────────────────────────────────────────────────────────────
+
+const REVIEW_BUCKET = "review-images";
+
+/** 리뷰 이미지 1장을 Storage에 업로드하고 path + public URL 반환 */
+export function uploadReviewImage(
+  userId: string,
+  file: ImageFile
+): Promise<{ path: string; publicUrl: string }> {
+  // path 규칙: ${userId}/${uuid}.${ext}
+  return uploadImage(REVIEW_BUCKET, userId, file);
+}
+
+/** 리뷰 public URL 배열에 해당하는 Storage 파일 삭제(수정 시 차집합·삭제 시 전량) */
+export function removeReviewImagesByUrl(publicUrls: string[]): Promise<void> {
+  return removeImagesByUrl(REVIEW_BUCKET, publicUrls);
+}

@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { Star, Trash2 } from "lucide-react";
+import { Star, Trash2, Pencil, X, Plus } from "lucide-react";
+import Image from "next/image";
 import { StarRating } from "@/components/product/StarRating";
 import type { Review, ReviewListResponse } from "@/types";
+
+const MAX_IMAGES = 3;
+const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
+const MAX_SIZE = 5 * 1024 * 1024;
 
 interface ReviewSectionProps {
   productId: string;
@@ -19,12 +24,58 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
   const [loading, setLoading] = useState(true);
 
   // 폼 상태
+  const [editing, setEditing] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [myComment, setMyComment] = useState("");
+  // 유지할 기존 이미지 URL (수정 시 선택적 제거)
+  const [keepUrls, setKeepUrls] = useState<string[]>([]);
+  // 새로 추가할 파일
+  const [files, setFiles] = useState<File[]>([]);
+  // 새 파일 objectURL 미리보기
+  const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // 숨김 파일 input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // files 변경 시 objectURL 생성/해제
+  useEffect(() => {
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [files]);
+
+  // "+" 타일 클릭 → 파일 선택 핸들러
+  const onAddFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormError(null);
+    const picked = Array.from(e.target.files ?? []);
+    // 총 개수 검증
+    if (keepUrls.length + files.length + picked.length > MAX_IMAGES) {
+      setFormError(`사진은 최대 ${MAX_IMAGES}장`);
+      e.target.value = "";
+      return;
+    }
+    for (const f of picked) {
+      if (!ALLOWED.includes(f.type)) {
+        setFormError("jpg/png/webp만 올릴 수 있습니다.");
+        e.target.value = "";
+        return;
+      }
+      if (f.size > MAX_SIZE) {
+        setFormError("각 사진은 5MB 이하여야 합니다.");
+        e.target.value = "";
+        return;
+      }
+    }
+    setFiles((prev) => [...prev, ...picked]);
+    // 같은 파일 재선택 허용
+    e.target.value = "";
+  };
 
   const loadReviews = useCallback(async () => {
     setLoading(true);
@@ -34,23 +85,14 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       if (json.success && json.data) {
         const listData = json.data as ReviewListResponse;
         setData(listData);
-        // 본인 리뷰가 있으면 폼에 prefill
-        if (isLoggedIn && session?.user?.id) {
-          const mine = listData.reviews.find(
-            (r) => r.userId === session.user.id,
-          );
-          if (mine) {
-            setMyRating(mine.rating);
-            setMyComment(mine.comment ?? "");
-          }
-        }
+        // 자동 prefill 제거 — 수정 클릭 시 명시적 세팅으로 대체
       }
     } catch {
       // 로드 실패는 조용히 처리 — 빈 상태로 렌더
     } finally {
       setLoading(false);
     }
-  }, [productId, isLoggedIn, session?.user?.id]);
+  }, [productId]);
 
   useEffect(() => {
     loadReviews();
@@ -74,10 +116,17 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
 
     setSubmitting(true);
     try {
+      const fd = new FormData();
+      fd.append("rating", String(myRating));
+      if (myComment) fd.append("comment", myComment);
+      // 유지할 기존 URL
+      keepUrls.forEach((u) => fd.append("keepImageUrls", u));
+      // 새 파일
+      files.forEach((f) => fd.append("images", f));
+
       const res = await fetch(`/api/products/${productId}/reviews`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating: myRating, comment: myComment }),
+        body: fd,
       });
       const json = await res.json();
 
@@ -98,7 +147,10 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
         return;
       }
 
+      setFiles([]);
+      setKeepUrls([]);
       setNotice(myReview ? "리뷰가 수정되었습니다." : "리뷰가 등록되었습니다.");
+      setEditing(false);
       await loadReviews();
     } catch {
       setFormError("네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
@@ -125,6 +177,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
 
       setMyRating(0);
       setMyComment("");
+      setEditing(false);
       setNotice("리뷰가 삭제되었습니다.");
       await loadReviews();
     } catch {
@@ -133,6 +186,9 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       setDeleting(false);
     }
   };
+
+  // 총 이미지 수 (기존 유지 + 새 파일)
+  const totalImages = keepUrls.length + files.length;
 
   return (
     <div className="pt-4 space-y-6">
@@ -158,78 +214,199 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
         )}
       </div>
 
-      {/* 작성/수정 폼 — 로그인 시 노출, 비로그인 시 안내 */}
+      {/* 로그인 상태 — 트리거 버튼 또는 작성/수정 폼 */}
       {isLoggedIn ? (
-        <form
-          onSubmit={handleSubmit}
-          className="bg-zinc-900/30 border border-white/10 rounded-xl p-5 space-y-4"
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-zinc-300">
-              {myReview ? "내 리뷰 수정" : "리뷰 작성"}
-            </p>
-            {myReview && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
-                aria-label="리뷰 삭제"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                {deleting ? "삭제 중..." : "삭제"}
-              </button>
-            )}
-          </div>
-
-          {/* 별점 선택 */}
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-400">별점 *</label>
-            <StarRating
-              value={myRating}
-              onChange={setMyRating}
-            />
-          </div>
-
-          {/* 코멘트 */}
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-400" htmlFor="review-comment">
-              코멘트 (선택, 최대 2000자)
-            </label>
-            <textarea
-              id="review-comment"
-              value={myComment}
-              onChange={(e) => setMyComment(e.target.value)}
-              maxLength={2000}
-              rows={3}
-              placeholder="상품에 대한 솔직한 리뷰를 남겨 주세요."
-              className="w-full bg-zinc-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-brand-neon/50 transition-colors"
-            />
-            <p className="text-right text-xs text-zinc-600">
-              {myComment.length}/2000
-            </p>
-          </div>
-
-          {/* 오류/알림 메시지 */}
-          {formError && (
-            <p className="text-sm text-red-400">{formError}</p>
+        <>
+          {/* 트리거: 폼이 닫혀 있을 때만 노출 */}
+          {!editing && (
+            <div>
+              {!myReview ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMyRating(0);
+                    setMyComment("");
+                    setKeepUrls([]);
+                    setFiles([]);
+                    setFormError(null);
+                    setEditing(true);
+                  }}
+                  className="px-5 py-2 rounded-full bg-brand-neon text-black text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  리뷰 작성하기
+                </button>
+              ) : (
+                <p className="text-xs text-zinc-500">내 리뷰가 등록되어 있습니다. 목록에서 수정·삭제할 수 있습니다.</p>
+              )}
+            </div>
           )}
-          {notice && (
+
+          {/* 성공 알림 — 폼 닫힌 후에도 표시 */}
+          {notice && !editing && (
             <p className="text-sm text-brand-neon">{notice}</p>
           )}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-6 py-2 rounded-full bg-brand-neon text-black text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            {submitting
-              ? "제출 중..."
-              : myReview
-              ? "리뷰 수정"
-              : "리뷰 등록"}
-          </button>
-        </form>
+          {/* 작성/수정 폼 — editing 상태일 때만 렌더 */}
+          {editing && (
+            <form
+              onSubmit={handleSubmit}
+              className="bg-zinc-900/30 border border-white/10 rounded-xl p-5 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-zinc-300">
+                  {myReview ? "내 리뷰 수정" : "리뷰 작성"}
+                </p>
+              </div>
+
+              {/* 별점 선택 */}
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-400">별점 *</label>
+                <StarRating
+                  value={myRating}
+                  onChange={setMyRating}
+                />
+              </div>
+
+              {/* 코멘트 */}
+              <div className="space-y-1">
+                <label className="text-xs text-zinc-400" htmlFor="review-comment">
+                  코멘트 (선택, 최대 2000자)
+                </label>
+                <textarea
+                  id="review-comment"
+                  value={myComment}
+                  onChange={(e) => setMyComment(e.target.value)}
+                  maxLength={2000}
+                  rows={3}
+                  placeholder="상품에 대한 솔직한 리뷰를 남겨 주세요."
+                  className="w-full bg-zinc-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-brand-neon/50 transition-colors"
+                />
+                <p className="text-right text-xs text-zinc-600">
+                  {myComment.length}/2000
+                </p>
+              </div>
+
+              {/* 사진 갤러리 편집기 */}
+              <div className="space-y-2">
+                <p className="text-xs text-zinc-400">사진 (선택, 최대 3장)</p>
+                <div className="flex flex-wrap gap-2">
+                  {/* 기존 이미지 썸네일 (hover X → 제거) */}
+                  {keepUrls.map((url) => (
+                    <div key={url} className="relative group">
+                      <Image
+                        src={url}
+                        width={80}
+                        height={80}
+                        alt="리뷰 이미지"
+                        className="rounded-lg object-cover w-20 h-20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setKeepUrls((prev) => prev.filter((u) => u !== url))
+                        }
+                        className="absolute -top-1.5 -right-1.5 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="사진 삭제"
+                      >
+                        <X className="w-3.5 h-3.5 text-white" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* 새 파일 objectURL 미리보기 (hover X → 제거) */}
+                  {files.map((_, idx) => (
+                    <div key={idx} className="relative group">
+                      {/* objectURL은 next/image에서 최적화 불가 → plain img 사용 */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={previews[idx]}
+                        alt="새 리뷰 이미지 미리보기"
+                        className="rounded-lg object-cover w-20 h-20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFiles((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        className="absolute -top-1.5 -right-1.5 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="사진 삭제"
+                      >
+                        <X className="w-3.5 h-3.5 text-white" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* "+" 추가 타일 — 총 3장 미만일 때 표시 */}
+                  {totalImages < MAX_IMAGES && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-20 h-20 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center text-zinc-500 hover:border-brand-neon hover:text-brand-neon transition-colors"
+                      aria-label="사진 추가"
+                    >
+                      <Plus className="w-6 h-6" />
+                    </button>
+                  )}
+                </div>
+
+                {/* 숨김 파일 input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  aria-label="사진 파일 선택"
+                  onChange={onAddFiles}
+                />
+              </div>
+
+              {/* 오류/알림 메시지 */}
+              {formError && (
+                <p className="text-sm text-red-400">{formError}</p>
+              )}
+              {notice && (
+                <p className="text-sm text-brand-neon">{notice}</p>
+              )}
+
+              {/* 버튼 영역 */}
+              <div className="flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-6 py-2 rounded-full bg-brand-neon text-black text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {submitting
+                    ? "제출 중..."
+                    : myReview
+                    ? "리뷰 수정"
+                    : "리뷰 등록"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // 수정 모드면 원래 값으로 원복, 작성 모드면 초기화
+                    if (myReview) {
+                      setMyRating(myReview.rating);
+                      setMyComment(myReview.comment ?? "");
+                      setKeepUrls(myReview.imageUrls ?? []);
+                    } else {
+                      setMyRating(0);
+                      setMyComment("");
+                      setKeepUrls([]);
+                    }
+                    setFiles([]);
+                    setFormError(null);
+                    setEditing(false);
+                  }}
+                  className="px-5 py-2 rounded-full border border-white/15 text-zinc-400 text-sm hover:text-zinc-200 hover:border-white/30 transition-colors"
+                >
+                  취소
+                </button>
+              </div>
+            </form>
+          )}
+        </>
       ) : (
         status !== "loading" && (
           <div className="bg-zinc-900/20 border border-white/5 rounded-xl px-5 py-4 text-sm text-zinc-400">
@@ -271,15 +448,62 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                       </span>
                     )}
                 </div>
-                <span className="text-xs text-zinc-600">
-                  {new Date(review.createdAt).toLocaleDateString("ko-KR")}
-                </span>
+                <div className="flex items-center gap-2">
+                  {/* 본인 리뷰 — 수정/삭제 버튼 */}
+                  {isLoggedIn && session?.user?.id === review.userId && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMyRating(review.rating);
+                          setMyComment(review.comment ?? "");
+                          setKeepUrls(review.imageUrls ?? []);
+                          setFiles([]);
+                          setFormError(null);
+                          setEditing(true);
+                        }}
+                        className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                        aria-label="리뷰 수정"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                        aria-label="리뷰 삭제"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        {deleting ? "삭제 중..." : "삭제"}
+                      </button>
+                    </>
+                  )}
+                  <span className="text-xs text-zinc-600">
+                    {new Date(review.createdAt).toLocaleDateString("ko-KR")}
+                  </span>
+                </div>
               </div>
               <StarRating value={review.rating} readonly size="sm" />
               {review.comment && (
                 <p className="text-sm text-zinc-400 whitespace-pre-wrap">
                   {review.comment}
                 </p>
+              )}
+              {review.imageUrls?.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {review.imageUrls.map((url) => (
+                    <Image
+                      key={url}
+                      src={url}
+                      width={80}
+                      height={80}
+                      alt="리뷰 이미지"
+                      className="rounded-lg object-cover"
+                    />
+                  ))}
+                </div>
               )}
             </li>
           ))}

@@ -5,6 +5,7 @@
  * - 케이스 ③: 비로그인 → 작성 폼 미노출 + 로그인 안내
  * - 케이스 ④: 로그인 → 폼 노출, 별점 클릭 + textarea 입력 + 제출 → POST fetch 호출
  * - 케이스 ⑤: POST 409 → 한글 안내 메시지 표시
+ * - 케이스 ⑥: "+" 타일 클릭으로 파일 선택 → 미리보기 img 렌더
  *
  * @testing-library/jest-dom 미설치 환경이므로 순수 vitest expect 사용
  */
@@ -21,6 +22,15 @@ vi.mock("next-auth/react", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn() })),
   usePathname: vi.fn(() => "/"),
+}));
+
+// --- next/image mock (리뷰 이미지 썸네일 렌더 대비) ---
+vi.mock("next/image", () => ({
+  default: (props: { src: string; alt: string; [key: string]: unknown }) => {
+    const { src, alt } = props;
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} />;
+  },
 }));
 
 import { useSession } from "next-auth/react";
@@ -97,6 +107,9 @@ beforeEach(() => {
   vi.resetAllMocks();
   global.fetch = vi.fn();
   window.confirm = vi.fn(() => true);
+  // objectURL mock — jsdom에서 미지원
+  URL.createObjectURL = vi.fn(() => "blob:mock-url");
+  URL.revokeObjectURL = vi.fn();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -161,8 +174,8 @@ describe("ReviewSection", () => {
     expect(loginLink).not.toBeNull();
   });
 
-  // 케이스 ④: 로그인 → 폼 노출 + 별점 클릭 + 제출 → POST fetch 호출
-  it("로그인 → 폼 노출, 별점 4점 + 코멘트 + 제출 → POST fetch 호출", async () => {
+  // 케이스 ④: 로그인 → "리뷰 작성하기" 버튼으로 폼 열기 + 별점 클릭 + 제출 → POST fetch 호출
+  it("로그인 → 리뷰 작성하기 클릭으로 폼 열기, 별점 4점 + 코멘트 + 제출 → POST fetch 호출", async () => {
     setAuth(true);
     const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
 
@@ -188,12 +201,16 @@ describe("ReviewSection", () => {
 
     render(<ReviewSection productId="p1" />);
 
-    // 로그인 상태 → textarea 노출 대기
+    // "리뷰 작성하기" 버튼 대기 후 클릭 → 폼 열기
     await waitFor(() => {
-      expect(
-        screen.queryByPlaceholderText("상품에 대한 솔직한 리뷰를 남겨 주세요."),
-      ).not.toBeNull();
+      expect(screen.queryByRole("button", { name: "리뷰 작성하기" })).not.toBeNull();
     });
+    fireEvent.click(screen.getByRole("button", { name: "리뷰 작성하기" }));
+
+    // 폼(textarea) 노출 확인
+    expect(
+      screen.queryByPlaceholderText("상품에 대한 솔직한 리뷰를 남겨 주세요."),
+    ).not.toBeNull();
 
     // 별점 4점 클릭 (StarRating interactive: aria-label="별점 4점")
     const star4 = screen.getByRole("button", { name: "별점 4점" });
@@ -209,14 +226,13 @@ describe("ReviewSection", () => {
     const submitBtn = screen.getByRole("button", { name: "리뷰 등록" });
     fireEvent.click(submitBtn);
 
-    // POST fetch 호출 검증
+    // POST fetch 호출 검증 — FormData 전송(headers 없음)
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/products/p1/reviews",
         expect.objectContaining({
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rating: 4, comment: "테스트 코멘트" }),
+          body: expect.any(FormData),
         }),
       );
     });
@@ -227,7 +243,7 @@ describe("ReviewSection", () => {
     setAuth(true);
     const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
 
-    // 초기 GET (빈 목록 — 폼 노출용)
+    // 초기 GET (빈 목록 — 트리거 버튼 노출용)
     fetchMock.mockResolvedValueOnce(makeGetResponse([]));
     // POST → 409 응답
     fetchMock.mockResolvedValueOnce({
@@ -238,12 +254,11 @@ describe("ReviewSection", () => {
 
     render(<ReviewSection productId="p1" />);
 
-    // 폼 노출 대기
+    // "리뷰 작성하기" 버튼 대기 후 클릭 → 폼 열기
     await waitFor(() => {
-      expect(
-        screen.queryByPlaceholderText("상품에 대한 솔직한 리뷰를 남겨 주세요."),
-      ).not.toBeNull();
+      expect(screen.queryByRole("button", { name: "리뷰 작성하기" })).not.toBeNull();
     });
+    fireEvent.click(screen.getByRole("button", { name: "리뷰 작성하기" }));
 
     // 별점 4점 클릭
     const star4 = screen.getByRole("button", { name: "별점 4점" });
@@ -259,5 +274,37 @@ describe("ReviewSection", () => {
         screen.queryByText("이미 리뷰가 처리되었습니다. 새로고침 후 다시 시도해 주세요."),
       ).not.toBeNull();
     });
+  });
+
+  // 케이스 ⑥: "+" 타일로 파일 선택 → objectURL 미리보기 img 렌더
+  it("사진 추가 타일에 File 1개 change → 미리보기 img 렌더", async () => {
+    setAuth(true);
+    const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
+
+    // 초기 GET (빈 목록 — 트리거 버튼 노출용)
+    fetchMock.mockResolvedValueOnce(makeGetResponse([]));
+
+    render(<ReviewSection productId="p1" />);
+
+    // "리뷰 작성하기" 버튼 대기 후 클릭 → 폼 열기
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "리뷰 작성하기" })).not.toBeNull();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "리뷰 작성하기" }));
+
+    // 숨김 파일 input 찾기 (aria-label로 접근)
+    const fileInput = screen.getByLabelText("사진 파일 선택");
+    const file1 = new File(["img1"], "photo1.jpg", { type: "image/jpeg" });
+
+    // 파일 1개 change 이벤트
+    fireEvent.change(fileInput, { target: { files: [file1] } });
+
+    // createObjectURL이 호출되어 미리보기 img가 렌더되는지 확인
+    await waitFor(() => {
+      expect(URL.createObjectURL).toHaveBeenCalled();
+    });
+    // blob:mock-url을 src로 가진 img 렌더 확인
+    const previewImg = screen.queryByAltText("새 리뷰 이미지 미리보기");
+    expect(previewImg).not.toBeNull();
   });
 });
