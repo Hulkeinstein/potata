@@ -211,8 +211,10 @@ async function main() {
       description: product.description ?? null,
       sizes: product.sizes ?? [],
       colors: product.colors ?? [],
-      rating: product.rating ?? null,
-      reviewCount: product.reviewCount ?? null,
+      // 가짜 평점/리뷰수 시드 제거 — 평점은 실제 리뷰 작성 시 재집계(recomputeProductRating)로만 채워짐.
+      // 상품 데이터 배열의 rating/reviewCount 값은 더 이상 시드하지 않는다(dummy review 제거).
+      rating: null,
+      reviewCount: 0,
       isNew: product.isNew ?? false,
       isBest: product.isBest ?? false,
       isHot: product.isHot ?? false,
