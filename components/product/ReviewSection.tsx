@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { Star, Trash2, Pencil } from "lucide-react";
+import { Star, Trash2, Pencil, X, Plus } from "lucide-react";
 import Image from "next/image";
 import { StarRating } from "@/components/product/StarRating";
 import type { Review, ReviewListResponse } from "@/types";
@@ -27,30 +27,54 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
   const [editing, setEditing] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [myComment, setMyComment] = useState("");
+  // 유지할 기존 이미지 URL (수정 시 선택적 제거)
+  const [keepUrls, setKeepUrls] = useState<string[]>([]);
+  // 새로 추가할 파일
   const [files, setFiles] = useState<File[]>([]);
+  // 새 파일 objectURL 미리보기
+  const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 숨김 파일 input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // files 변경 시 objectURL 생성/해제
+  useEffect(() => {
+    const urls = files.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [files]);
+
+  // "+" 타일 클릭 → 파일 선택 핸들러
+  const onAddFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormError(null);
     const picked = Array.from(e.target.files ?? []);
-    if (picked.length > MAX_IMAGES) {
+    // 총 개수 검증
+    if (keepUrls.length + files.length + picked.length > MAX_IMAGES) {
       setFormError(`사진은 최대 ${MAX_IMAGES}장`);
+      e.target.value = "";
       return;
     }
     for (const f of picked) {
       if (!ALLOWED.includes(f.type)) {
         setFormError("jpg/png/webp만 올릴 수 있습니다.");
+        e.target.value = "";
         return;
       }
       if (f.size > MAX_SIZE) {
         setFormError("각 사진은 5MB 이하여야 합니다.");
+        e.target.value = "";
         return;
       }
     }
-    setFiles(picked);
+    setFiles((prev) => [...prev, ...picked]);
+    // 같은 파일 재선택 허용
+    e.target.value = "";
   };
 
   const loadReviews = useCallback(async () => {
@@ -95,6 +119,9 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       const fd = new FormData();
       fd.append("rating", String(myRating));
       if (myComment) fd.append("comment", myComment);
+      // 유지할 기존 URL
+      keepUrls.forEach((u) => fd.append("keepImageUrls", u));
+      // 새 파일
       files.forEach((f) => fd.append("images", f));
 
       const res = await fetch(`/api/products/${productId}/reviews`, {
@@ -121,6 +148,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       }
 
       setFiles([]);
+      setKeepUrls([]);
       setNotice(myReview ? "리뷰가 수정되었습니다." : "리뷰가 등록되었습니다.");
       setEditing(false);
       await loadReviews();
@@ -159,6 +187,9 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
     }
   };
 
+  // 총 이미지 수 (기존 유지 + 새 파일)
+  const totalImages = keepUrls.length + files.length;
+
   return (
     <div className="pt-4 space-y-6">
       {/* 헤더 — 평균 별점 + 리뷰 수 */}
@@ -195,6 +226,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                   onClick={() => {
                     setMyRating(0);
                     setMyComment("");
+                    setKeepUrls([]);
                     setFiles([]);
                     setFormError(null);
                     setEditing(true);
@@ -226,26 +258,6 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                 </p>
               </div>
 
-              {/* 수정 모드: 기존 첨부 이미지 표시 (read-only 썸네일) */}
-              {myReview && myReview.imageUrls && myReview.imageUrls.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-xs text-zinc-400">현재 첨부 사진</p>
-                  <div className="flex flex-wrap gap-2">
-                    {myReview.imageUrls.map((url) => (
-                      <Image
-                        key={url}
-                        src={url}
-                        width={64}
-                        height={64}
-                        alt="기존 리뷰 이미지"
-                        className="rounded-lg object-cover opacity-80"
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-zinc-500">새 사진을 선택하면 기존 사진이 교체됩니다.</p>
-                </div>
-              )}
-
               {/* 별점 선택 */}
               <div className="space-y-1">
                 <label className="text-xs text-zinc-400">별점 *</label>
@@ -274,22 +286,79 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                 </p>
               </div>
 
-              {/* 사진 첨부 (선택) */}
-              <div className="space-y-1">
-                <label className="text-xs text-zinc-400" htmlFor="review-images">
-                  사진 (선택, 최대 3장)
-                </label>
+              {/* 사진 갤러리 편집기 */}
+              <div className="space-y-2">
+                <p className="text-xs text-zinc-400">사진 (선택, 최대 3장)</p>
+                <div className="flex flex-wrap gap-2">
+                  {/* 기존 이미지 썸네일 (hover X → 제거) */}
+                  {keepUrls.map((url) => (
+                    <div key={url} className="relative group">
+                      <Image
+                        src={url}
+                        width={80}
+                        height={80}
+                        alt="리뷰 이미지"
+                        className="rounded-lg object-cover w-20 h-20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setKeepUrls((prev) => prev.filter((u) => u !== url))
+                        }
+                        className="absolute -top-1.5 -right-1.5 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="사진 삭제"
+                      >
+                        <X className="w-3.5 h-3.5 text-white" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* 새 파일 objectURL 미리보기 (hover X → 제거) */}
+                  {files.map((_, idx) => (
+                    <div key={idx} className="relative group">
+                      {/* objectURL은 next/image에서 최적화 불가 → plain img 사용 */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={previews[idx]}
+                        alt="새 리뷰 이미지 미리보기"
+                        className="rounded-lg object-cover w-20 h-20"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFiles((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        className="absolute -top-1.5 -right-1.5 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="사진 삭제"
+                      >
+                        <X className="w-3.5 h-3.5 text-white" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* "+" 추가 타일 — 총 3장 미만일 때 표시 */}
+                  {totalImages < MAX_IMAGES && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-20 h-20 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center text-zinc-500 hover:border-brand-neon hover:text-brand-neon transition-colors"
+                      aria-label="사진 추가"
+                    >
+                      <Plus className="w-6 h-6" />
+                    </button>
+                  )}
+                </div>
+
+                {/* 숨김 파일 input */}
                 <input
-                  id="review-images"
+                  ref={fileInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   multiple
-                  onChange={onFileChange}
-                  className="mt-1 block w-full text-sm text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-white file:text-black file:font-bold file:text-xs hover:file:bg-gray-200"
+                  className="hidden"
+                  aria-label="사진 파일 선택"
+                  onChange={onAddFiles}
                 />
-                {files.length > 0 && (
-                  <p className="text-xs text-brand-neon">{files.length}장 선택됨</p>
-                )}
               </div>
 
               {/* 오류/알림 메시지 */}
@@ -320,9 +389,11 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                     if (myReview) {
                       setMyRating(myReview.rating);
                       setMyComment(myReview.comment ?? "");
+                      setKeepUrls(myReview.imageUrls ?? []);
                     } else {
                       setMyRating(0);
                       setMyComment("");
+                      setKeepUrls([]);
                     }
                     setFiles([]);
                     setFormError(null);
@@ -386,6 +457,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                         onClick={() => {
                           setMyRating(review.rating);
                           setMyComment(review.comment ?? "");
+                          setKeepUrls(review.imageUrls ?? []);
                           setFiles([]);
                           setFormError(null);
                           setEditing(true);

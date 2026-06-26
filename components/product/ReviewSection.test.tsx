@@ -5,6 +5,7 @@
  * - 케이스 ③: 비로그인 → 작성 폼 미노출 + 로그인 안내
  * - 케이스 ④: 로그인 → 폼 노출, 별점 클릭 + textarea 입력 + 제출 → POST fetch 호출
  * - 케이스 ⑤: POST 409 → 한글 안내 메시지 표시
+ * - 케이스 ⑥: "+" 타일 클릭으로 파일 선택 → 미리보기 img 렌더
  *
  * @testing-library/jest-dom 미설치 환경이므로 순수 vitest expect 사용
  */
@@ -106,6 +107,9 @@ beforeEach(() => {
   vi.resetAllMocks();
   global.fetch = vi.fn();
   window.confirm = vi.fn(() => true);
+  // objectURL mock — jsdom에서 미지원
+  URL.createObjectURL = vi.fn(() => "blob:mock-url");
+  URL.revokeObjectURL = vi.fn();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -272,8 +276,8 @@ describe("ReviewSection", () => {
     });
   });
 
-  // 케이스 ⑥: 파일 input에 File 2개 change → "2장 선택됨" 텍스트 렌더
-  it("파일 input에 File 2개 선택 → '2장 선택됨' 텍스트 렌더", async () => {
+  // 케이스 ⑥: "+" 타일로 파일 선택 → objectURL 미리보기 img 렌더
+  it("사진 추가 타일에 File 1개 change → 미리보기 img 렌더", async () => {
     setAuth(true);
     const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
 
@@ -288,15 +292,19 @@ describe("ReviewSection", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "리뷰 작성하기" }));
 
-    // 파일 input 찾기
-    const fileInput = screen.getByLabelText("사진 (선택, 최대 3장)");
+    // 숨김 파일 input 찾기 (aria-label로 접근)
+    const fileInput = screen.getByLabelText("사진 파일 선택");
     const file1 = new File(["img1"], "photo1.jpg", { type: "image/jpeg" });
-    const file2 = new File(["img2"], "photo2.jpg", { type: "image/jpeg" });
 
-    // 파일 2개 change 이벤트
-    fireEvent.change(fileInput, { target: { files: [file1, file2] } });
+    // 파일 1개 change 이벤트
+    fireEvent.change(fileInput, { target: { files: [file1] } });
 
-    // "2장 선택됨" 텍스트 렌더 확인
-    expect(screen.queryByText("2장 선택됨")).not.toBeNull();
+    // createObjectURL이 호출되어 미리보기 img가 렌더되는지 확인
+    await waitFor(() => {
+      expect(URL.createObjectURL).toHaveBeenCalled();
+    });
+    // blob:mock-url을 src로 가진 img 렌더 확인
+    const previewImg = screen.queryByAltText("새 리뷰 이미지 미리보기");
+    expect(previewImg).not.toBeNull();
   });
 });

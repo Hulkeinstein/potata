@@ -83,7 +83,7 @@ export async function GET(
 
 // POST: 리뷰 작성·수정(upsert) — 로그인 구매자 전용 (admin 우회 가능)
 // 보안 게이트: auth → 파싱 → rating/comment 검증 → 상품 존재 → (admin OR 구매자) 게이트
-// 이미지: multipart 파싱 → 크기/magic-byte 검증 → 업로드(트랜잭션 밖) → $transaction(imageUrls 포함) → 차집합 삭제
+// 이미지: keepImageUrls(유지 기존 URL) + images(새 파일) → 보안 필터(prevUrls∩keep) → 업로드(트랜잭션 밖) → $transaction(finalImageUrls) → 제거분 삭제
 // $transaction: review.upsert + recomputeProductRating (원자적 집계)
 export async function POST(
   request: NextRequest,
@@ -119,6 +119,10 @@ export async function POST(
     const files = form
       .getAll("images")
       .filter((f): f is File => f instanceof File);
+    // keepImageUrls: 클라가 "유지할 기존 URL" 목록으로 전송 — 서버에서 본인 것만 필터
+    const keepImageUrls = form
+      .getAll("keepImageUrls")
+      .filter((v): v is string => typeof v === "string");
 
     // 4. rating 검증(정수 1~5)
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -164,8 +168,8 @@ export async function POST(
       );
     }
 
-    // 7. 이미지 검증 — 장수·크기·magic-byte(sniff)
-    if (files.length > MAX_REVIEW_IMAGES) {
+    // 7. 이미지 개수 검증 — kept(유지) + 신규 파일 총합 ≤ MAX_REVIEW_IMAGES
+    if (keepImageUrls.length + files.length > MAX_REVIEW_IMAGES) {
       return NextResponse.json(
         { success: false, error: `이미지는 최대 ${MAX_REVIEW_IMAGES}장` },
         { status: 400 },
@@ -191,11 +195,16 @@ export async function POST(
       validated.push({ file: f, buf, ext });
     }
 
-    // 8. 기존 imageUrls 조회 — 차집합(이전∖신규) 계산용
+    // 8. 기존 imageUrls 조회 — kept 보안 필터 + 차집합 계산용
     const prev = await prisma.review.findUnique({
       where: { userId_productId: { userId: session.user.id, productId } },
       select: { imageUrls: true },
     });
+    const prevUrls = prev?.imageUrls ?? [];
+
+    // 8-b. kept(보안 필터) — 클라가 보낸 keepImageUrls 중 본인 기존 것만 허용
+    // 임의 URL 주입 차단: prevUrls ∩ keepImageUrls 만 신뢰
+    const kept = [...new Set(keepImageUrls.filter((u) => prevUrls.includes(u)))];
 
     // 9. 이미지 업로드 — $transaction 밖 / 부분 실패 시 업로드 완료분 보상 삭제
     const uploaded: string[] = [];
@@ -218,14 +227,14 @@ export async function POST(
     const normalizedComment =
       comment && comment.trim() !== "" ? comment.trim() : null;
 
-    // 10-b. 최종 imageUrls 결정 — 새 파일 없으면 기존 유지(수정 UX: 사진 안 바꾸면 기존 보존)
-    // 수정 폼은 File 객체를 prefill 못함(브라우저 제약) → 0장 전송 = "변경 없음"
-    // 신규(prev null) + 0장 → [], 신규 + N장 → uploaded, 수정 + 0장 → prev 유지, 수정 + N장 → uploaded(교체)
-    const hasNewImages = validated.length > 0;
-    const finalImageUrls = hasNewImages ? uploaded : (prev?.imageUrls ?? []);
+    // 10-b. 최종 imageUrls 결정 — 유지분(kept) + 신규 업로드분(uploaded)
+    // 신규 리뷰: prevUrls=[] → kept=[] → finalImageUrls=uploaded
+    // 수정(keep 전체): kept=prevUrls → finalImageUrls=prevUrls(기존 유지)
+    // 수정(일부 제거): kept=부분집합 → removed=prevUrls∖kept → Storage 삭제
+    const finalImageUrls = [...kept, ...uploaded];
 
     // 11. $transaction: review upsert(imageUrls 포함) + Product 집계 재계산(원자적)
-    // DB 실패 시 업로드된 이미지 보상 삭제 후 re-throw
+    // DB 실패 시 신규 업로드분(uploaded)만 보상 삭제 — 기존 kept는 건드리지 않음
     let review;
     try {
       review = await prisma.$transaction(async (tx) => {
@@ -250,15 +259,15 @@ export async function POST(
         return r;
       });
     } catch (e) {
+      // DB 실패 보상: 신규 업로드분만 삭제(kept는 기존 것 — Storage에서 지우면 안 됨)
       await removeReviewImagesByUrl(uploaded).catch(() => {});
       throw e;
     }
 
-    // 12. 차집합 삭제 — 새 이미지가 있을 때만(0장이면 기존 유지이므로 삭제 불필요)
-    // hasNewImages일 때: 이전 이미지 중 신규 목록에 없는 것만 정리(upsert 대체분)
-    const removed = hasNewImages
-      ? (prev?.imageUrls ?? []).filter((u) => !uploaded.includes(u))
-      : [];
+    // 12. 제거분 삭제 — DB 커밋 후(트랜잭션 밖) 실행
+    // removed = 기존∖kept = 사용자가 명시적으로 제거한 이전 이미지
+    // DB 커밋 전 삭제 금지: 롤백 시 기존 이미지 유실 방지
+    const removed = prevUrls.filter((u) => !kept.includes(u));
     await removeReviewImagesByUrl(removed).catch(() => {});
 
     // 13. 캐시 무효화 — 상품 상세 페이지 + 카탈로그 태그

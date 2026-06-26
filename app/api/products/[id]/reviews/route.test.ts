@@ -106,10 +106,12 @@ const makeParams = (id = "p1") =>
 function postReq(
   fields: Record<string, string>,
   files: File[] = [],
+  keepImageUrls: string[] = [],
 ): NextRequest {
   const fd = new FormData();
   for (const [k, v] of Object.entries(fields)) fd.append(k, v);
   files.forEach((f) => fd.append("images", f));
+  keepImageUrls.forEach((u) => fd.append("keepImageUrls", u));
   return {
     url: "http://localhost/api/products/p1/reviews",
     formData: async () => fd,
@@ -479,8 +481,8 @@ describe("POST /api/products/[id]/reviews", () => {
     expect(removeMock).toHaveBeenCalledWith(["https://x/old.jpg"]);
   });
 
-  // 신규 (k): 수정 + 새 이미지 0장 → 기존 imageUrls 보존, removeMock 미호출
-  it("(k) 수정 + 새 이미지 0장 → 기존 imageUrls 보존, removeMock 미호출", async () => {
+  // 신규 (k): 수정 + keepImageUrls=기존 전체 + 새 파일 0 → 기존 imageUrls 보존, removeMock 미호출
+  it("(k) 수정 + keepImageUrls=기존 전체 + 새 파일 0 → 기존 imageUrls 보존, removeMock 미호출", async () => {
     authMock.mockResolvedValue({ user: { id: "u1", email: "a@b.com" } });
     isAdminMock.mockReturnValue(false);
     productFindUniqueMock.mockResolvedValue({ id: "p1" });
@@ -494,16 +496,17 @@ describe("POST /api/products/[id]/reviews", () => {
     recomputeProductRatingMock.mockResolvedValue(undefined);
 
     const res = await POST(
-      postReq({ rating: "4", comment: "no new images" }, []), // 이미지 0장
+      // keepImageUrls=기존 전체 전송 → kept=["https://x/keep.jpg"], removed=[]
+      postReq({ rating: "4", comment: "no new images" }, [], ["https://x/keep.jpg"]),
       { params: makeParams() },
     );
     const json = await res.json();
 
     expect(res.status).toBe(201);
     expect(json.success).toBe(true);
-    // 업로드 미호출 (0장)
+    // 업로드 미호출 (새 파일 0장)
     expect(uploadMock).not.toHaveBeenCalled();
-    // removeMock 미호출 — 기존 이미지 보존
+    // removeMock 미호출 — kept=기존 전체이므로 removed=[]
     expect(removeMock).not.toHaveBeenCalledWith(["https://x/keep.jpg"]);
     // upsert update.imageUrls = 기존 값 유지
     expect(reviewUpsertMock).toHaveBeenCalledWith(
@@ -536,6 +539,183 @@ describe("POST /api/products/[id]/reviews", () => {
     expect(json.success).toBe(false);
     // 업로드된 이미지 보상 삭제 확인
     expect(removeMock).toHaveBeenCalledWith(["https://x/uploaded.jpg"]);
+  });
+
+  // 신규 (l): 수정 + keepImageUrls=일부(기존 2장 중 1장) + 새 파일 0 → 최종=keep 1장, removeMock(제거된 1장) 호출
+  it("(l) 수정 + keepImageUrls=일부(1장만 keep) → 최종 1장, 제거분 removeMock 호출", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1", email: "a@b.com" } });
+    isAdminMock.mockReturnValue(false);
+    productFindUniqueMock.mockResolvedValue({ id: "p1" });
+    hasPurchasedProductMock.mockResolvedValue(true);
+    // prev: 기존 2장
+    reviewFindUniqueMock.mockResolvedValue({
+      imageUrls: ["https://x/img1.jpg", "https://x/img2.jpg"],
+    });
+    reviewUpsertMock.mockResolvedValue({
+      ...upsertResult,
+      imageUrls: ["https://x/img1.jpg"],
+    });
+    recomputeProductRatingMock.mockResolvedValue(undefined);
+
+    const res = await POST(
+      // 기존 2장 중 img1만 keep, img2는 제거 → new 파일 없음
+      postReq({ rating: "4", comment: "partial keep" }, [], ["https://x/img1.jpg"]),
+      { params: makeParams() },
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json.success).toBe(true);
+    // 업로드 미호출 (새 파일 없음)
+    expect(uploadMock).not.toHaveBeenCalled();
+    // upsert imageUrls = keep 1장만
+    expect(reviewUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          imageUrls: ["https://x/img1.jpg"],
+        }),
+      }),
+    );
+    // removed = img2 (keep 안 된 것) → Storage 삭제
+    expect(removeMock).toHaveBeenCalledWith(["https://x/img2.jpg"]);
+  });
+
+  // 신규 (m): keepImageUrls에 본인 것 아닌 임의 URL 포함 → 필터되어 무시(저장 안 됨, 보안)
+  it("(m) keepImageUrls에 임의 URL → 보안 필터로 무시, finalImageUrls에 미포함", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1", email: "a@b.com" } });
+    isAdminMock.mockReturnValue(false);
+    productFindUniqueMock.mockResolvedValue({ id: "p1" });
+    hasPurchasedProductMock.mockResolvedValue(true);
+    // prev: 기존 1장
+    reviewFindUniqueMock.mockResolvedValue({ imageUrls: ["https://x/mine.jpg"] });
+    reviewUpsertMock.mockResolvedValue({
+      ...upsertResult,
+      imageUrls: ["https://x/mine.jpg"],
+    });
+    recomputeProductRatingMock.mockResolvedValue(undefined);
+
+    const res = await POST(
+      // mine.jpg(본인) + 임의 URL(타인/악의적) 전송
+      postReq({ rating: "4", comment: "injection" }, [], [
+        "https://x/mine.jpg",
+        "https://evil.com/other-file.jpg", // 본인 prevUrls에 없음 → 필터
+      ]),
+      { params: makeParams() },
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json.success).toBe(true);
+    // 임의 URL은 필터되어 upsert imageUrls에 미포함
+    expect(reviewUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          imageUrls: ["https://x/mine.jpg"], // 본인 것만
+        }),
+      }),
+    );
+  });
+
+  // 신규 (m2): keepImageUrls에 같은 URL 중복 → dedup 적용, upsert imageUrls에 1번만 포함
+  it("(m2) keepImageUrls 중복 URL → dedup 적용, finalImageUrls에 1번만", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1", email: "a@b.com" } });
+    isAdminMock.mockReturnValue(false);
+    productFindUniqueMock.mockResolvedValue({ id: "p1" });
+    hasPurchasedProductMock.mockResolvedValue(true);
+    // prev: urlA 1장
+    reviewFindUniqueMock.mockResolvedValue({ imageUrls: ["https://x/img-a.jpg"] });
+    reviewUpsertMock.mockResolvedValue({
+      ...upsertResult,
+      imageUrls: ["https://x/img-a.jpg"],
+    });
+    recomputeProductRatingMock.mockResolvedValue(undefined);
+
+    const res = await POST(
+      // keepImageUrls에 urlA를 2번 전송 (중복)
+      postReq({ rating: "4", comment: "dedup" }, [], [
+        "https://x/img-a.jpg",
+        "https://x/img-a.jpg",
+      ]),
+      { params: makeParams() },
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json.success).toBe(true);
+    // dedup → upsert imageUrls에 urlA 1번만
+    expect(reviewUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          imageUrls: ["https://x/img-a.jpg"],
+        }),
+      }),
+    );
+  });
+
+  // 신규 (n): keep 2 + 새 파일 2 = 총 4장 → 400(총 개수 초과)
+  it("(n) keep 2 + 새 파일 2 = 총 4장 → 400(총 개수 초과)", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1", email: "a@b.com" } });
+    isAdminMock.mockReturnValue(false);
+    productFindUniqueMock.mockResolvedValue({ id: "p1" });
+    hasPurchasedProductMock.mockResolvedValue(true);
+    reviewFindUniqueMock.mockResolvedValue(null);
+
+    const res = await POST(
+      postReq(
+        { rating: "4", comment: "too many total" },
+        [jpgFile("new1.jpg"), jpgFile("new2.jpg")],
+        ["https://x/keep1.jpg", "https://x/keep2.jpg"],
+      ),
+      { params: makeParams() },
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.success).toBe(false);
+    expect(json.error).toBe(`이미지는 최대 ${3}장`);
+    expect(uploadMock).not.toHaveBeenCalled();
+  });
+
+  // 신규 (o): 신규 리뷰(prev 없음) + 새 파일 2 → finalImageUrls=업로드 2, kept=[]
+  it("(o) 신규 리뷰 + 새 파일 2 → finalImageUrls=업로드 2", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1", email: "a@b.com" } });
+    isAdminMock.mockReturnValue(false);
+    productFindUniqueMock.mockResolvedValue({ id: "p1" });
+    hasPurchasedProductMock.mockResolvedValue(true);
+    reviewFindUniqueMock.mockResolvedValue(null); // prev 없음
+    uploadMock
+      .mockResolvedValueOnce({ publicUrl: "https://x/new1.jpg" })
+      .mockResolvedValueOnce({ publicUrl: "https://x/new2.jpg" });
+    reviewUpsertMock.mockResolvedValue({
+      ...upsertResult,
+      imageUrls: ["https://x/new1.jpg", "https://x/new2.jpg"],
+    });
+    recomputeProductRatingMock.mockResolvedValue(undefined);
+
+    const res = await POST(
+      // 신규 리뷰 — keepImageUrls 없음 (또는 빈 배열)
+      postReq(
+        { rating: "5", comment: "brand new" },
+        [jpgFile("new1.jpg"), jpgFile("new2.jpg")],
+        [], // keepImageUrls 없음
+      ),
+      { params: makeParams() },
+    );
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json.success).toBe(true);
+    expect(uploadMock).toHaveBeenCalledTimes(2);
+    // create.imageUrls = uploaded 2장 (kept=[] → finalImageUrls=uploaded)
+    expect(reviewUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          imageUrls: ["https://x/new1.jpg", "https://x/new2.jpg"],
+        }),
+      }),
+    );
+    // removed=[] — removeMock 호출 안 됨
+    expect(removeMock).not.toHaveBeenCalledWith(expect.arrayContaining(["https://x"]));
   });
 });
 
