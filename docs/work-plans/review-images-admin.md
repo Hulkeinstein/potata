@@ -337,7 +337,7 @@ Wave 5 (전체 완료 후):
 - [x] F6. Storage 정합: 단위테스트 (h)차집합·(i)DB실패 보상·(j)DELETE 정리로 검증(by-test, storage mock). 실파일 검증은 F8 버킷 후.
 - [x] F7. **Tier2 다중 적대검증** ✅: validator VALID/APPROVED(100/100, critical 0, admin route·lib/products 회귀 0). oracle "Ship it"(CRITICAL/HIGH 0) + L1 강화(contentType sniffed 파생) 반영.
 - [ ] F8. ⚠️ `review-images` public 버킷 실생성 — **사용자 운영 선결**(Supabase 콘솔, product-images 동형). 미생성 시 실업로드 500(코드/테스트는 mock이라 무관).
-- [ ] F9. commit + PR(squash) — 진행 중.
+- [x] F9. commit `6b74737` + PR #43(squash 대기). ✅
 
 ---
 

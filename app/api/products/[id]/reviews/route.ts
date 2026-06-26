@@ -218,6 +218,12 @@ export async function POST(
     const normalizedComment =
       comment && comment.trim() !== "" ? comment.trim() : null;
 
+    // 10-b. 최종 imageUrls 결정 — 새 파일 없으면 기존 유지(수정 UX: 사진 안 바꾸면 기존 보존)
+    // 수정 폼은 File 객체를 prefill 못함(브라우저 제약) → 0장 전송 = "변경 없음"
+    // 신규(prev null) + 0장 → [], 신규 + N장 → uploaded, 수정 + 0장 → prev 유지, 수정 + N장 → uploaded(교체)
+    const hasNewImages = validated.length > 0;
+    const finalImageUrls = hasNewImages ? uploaded : (prev?.imageUrls ?? []);
+
     // 11. $transaction: review upsert(imageUrls 포함) + Product 집계 재계산(원자적)
     // DB 실패 시 업로드된 이미지 보상 삭제 후 re-throw
     let review;
@@ -232,12 +238,12 @@ export async function POST(
             productId,
             rating,
             comment: normalizedComment,
-            imageUrls: uploaded,
+            imageUrls: finalImageUrls,
           },
           update: {
             rating,
             comment: normalizedComment,
-            imageUrls: uploaded,
+            imageUrls: finalImageUrls,
           },
         });
         await recomputeProductRating(tx, productId);
@@ -248,10 +254,11 @@ export async function POST(
       throw e;
     }
 
-    // 12. 차집합 삭제 — 이전에 있던 이미지 중 신규 목록에 없는 것만(upsert 대체분)
-    const removed = (prev?.imageUrls ?? []).filter(
-      (u) => !uploaded.includes(u),
-    );
+    // 12. 차집합 삭제 — 새 이미지가 있을 때만(0장이면 기존 유지이므로 삭제 불필요)
+    // hasNewImages일 때: 이전 이미지 중 신규 목록에 없는 것만 정리(upsert 대체분)
+    const removed = hasNewImages
+      ? (prev?.imageUrls ?? []).filter((u) => !uploaded.includes(u))
+      : [];
     await removeReviewImagesByUrl(removed).catch(() => {});
 
     // 13. 캐시 무효화 — 상품 상세 페이지 + 카탈로그 태그

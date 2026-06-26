@@ -170,8 +170,8 @@ describe("ReviewSection", () => {
     expect(loginLink).not.toBeNull();
   });
 
-  // 케이스 ④: 로그인 → 폼 노출 + 별점 클릭 + 제출 → POST fetch 호출
-  it("로그인 → 폼 노출, 별점 4점 + 코멘트 + 제출 → POST fetch 호출", async () => {
+  // 케이스 ④: 로그인 → "리뷰 작성하기" 버튼으로 폼 열기 + 별점 클릭 + 제출 → POST fetch 호출
+  it("로그인 → 리뷰 작성하기 클릭으로 폼 열기, 별점 4점 + 코멘트 + 제출 → POST fetch 호출", async () => {
     setAuth(true);
     const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
 
@@ -197,12 +197,16 @@ describe("ReviewSection", () => {
 
     render(<ReviewSection productId="p1" />);
 
-    // 로그인 상태 → textarea 노출 대기
+    // "리뷰 작성하기" 버튼 대기 후 클릭 → 폼 열기
     await waitFor(() => {
-      expect(
-        screen.queryByPlaceholderText("상품에 대한 솔직한 리뷰를 남겨 주세요."),
-      ).not.toBeNull();
+      expect(screen.queryByRole("button", { name: "리뷰 작성하기" })).not.toBeNull();
     });
+    fireEvent.click(screen.getByRole("button", { name: "리뷰 작성하기" }));
+
+    // 폼(textarea) 노출 확인
+    expect(
+      screen.queryByPlaceholderText("상품에 대한 솔직한 리뷰를 남겨 주세요."),
+    ).not.toBeNull();
 
     // 별점 4점 클릭 (StarRating interactive: aria-label="별점 4점")
     const star4 = screen.getByRole("button", { name: "별점 4점" });
@@ -235,7 +239,7 @@ describe("ReviewSection", () => {
     setAuth(true);
     const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
 
-    // 초기 GET (빈 목록 — 폼 노출용)
+    // 초기 GET (빈 목록 — 트리거 버튼 노출용)
     fetchMock.mockResolvedValueOnce(makeGetResponse([]));
     // POST → 409 응답
     fetchMock.mockResolvedValueOnce({
@@ -246,12 +250,11 @@ describe("ReviewSection", () => {
 
     render(<ReviewSection productId="p1" />);
 
-    // 폼 노출 대기
+    // "리뷰 작성하기" 버튼 대기 후 클릭 → 폼 열기
     await waitFor(() => {
-      expect(
-        screen.queryByPlaceholderText("상품에 대한 솔직한 리뷰를 남겨 주세요."),
-      ).not.toBeNull();
+      expect(screen.queryByRole("button", { name: "리뷰 작성하기" })).not.toBeNull();
     });
+    fireEvent.click(screen.getByRole("button", { name: "리뷰 작성하기" }));
 
     // 별점 4점 클릭
     const star4 = screen.getByRole("button", { name: "별점 4점" });
@@ -274,17 +277,16 @@ describe("ReviewSection", () => {
     setAuth(true);
     const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
 
-    // 초기 GET (빈 목록 — 폼 노출용)
+    // 초기 GET (빈 목록 — 트리거 버튼 노출용)
     fetchMock.mockResolvedValueOnce(makeGetResponse([]));
 
     render(<ReviewSection productId="p1" />);
 
-    // 폼 노출 대기
+    // "리뷰 작성하기" 버튼 대기 후 클릭 → 폼 열기
     await waitFor(() => {
-      expect(
-        screen.queryByPlaceholderText("상품에 대한 솔직한 리뷰를 남겨 주세요."),
-      ).not.toBeNull();
+      expect(screen.queryByRole("button", { name: "리뷰 작성하기" })).not.toBeNull();
     });
+    fireEvent.click(screen.getByRole("button", { name: "리뷰 작성하기" }));
 
     // 파일 input 찾기
     const fileInput = screen.getByLabelText("사진 (선택, 최대 3장)");
