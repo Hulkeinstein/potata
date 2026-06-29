@@ -3,9 +3,11 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractErrorMessage } from "@/lib/auth";
+import { isAdmin } from "@/lib/admin";
 import type { Question, Answer, QuestionListResponse, CreateQuestionRequest } from "@/types";
 
-// GET: 공개 질문 목록 조회 (인증 불필요)
+// GET: 공개 질문 목록 조회 (인증 불필요 — 비로그인도 목록 조회 가능)
+// viewerIsAdmin: 로그인 + admin allowlist 해당 시 true, 그 외 false
 // 해당 productId 질문 최신순 목록 + 답변 include(createdAt asc) + userName 평탄화
 export async function GET(
   _req: NextRequest,
@@ -13,6 +15,10 @@ export async function GET(
 ) {
   try {
     const { id: productId } = await params;
+
+    // auth()는 공개 GET에서도 호출 — 세션 없으면 null (목록 반환은 계속)
+    const session = await auth();
+    const viewerIsAdmin = isAdmin(session?.user?.email);
 
     const [rows, questionCount] = await Promise.all([
       prisma.question.findMany({
@@ -54,7 +60,7 @@ export async function GET(
       updatedAt: r.updatedAt.toISOString(),
     }));
 
-    const data: QuestionListResponse = { questions, questionCount };
+    const data: QuestionListResponse = { questions, questionCount, viewerIsAdmin };
 
     return NextResponse.json({ success: true, data }, { status: 200 });
   } catch (error) {

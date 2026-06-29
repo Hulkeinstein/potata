@@ -347,4 +347,5 @@ export interface CreateAnswerRequest { content: string; }
 export interface QuestionListResponse {
   questions: Question[];
   questionCount: number;
+  viewerIsAdmin: boolean;
 }

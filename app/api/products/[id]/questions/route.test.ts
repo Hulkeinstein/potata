@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // vi.hoisted: mock 참조를 vi.mock 호이스팅보다 먼저 초기화
 const {
   authMock,
+  isAdminMock,
   revalidatePathMock,
   questionFindManyMock,
   questionCountMock,
@@ -11,6 +12,7 @@ const {
 } = vi.hoisted(() => {
   return {
     authMock: vi.fn(),
+    isAdminMock: vi.fn(),
     revalidatePathMock: vi.fn(),
     questionFindManyMock: vi.fn(),
     questionCountMock: vi.fn(),
@@ -20,6 +22,8 @@ const {
 });
 
 vi.mock("@/auth", () => ({ auth: authMock }));
+
+vi.mock("@/lib/admin", () => ({ isAdmin: isAdminMock }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -90,7 +94,10 @@ describe("GET /api/products/[id]/questions", () => {
     vi.clearAllMocks();
   });
 
-  it("① 정상 목록 → questions 배열 + questionCount 반환 (userName 평탄화)", async () => {
+  it("① 정상 목록 → questions 배열 + questionCount 반환 (userName 평탄화) / 비로그인 → viewerIsAdmin false", async () => {
+    // 비로그인: auth null, isAdmin false
+    authMock.mockResolvedValue(null);
+    isAdminMock.mockReturnValue(false);
     questionFindManyMock.mockResolvedValue([
       makeQuestionRow({ answers: [] }),
     ]);
@@ -104,9 +111,13 @@ describe("GET /api/products/[id]/questions", () => {
     expect(json.data.questions).toHaveLength(1);
     expect(json.data.questions[0].userName).toBe("홍길동");
     expect(json.data.questionCount).toBe(1);
+    expect(json.data.viewerIsAdmin).toBe(false);
   });
 
-  it("② 빈 목록 → questions:[], questionCount:0", async () => {
+  it("② 빈 목록 → questions:[], questionCount:0 / 비admin 로그인 → viewerIsAdmin false", async () => {
+    // 비admin 로그인: auth 세션 있음, isAdmin false
+    authMock.mockResolvedValue({ user: { id: "u1", email: "user@example.com" } });
+    isAdminMock.mockReturnValue(false);
     questionFindManyMock.mockResolvedValue([]);
     questionCountMock.mockResolvedValue(0);
 
@@ -117,9 +128,12 @@ describe("GET /api/products/[id]/questions", () => {
     expect(json.success).toBe(true);
     expect(json.data.questions).toEqual([]);
     expect(json.data.questionCount).toBe(0);
+    expect(json.data.viewerIsAdmin).toBe(false);
   });
 
   it("③ 답변 포함 질문 → answers 평탄화 (userName 포함)", async () => {
+    authMock.mockResolvedValue(null);
+    isAdminMock.mockReturnValue(false);
     questionFindManyMock.mockResolvedValue([
       makeQuestionRow({
         answers: [
@@ -143,6 +157,35 @@ describe("GET /api/products/[id]/questions", () => {
     expect(json.data.questions[0].answers).toHaveLength(1);
     expect(json.data.questions[0].answers[0].userName).toBe("관리자");
     expect(json.data.questions[0].answers[0].questionId).toBe("q1");
+  });
+
+  it("④-a admin 로그인 → viewerIsAdmin true", async () => {
+    // admin 세션: auth에 admin 이메일, isAdmin → true
+    authMock.mockResolvedValue({ user: { id: "admin1", email: "admin@example.com" } });
+    isAdminMock.mockReturnValue(true);
+    questionFindManyMock.mockResolvedValue([]);
+    questionCountMock.mockResolvedValue(0);
+
+    const res = await GET(makeGetReq(), { params: makeParams() });
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.success).toBe(true);
+    expect(json.data.viewerIsAdmin).toBe(true);
+  });
+
+  it("④-b 비로그인(auth null) → viewerIsAdmin false", async () => {
+    authMock.mockResolvedValue(null);
+    isAdminMock.mockReturnValue(false);
+    questionFindManyMock.mockResolvedValue([]);
+    questionCountMock.mockResolvedValue(0);
+
+    const res = await GET(makeGetReq(), { params: makeParams() });
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.success).toBe(true);
+    expect(json.data.viewerIsAdmin).toBe(false);
   });
 });
 
