@@ -87,9 +87,9 @@
 - [x] 9. PR1 db push + 기계검증 (tsc/lint/test/build) `category:quick`
 
 ### Wave 4 — PR2 UI (PR1 머지 후 — skeleton)
-- [ ] 10. QASection 컴포넌트 작성 `category:visual-engineering`
-- [ ] 11. ProductDetailClient Q&A 탭 연동 `category:visual-engineering`
-- [ ] 12. QASection component 테스트 `category:ultrabrain`
+- [x] 10. QASection 컴포넌트 작성 `category:visual-engineering` (+ GET viewerIsAdmin 선행 enable)
+- [x] 11. ProductDetailClient Q&A 탭 연동 `category:visual-engineering`
+- [x] 12. QASection component 테스트 `category:ultrabrain`
 
 ---
 

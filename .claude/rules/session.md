@@ -18,9 +18,9 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 
 **확정 결정**: 질문 권한=전체 로그인(구매 게이트 없음) · 답변=admin only(isAdmin) · 수정삭제=질문(본인 수정·삭제+admin 삭제)·답변(admin CRUD). Question(1):Answer(N) onDelete Cascade. 1인 N질문(@@unique 없음)→questionId 기반+IDOR 명시 소유검증. JSON body·create·revalidatePath.
 
-**진행**: PR1 = Task 1~9(W1 schema/types → W2 route 4개(질문 GET/POST·PATCH/DELETE, 답변 POST·PATCH/DELETE) → W3 테스트+db push). PR2 skeleton = Task 10~12(QASection·연동·테스트). 검증 F1~F13.
+**진행**: PR1(스키마+API, #44) **머지 완료**. **PR2(UI) 실행 중** — Task 10(QASection ✅) + GET viewerIsAdmin(✅, auth.ts 미수정·서버 계산), Task 11(ProductDetailClient Q&A 탭 연동), Task 12(QASection 테스트). 검증 F1~F13.
 
-**브랜치**: `feat/product-qna`. 운영 선결 없음(이미지 OUT — db push만).
+**브랜치**: `feat/product-qna-ui`(PR2). admin UI 판정 = GET 응답 `viewerIsAdmin`(클라 isAdmin 호출 불가 회피). 운영 선결 없음(이미지 OUT).
 
 ---
 
