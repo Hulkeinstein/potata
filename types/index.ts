@@ -318,3 +318,33 @@ export interface TryOnResult {
   confidence: number;
   createdAt: string;
 }
+
+// Q&A 관련 타입
+export interface Answer {
+  id: string;
+  questionId: string;
+  userName: string;   // 답변 admin 표시용 (User.name)
+  content: string;
+  createdAt: string;  // ISO
+  updatedAt: string;  // ISO
+}
+
+export interface Question {
+  id: string;
+  userId: string;
+  userName: string;   // 작성자 표시용 (User.name) — GET join select
+  productId: string;
+  content: string;
+  answers: Answer[];  // include로 채움(답변 createdAt asc)
+  createdAt: string;  // ISO
+  updatedAt: string;  // ISO
+}
+
+// NOTE: POST/PATCH는 JSON body { content }만. productId는 URL param, userId는 session만 신뢰.
+export interface CreateQuestionRequest { content: string; }
+export interface CreateAnswerRequest { content: string; }
+
+export interface QuestionListResponse {
+  questions: Question[];
+  questionCount: number;
+}

@@ -12,15 +12,15 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 
 ## 지금 작업
 
-**리뷰 이미지 첨부 + admin 우회** 트랙 — `/plan`+momus(~95%) 완료, **단일 PR 실행 중**. Plan: `docs/work-plans/review-images-admin.md`. (리뷰 PR1#41+PR2#42 머지 완료.)
+**상품 Q&A(문의/답변) 섹션** 트랙 — `/plan`+momus(~95%) 완료, **PR1(스키마+API) 실행 중**. Plan: `docs/work-plans/product-qna.md`. (리뷰 트랙 #41·#42·#43 전부 머지 완료.)
 
-**Objective**: 로그인 구매자(또는 admin)가 리뷰에 이미지 0~3장 첨부·조회·수정·삭제. admin(ADMIN_EMAILS)은 미구매 상품에도 작성, 일반 유저는 구매 게이트 유지. tsc·lint·test·build green + Tier2 다중 적대검증(파일 업로드 보안·권한 게이트).
+**Objective**: 비작동 Q&A 탭(ProductDetailClient:295-311)을 실작동시킨다. 로그인 유저가 질문 작성·조회·수정·삭제, admin이 답변 작성·수정·삭제. 질문 삭제 시 답변 cascade. 리뷰 패턴 복제하되 이미지·평점집계·upsert 제거.
 
-**확정 결정**: 이미지 ≤3장·선택·5MB·jpg/png/webp·magic-byte. `review-images` 신규 버킷. admin 우회=`isAdmin(session.user.email) || hasPurchasedProduct`. POST JSON→multipart 전환(→ 단일 atomic PR 필수). 수정 시 차집합만 Storage 정리, 삭제 시 전량, DB 실패 시 보상.
+**확정 결정**: 질문 권한=전체 로그인(구매 게이트 없음) · 답변=admin only(isAdmin) · 수정삭제=질문(본인 수정·삭제+admin 삭제)·답변(admin CRUD). Question(1):Answer(N) onDelete Cascade. 1인 N질문(@@unique 없음)→questionId 기반+IDOR 명시 소유검증. JSON body·create·revalidatePath.
 
-**진행**: 단일 PR = TODO 1~11(W1 schema/types/storage래퍼/magic-byte공용 → W2 route GET/POST/DELETE → W3 ReviewSection UI → W4 테스트 → W5 db push). 검증 F1~F9.
+**진행**: PR1 = Task 1~9(W1 schema/types → W2 route 4개(질문 GET/POST·PATCH/DELETE, 답변 POST·PATCH/DELETE) → W3 테스트+db push). PR2 skeleton = Task 10~12(QASection·연동·테스트). 검증 F1~F13.
 
-**브랜치**: `feat/review-images-admin`. ⚠️ 운영 선결(F8): `review-images` public 버킷 Supabase 콘솔 생성 필요(실업로드용).
+**브랜치**: `feat/product-qna`. 운영 선결 없음(이미지 OUT — db push만).
 
 ---
 
