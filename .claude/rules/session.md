@@ -12,15 +12,15 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 
 ## 지금 작업
 
-**상품 Q&A(문의/답변) 섹션** 트랙 — `/plan`+momus(~95%) 완료, **PR1(스키마+API) 실행 중**. Plan: `docs/work-plans/product-qna.md`. (리뷰 트랙 #41·#42·#43 전부 머지 완료.)
+**상품 검색 기능** 트랙 — `/plan`+momus(~95%) 완료, **단일 PR 실행 중**. Plan: `docs/work-plans/product-search.md`. (리뷰·리뷰이미지·Q&A 트랙 #41~#45 전부 머지 완료.)
 
-**Objective**: 비작동 Q&A 탭(ProductDetailClient:295-311)을 실작동시킨다. 로그인 유저가 질문 작성·조회·수정·삭제, admin이 답변 작성·수정·삭제. 질문 삭제 시 답변 cascade. 리뷰 패턴 복제하되 이미지·평점집계·upsert 제거.
+**Objective**: 비작동 SearchOverlay(제출 핸들러 없음)를 카탈로그 DB 검색으로 연결. 엔터/브랜드칩 → `/search?q=` 결과 페이지(server component) → name/brand/category 부분일치(대소문자 무시) 상품 ProductCard 그리드. 공개(인증 불필요).
 
-**확정 결정**: 질문 권한=전체 로그인(구매 게이트 없음) · 답변=admin only(isAdmin) · 수정삭제=질문(본인 수정·삭제+admin 삭제)·답변(admin CRUD). Question(1):Answer(N) onDelete Cascade. 1인 N질문(@@unique 없음)→questionId 기반+IDOR 명시 소유검증. JSON body·create·revalidatePath.
+**확정 결정**: 검색 UX=결과 페이지 이동(server component 직접 조회, API 없음) · 검색 대상=name/brand/category(contains insensitive, description 제외) · 스키마·의존성 무변경(name 인덱스·use-debounce·풀텍스트 OUT). searchProducts는 unstable_cache 미사용(동적). q 위생: trim·최소 2자·encodeURIComponent.
 
-**진행**: PR1(스키마+API, #44) **머지 완료**. **PR2(UI) 실행 중** — Task 10(QASection ✅) + GET viewerIsAdmin(✅, auth.ts 미수정·서버 계산), Task 11(ProductDetailClient Q&A 탭 연동), Task 12(QASection 테스트). 검증 F1~F13.
+**진행**: 단일 PR = Task 1~5(W1 searchProducts 헬퍼·/search 페이지 → W2 SearchOverlay 제출 연결 → W3 테스트 2). 검증 F1~F13 + Tier2.
 
-**브랜치**: `feat/product-qna-ui`(PR2). admin UI 판정 = GET 응답 `viewerIsAdmin`(클라 isAdmin 호출 불가 회피). 운영 선결 없음(이미지 OUT).
+**브랜치**: `feat/product-search`. 운영 선결 없음(스키마/의존성 무변경 — `git diff schema.prisma package.json` 빈 출력 유지).
 
 ---
 

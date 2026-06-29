@@ -109,6 +109,28 @@ export async function getProductById(id: string): Promise<Product | null> {
   return row ? toAppProduct(row) : null;
 }
 
+/**
+ * 상품 검색 — name/brand/category 부분일치(대소문자 무시).
+ * 동적 쿼리이므로 unstable_cache 미사용(getProductById 선례). 2자 미만은 DB 미접근.
+ */
+export async function searchProducts(q: string): Promise<Product[]> {
+  const term = q.trim();
+  // 과대 입력 풀스캔 방어(Tier2 M1): 2자 미만 또는 100자 초과 → DB 미접근
+  if (term.length < 2 || term.length > 100) return [];
+  const rows = await prisma.product.findMany({
+    where: {
+      OR: [
+        { name: { contains: term, mode: "insensitive" } },
+        { brand: { contains: term, mode: "insensitive" } },
+        { category: { contains: term, mode: "insensitive" } },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  // hotIds 미전달 → isHot false (검색 결과는 HOT 배지 불필요)
+  return rows.map((r) => toAppProduct(r));
+}
+
 // ADR-005: DB에 저장 가능한 실제 카테고리 6종('All'은 필터 전용 — 저장 금지)
 const VALID_CATEGORIES = ["Outer", "Top", "Bottom", "Dress", "Acc", "Shoes"] as const;
 
