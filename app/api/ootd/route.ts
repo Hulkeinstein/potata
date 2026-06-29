@@ -97,23 +97,37 @@ export async function POST(req: NextRequest) {
 }
 
 // GET: 피드 — cursor pagination 최신순 + likeCount + isLiked + 작성자 + 태그 상품
+// tab=all(기본): 비로그인 공개. tab=following: 인증 필수 + 팔로잉 유저 게시물만.
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const tab = searchParams.get("tab") === "following" ? "following" : "all";
+    const cursor = searchParams.get("cursor");
+
     const session = await auth();
-    if (!session?.user) {
+    const userId = session?.user?.id ?? null;
+
+    // tab=following은 인증 필수(tab=all은 비로그인 공개)
+    if (tab === "following" && !userId) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
-    const userId = session.user.id;
-    const cursor = new URL(req.url).searchParams.get("cursor");
+
+    // 팔로잉 필터: 내가 팔로우하는 유저(followers.some.followerId=나) 게시물만
+    const whereClause =
+      tab === "following"
+        ? { user: { followers: { some: { followerId: userId! } } } }
+        : {};
 
     const posts = await prisma.oOTDPost.findMany({
       take: FEED_TAKE,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       orderBy: { createdAt: "desc" },
+      where: whereClause,
       include: {
-        user: { select: { id: true, name: true, avatar: true } },
+        user: { select: { id: true, name: true, handle: true, avatar: true } },
         products: { include: { product: true } },
-        likes: { where: { userId }, select: { id: true } }, // 현재 유저 좋아요 여부(0/1)
+        // 비로그인(userId=null) 시 "__none__"으로 빈 배열 보장 → isLiked false
+        likes: { where: { userId: userId ?? "__none__" }, select: { id: true } },
         _count: { select: { likes: true } },
       },
     });
@@ -123,7 +137,7 @@ export async function GET(req: NextRequest) {
       imageUrls: p.imageUrls,
       caption: p.caption,
       createdAt: p.createdAt.toISOString(),
-      author: { id: p.user.id, name: p.user.name, avatar: p.user.avatar },
+      author: { id: p.user.id, name: p.user.name, handle: p.user.handle, avatar: p.user.avatar },
       products: p.products.map((op) => ({
         id: op.product.id,
         name: op.product.name,

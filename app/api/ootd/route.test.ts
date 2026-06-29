@@ -37,9 +37,10 @@ function postReq(files: File[], fields: Record<string, string | string[]> = {}):
   }
   return { url: "http://localhost/api/ootd", formData: async () => fd } as unknown as NextRequest;
 }
-function getReq(cursor?: string): NextRequest {
+function getReq(params?: { cursor?: string; tab?: string }): NextRequest {
   const u = new URL("http://localhost/api/ootd");
-  if (cursor) u.searchParams.set("cursor", cursor);
+  if (params?.cursor) u.searchParams.set("cursor", params.cursor);
+  if (params?.tab) u.searchParams.set("tab", params.tab);
   return new Request(u) as unknown as NextRequest;
 }
 
@@ -127,11 +128,60 @@ describe("POST /api/ootd", () => {
 describe("GET /api/ootd", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("미인증은 401", async () => {
+  // ── tab=all (기본) — 비로그인 공개 ───────────────────────────────────────
+
+  it("tab=all 비로그인(auth null) → 200, 전체 피드 반환(인증 불필요)", async () => {
     authMock.mockResolvedValue(null);
-    const res = await GET(getReq());
-    expect(res.status).toBe(401);
+    postFindMany.mockResolvedValue([]);
+    const res = await GET(getReq({ tab: "all" }));
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as FeedJson;
+    expect(json.data.items).toHaveLength(0);
   });
+
+  it("tab=all 비로그인 → isLiked false(likes 빈 배열 → false)", async () => {
+    authMock.mockResolvedValue(null);
+    postFindMany.mockResolvedValue([
+      {
+        id: "p1",
+        imageUrls: ["i1"],
+        caption: "c",
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+        user: { id: "u2", name: "B", handle: null, avatar: null },
+        products: [],
+        likes: [], // 비로그인 → "__none__" userId로 조회 → 항상 빈 배열
+        _count: { likes: 5 },
+      },
+    ]);
+    const res = await GET(getReq()); // tab 파라미터 없음 = all
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as FeedJson;
+    expect(json.data.items[0].isLiked).toBe(false);
+  });
+
+  // ── tab=following — 인증 필수 ────────────────────────────────────────────
+
+  it("tab=following 비로그인 → 401, findMany 미호출", async () => {
+    authMock.mockResolvedValue(null);
+    const res = await GET(getReq({ tab: "following" }));
+    expect(res.status).toBe(401);
+    expect(postFindMany).not.toHaveBeenCalled();
+  });
+
+  it("tab=following 로그인 → 200, findMany where에 followers.some.followerId 포함", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1" } });
+    postFindMany.mockResolvedValue([]);
+    const res = await GET(getReq({ tab: "following" }));
+    expect(res.status).toBe(200);
+
+    // findMany 호출 인자에서 where 절 확인 — 팔로잉 필터 적용
+    const callArg = postFindMany.mock.calls[0][0] as {
+      where: { user?: { followers?: { some?: { followerId?: string } } } };
+    };
+    expect(callArg.where?.user?.followers?.some?.followerId).toBe("u1");
+  });
+
+  // ── 피드 매핑 (기존 유지) ─────────────────────────────────────────────────
 
   it("피드 매핑: likeCount/isLiked/author/products(Pick)", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
@@ -141,7 +191,7 @@ describe("GET /api/ootd", () => {
         imageUrls: ["i1"],
         caption: "c",
         createdAt: new Date("2026-01-01T00:00:00Z"),
-        user: { id: "u2", name: "B", avatar: null },
+        user: { id: "u2", name: "B", handle: null, avatar: null },
         products: [{ product: { id: "1", name: "N", brand: "Br", imageUrl: "img", description: "x" } }],
         likes: [{ id: "l1" }],
         _count: { likes: 3 },
