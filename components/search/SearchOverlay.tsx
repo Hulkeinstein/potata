@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, TrendingUp, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface SearchOverlayProps {
     isOpen: boolean;
@@ -20,8 +21,17 @@ const RECENT_BRANDS = [
 ];
 
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
+    const router = useRouter();
     const inputRef = useRef<HTMLInputElement>(null);
     const [searchTerm, setSearchTerm] = useState("");
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const term = searchTerm.trim();
+        if (term.length < 2) return; // 최소 2자 가드 — 이동 안 함
+        router.push(`/search?q=${encodeURIComponent(term)}`);
+        onClose();
+    };
 
     // Auto-focus input when opened
     useEffect(() => {
@@ -70,16 +80,18 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                         transition={{ delay: 0.1 }}
                         className="w-full max-w-3xl relative mb-12"
                     >
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search brands, items..."
-                            aria-label="Search products"
-                            autoFocus
-                            className="w-full bg-transparent border-b-2 border-white/20 text-3xl md:text-5xl font-bold text-white placeholder-gray-500 py-4 focus:outline-none focus:border-brand-neon transition-colors"
-                        />
+                        <form onSubmit={handleSubmit}>
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search brands, items..."
+                                aria-label="Search products"
+                                autoFocus
+                                className="w-full bg-transparent border-b-2 border-white/20 text-3xl md:text-5xl font-bold text-white placeholder-gray-500 py-4 focus:outline-none focus:border-brand-neon transition-colors"
+                            />
+                        </form>
                         <Search className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400" />
                     </motion.div>
 
@@ -123,7 +135,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                 {RECENT_BRANDS.map((brand) => (
                                     <Link
                                         key={brand}
-                                        href={`/search?q=${brand}`}
+                                        href={`/search?q=${encodeURIComponent(brand)}`}
                                         className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:border-brand-neon hover:text-white transition-all text-sm"
                                         onClick={onClose}
                                     >

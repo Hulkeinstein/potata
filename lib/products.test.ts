@@ -22,7 +22,7 @@ vi.mock("next/cache", () => ({
   revalidateTag: vi.fn(),
 }));
 
-import { createProduct, getAllProducts } from "@/lib/products";
+import { createProduct, getAllProducts, searchProducts } from "@/lib/products";
 import type { CreateProductInput } from "@/types";
 
 /** UUID v4 형식 정규식 */
@@ -211,6 +211,84 @@ function makePrismaRow(overrides: {
     updatedAt: new Date(2020, 0, 1),
   };
 }
+
+describe("searchProducts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("Happy: 2자 이상 쿼리 → findMany OR 3필드(name/brand/category) contains insensitive + toAppProduct 매핑", async () => {
+    const row = makePrismaRow({ id: "s1" });
+    productFindMany.mockResolvedValue([row]);
+
+    const results = await searchProducts("denim");
+
+    // findMany 1회 호출 확인
+    expect(productFindMany).toHaveBeenCalledTimes(1);
+
+    const callArg = productFindMany.mock.calls[0][0] as {
+      where: { OR: Array<{ name?: unknown; brand?: unknown; category?: unknown }> };
+      orderBy: unknown;
+    };
+
+    // OR 배열 길이 3 (name/brand/category)
+    expect(callArg.where.OR).toHaveLength(3);
+    expect(callArg.where.OR[0]).toEqual({ name: { contains: "denim", mode: "insensitive" } });
+    expect(callArg.where.OR[1]).toEqual({ brand: { contains: "denim", mode: "insensitive" } });
+    expect(callArg.where.OR[2]).toEqual({ category: { contains: "denim", mode: "insensitive" } });
+
+    // orderBy: createdAt asc
+    expect(callArg.orderBy).toEqual({ createdAt: "asc" });
+
+    // toAppProduct 매핑: id 채워지고 isHot false(hotIds 미전달)
+    expect(results).toHaveLength(1);
+    expect(results[0].id).toBe("s1");
+    expect(results[0].isHot).toBe(false);
+  });
+
+  it("최소 글자수: 1자 쿼리 → findMany 미호출, [] 반환", async () => {
+    const results = await searchProducts("a");
+
+    expect(productFindMany).not.toHaveBeenCalled();
+    expect(results).toEqual([]);
+  });
+
+  it("빈 문자열: '' → findMany 미호출, [] 반환", async () => {
+    const results = await searchProducts("");
+
+    expect(productFindMany).not.toHaveBeenCalled();
+    expect(results).toEqual([]);
+  });
+
+  it("trim: 앞뒤 공백 포함 쿼리 → contains 값이 trim된 문자열", async () => {
+    const row = makePrismaRow({ id: "s2" });
+    productFindMany.mockResolvedValue([row]);
+
+    await searchProducts("  denim ");
+
+    const callArg = productFindMany.mock.calls[0][0] as {
+      where: { OR: Array<{ name?: { contains?: string } }> };
+    };
+    // trim 후 "denim" 이 contains 값으로 전달되어야 한다
+    expect(callArg.where.OR[0]).toEqual({ name: { contains: "denim", mode: "insensitive" } });
+  });
+
+  it("상한 초과: 101자 쿼리 → findMany 미호출, [] 반환", async () => {
+    const results = await searchProducts("a".repeat(101));
+
+    expect(productFindMany).not.toHaveBeenCalled();
+    expect(results).toEqual([]);
+  });
+
+  it("결과 없음: findMany가 [] 반환 → searchProducts 결과 []", async () => {
+    productFindMany.mockResolvedValue([]);
+
+    const results = await searchProducts("nomatch");
+
+    expect(productFindMany).toHaveBeenCalledTimes(1);
+    expect(results).toEqual([]);
+  });
+});
 
 describe("getAllProducts — isHot 파생 검증", () => {
   beforeEach(() => {
