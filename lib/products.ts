@@ -58,6 +58,7 @@ function toAppProduct(p: PrismaProduct, hotIds?: Set<string>): Product {
     category: p.category as ProductCategory,
     sizes: p.sizes,
     colors: p.colors,
+    tags: p.tags,
     originalPrice: p.originalPrice ?? undefined,
     discountRate: p.discountRate ?? undefined,
     description: p.description ?? undefined,
@@ -117,16 +118,20 @@ export async function searchProducts(q: string): Promise<Product[]> {
   const term = q.trim();
   // 과대 입력 풀스캔 방어(Tier2 M1): 2자 미만 또는 100자 초과 → DB 미접근
   if (term.length < 2 || term.length > 100) return [];
-  const rows = await prisma.product.findMany({
-    where: {
-      OR: [
-        { name: { contains: term, mode: "insensitive" } },
-        { brand: { contains: term, mode: "insensitive" } },
-        { category: { contains: term, mode: "insensitive" } },
-      ],
-    },
-    orderBy: { createdAt: "asc" },
-  });
+  // NOTE: ILIKE는 Unicode 정규화를 하지 않음 — 입력/저장이 NFC라고 가정(NFD 혼용 시 부분매칭 실패 가능, 향후 normalize 검토).
+  // LIKE 와일드카드(%, _, \)를 값에서 이스케이프 → 사용자 입력이 패턴으로 해석되지 않게(Zero Trust)
+  const escaped = term.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const pattern = `%${escaped}%`;
+  // $queryRaw 태그드 템플릿: ${pattern}은 prepared-statement 파라미터로 바인딩(injection 안전).
+  // 테이블/컬럼은 camelCase(@map 없음) → 쌍따옴표 quoting 필수. unnest(tags)로 배열 부분매칭.
+  const rows = await prisma.$queryRaw<PrismaProduct[]>`
+    SELECT * FROM "Product"
+    WHERE name ILIKE ${pattern} ESCAPE '\\'
+       OR brand ILIKE ${pattern} ESCAPE '\\'
+       OR category ILIKE ${pattern} ESCAPE '\\'
+       OR EXISTS (SELECT 1 FROM unnest(tags) AS t WHERE t ILIKE ${pattern} ESCAPE '\\')
+    ORDER BY "createdAt" ASC
+  `;
   // hotIds 미전달 → isHot false (검색 결과는 HOT 배지 불필요)
   return rows.map((r) => toAppProduct(r));
 }
@@ -167,6 +172,7 @@ export async function createProduct(input: CreateProductInput): Promise<Product>
       description: input.description ?? null,
       sizes: input.sizes ?? [],
       colors: input.colors ?? [],
+      tags: input.tags ?? [],
       rating: null,
       reviewCount: null,
       isNew: input.isNew ?? false,

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import type { ApiResponse, AdminProductCreateData, ProductCategory } from "@/types";
 
 // 'All' 제외 6종 카테고리
@@ -59,6 +59,9 @@ export function AdminProductForm() {
   const [description, setDescription] = useState("");
   const [sizes, setSizes] = useState("");
   const [colors, setColors] = useState("");
+  // 태그 칩
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   // 제출 상태
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +89,25 @@ export function AdminProductForm() {
     if (!imagePreview) return;
     return () => URL.revokeObjectURL(imagePreview);
   }, [imagePreview]);
+
+  // 태그 칩 핸들러
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (!t || t.length > 20) return;           // 빈값·20자 가드
+    if (tags.includes(t)) { setTagInput(""); return; } // 중복 방지
+    if (tags.length >= 10) return;             // 최대 10개
+    setTags([...tags, t]);
+    setTagInput("");
+  };
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTag();
+    } else if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
+      setTags(tags.slice(0, -1)); // 빈 input에서 backspace → 마지막 칩 제거
+    }
+  };
+  const removeTag = (idx: number) => setTags(tags.filter((_, i) => i !== idx));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,6 +149,7 @@ export function AdminProductForm() {
       if (description.trim()) fd.append("description", description.trim());
       if (sizes.trim()) fd.append("sizes", sizes.trim());
       if (colors.trim()) fd.append("colors", colors.trim());
+      tags.forEach((t) => fd.append("tags", t));
       const res = await fetch("/api/admin/products", {
         method: "POST",
         body: fd,
@@ -350,6 +373,45 @@ export function AdminProductForm() {
               placeholder="Black, White"
               className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
             />
+          </div>
+
+          {/* 태그 칩 */}
+          <div className="space-y-2">
+            <label className="text-xs text-zinc-400 font-medium ml-1">
+              태그 (검색용)
+            </label>
+            {/* 추가된 태그 칩 목록 */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-1.5 bg-brand-neon/15 border border-brand-neon/40 text-brand-neon rounded-full pl-3 pr-1.5 py-1 text-sm"
+                  >
+                    <span>{tag}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeTag(i)}
+                      className="hover:bg-brand-neon/20 rounded-full p-0.5"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* 태그 입력 */}
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKeyDown}
+              placeholder="엔터 또는 쉼표로 추가 (최대 10개)"
+              className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
+            />
+            <p className="text-xs text-zinc-600 ml-1">
+              최대 10개, 각 태그 20자 이내 / Backspace로 마지막 태그 제거
+            </p>
           </div>
 
           {/* 설명 */}

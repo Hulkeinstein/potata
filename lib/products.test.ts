@@ -1,18 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // vi.hoisted: mock fn을 vi.mock 호이스팅 전에 초기화
-const { productCreate, productFindMany } = vi.hoisted(() => ({
+const { productCreate, productFindMany, productQueryRaw } = vi.hoisted(() => ({
   productCreate: vi.fn(),
   productFindMany: vi.fn(),
+  productQueryRaw: vi.fn(),
 }));
 
 // prisma.product mock — 실 DB 접근 금지
+// $queryRaw: searchProducts가 태그드 템플릿으로 호출하므로 prisma 최상위에 배치
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     product: {
       create: productCreate,
       findMany: productFindMany,
     },
+    $queryRaw: productQueryRaw,
   },
 }));
 
@@ -45,6 +48,7 @@ function makeCreateMock() {
         description: data.description ?? null,
         sizes: data.sizes,
         colors: data.colors,
+        tags: data.tags ?? [],
         rating: null,
         reviewCount: null,
         isNew: data.isNew,
@@ -177,6 +181,26 @@ describe("createProduct", () => {
       expect(calledWith.data.isNew).toBe(false);
     });
   });
+
+  describe("tags — 기본값 및 전달값 보존", () => {
+    it("tags 미제공 → create data.tags = []", async () => {
+      makeCreateMock();
+      await createProduct(baseInput); // tags 없음
+      const calledWith = productCreate.mock.calls[0][0] as {
+        data: { tags: string[] };
+      };
+      expect(calledWith.data.tags).toEqual([]);
+    });
+
+    it("tags=['a','b'] 제공 → create data.tags = ['a','b'] 보존", async () => {
+      makeCreateMock();
+      await createProduct({ ...baseInput, tags: ["a", "b"] });
+      const calledWith = productCreate.mock.calls[0][0] as {
+        data: { tags: string[] };
+      };
+      expect(calledWith.data.tags).toEqual(["a", "b"]);
+    });
+  });
 });
 
 // ─── PrismaProduct 형태의 fixture 생성 헬퍼 ────────────────────────────────
@@ -187,6 +211,7 @@ function makePrismaRow(overrides: {
   rating?: number | null;
   reviewCount?: number | null;
   createdAt?: Date | string;
+  tags?: string[];
 }) {
   return {
     id: overrides.id,
@@ -201,6 +226,7 @@ function makePrismaRow(overrides: {
     description: null,
     sizes: [],
     colors: [],
+    tags: overrides.tags ?? [],
     rating: overrides.rating ?? null,
     reviewCount: overrides.reviewCount ?? null,
     isNew: false,
@@ -213,80 +239,135 @@ function makePrismaRow(overrides: {
 }
 
 describe("searchProducts", () => {
+  // $queryRaw는 태그드 템플릿으로 호출됨: prisma.$queryRaw`...${pattern}...`
+  // mock.calls[0]은 [TemplateStringsArray, ...values] 형태 — values에서 pattern을 검증
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("Happy: 2자 이상 쿼리 → findMany OR 3필드(name/brand/category) contains insensitive + toAppProduct 매핑", async () => {
-    const row = makePrismaRow({ id: "s1" });
-    productFindMany.mockResolvedValue([row]);
+  it("Happy: 2자 이상 쿼리 → $queryRaw 호출됨, toAppProduct 매핑 결과에 id/isHot/tags 포함", async () => {
+    const row = makePrismaRow({ id: "s1", tags: ["데님", "봄"] });
+    productQueryRaw.mockResolvedValue([row]);
 
     const results = await searchProducts("denim");
 
-    // findMany 1회 호출 확인
-    expect(productFindMany).toHaveBeenCalledTimes(1);
+    // $queryRaw 1회 호출 확인 (findMany 미사용)
+    expect(productQueryRaw).toHaveBeenCalledTimes(1);
+    expect(productFindMany).not.toHaveBeenCalled();
 
-    const callArg = productFindMany.mock.calls[0][0] as {
-      where: { OR: Array<{ name?: unknown; brand?: unknown; category?: unknown }> };
-      orderBy: unknown;
-    };
-
-    // OR 배열 길이 3 (name/brand/category)
-    expect(callArg.where.OR).toHaveLength(3);
-    expect(callArg.where.OR[0]).toEqual({ name: { contains: "denim", mode: "insensitive" } });
-    expect(callArg.where.OR[1]).toEqual({ brand: { contains: "denim", mode: "insensitive" } });
-    expect(callArg.where.OR[2]).toEqual({ category: { contains: "denim", mode: "insensitive" } });
-
-    // orderBy: createdAt asc
-    expect(callArg.orderBy).toEqual({ createdAt: "asc" });
-
-    // toAppProduct 매핑: id 채워지고 isHot false(hotIds 미전달)
+    // toAppProduct 매핑: id·isHot·tags 확인
     expect(results).toHaveLength(1);
     expect(results[0].id).toBe("s1");
     expect(results[0].isHot).toBe(false);
+    expect(results[0].tags).toEqual(["데님", "봄"]);
   });
 
-  it("최소 글자수: 1자 쿼리 → findMany 미호출, [] 반환", async () => {
+  it("Happy: $queryRaw 바인딩 값에 '%denim%' 패턴 포함", async () => {
+    const row = makePrismaRow({ id: "s1" });
+    productQueryRaw.mockResolvedValue([row]);
+
+    await searchProducts("denim");
+
+    // 태그드 템플릿 호출: mock.calls[0] = [TemplateStringsArray, value1, ...]
+    // value 인자 중 하나가 %denim%을 포함하는지 확인
+    const callArgs = productQueryRaw.mock.calls[0] as unknown[];
+    const values = callArgs.slice(1); // 첫 번째 인자(TemplateStringsArray) 제외
+    const hasPattern = values.some(
+      (v) => typeof v === "string" && v.includes("denim")
+    );
+    expect(hasPattern).toBe(true);
+  });
+
+  it("최소 글자수: 1자 쿼리 → $queryRaw 미호출, [] 반환", async () => {
     const results = await searchProducts("a");
 
-    expect(productFindMany).not.toHaveBeenCalled();
+    expect(productQueryRaw).not.toHaveBeenCalled();
     expect(results).toEqual([]);
   });
 
-  it("빈 문자열: '' → findMany 미호출, [] 반환", async () => {
+  it("빈 문자열: '' → $queryRaw 미호출, [] 반환", async () => {
     const results = await searchProducts("");
 
-    expect(productFindMany).not.toHaveBeenCalled();
+    expect(productQueryRaw).not.toHaveBeenCalled();
     expect(results).toEqual([]);
   });
 
-  it("trim: 앞뒤 공백 포함 쿼리 → contains 값이 trim된 문자열", async () => {
+  it("trim: 앞뒤 공백 포함 '  denim ' → trim 후 2자 이상이므로 $queryRaw 호출됨", async () => {
     const row = makePrismaRow({ id: "s2" });
-    productFindMany.mockResolvedValue([row]);
+    productQueryRaw.mockResolvedValue([row]);
 
     await searchProducts("  denim ");
 
-    const callArg = productFindMany.mock.calls[0][0] as {
-      where: { OR: Array<{ name?: { contains?: string } }> };
-    };
-    // trim 후 "denim" 이 contains 값으로 전달되어야 한다
-    expect(callArg.where.OR[0]).toEqual({ name: { contains: "denim", mode: "insensitive" } });
+    expect(productQueryRaw).toHaveBeenCalledTimes(1);
+    // trim 후 패턴에 "denim" 포함 확인
+    const callArgs = productQueryRaw.mock.calls[0] as unknown[];
+    const values = callArgs.slice(1);
+    const hasPattern = values.some(
+      (v) => typeof v === "string" && v.includes("denim")
+    );
+    expect(hasPattern).toBe(true);
   });
 
-  it("상한 초과: 101자 쿼리 → findMany 미호출, [] 반환", async () => {
+  it("상한 초과: 101자 쿼리 → $queryRaw 미호출, [] 반환", async () => {
     const results = await searchProducts("a".repeat(101));
 
-    expect(productFindMany).not.toHaveBeenCalled();
+    expect(productQueryRaw).not.toHaveBeenCalled();
     expect(results).toEqual([]);
   });
 
-  it("결과 없음: findMany가 [] 반환 → searchProducts 결과 []", async () => {
-    productFindMany.mockResolvedValue([]);
+  it("결과 없음: $queryRaw가 [] 반환 → searchProducts 결과 []", async () => {
+    productQueryRaw.mockResolvedValue([]);
 
     const results = await searchProducts("nomatch");
 
-    expect(productFindMany).toHaveBeenCalledTimes(1);
+    expect(productQueryRaw).toHaveBeenCalledTimes(1);
     expect(results).toEqual([]);
+  });
+
+  it("이스케이프: '50%' 검색 시 바인딩 pattern에 '50\\%'가 포함됨(% 와일드카드로 해석 안 됨)", async () => {
+    const row = makePrismaRow({ id: "esc1" });
+    productQueryRaw.mockResolvedValue([row]);
+
+    await searchProducts("50%");
+
+    // 태그드 템플릿 호출: mock.calls[0] = [TemplateStringsArray, value1, ...]
+    // values 중 pattern 문자열을 찾아 이스케이프 확인
+    const callArgs = productQueryRaw.mock.calls[0] as unknown[];
+    const values = callArgs.slice(1); // TemplateStringsArray 제외
+    const boundPattern = values.find(
+      (v) => typeof v === "string" && v.includes("50")
+    ) as string | undefined;
+    expect(boundPattern).toBeDefined();
+    // "50%" → escaped: "50\%" → pattern: "%50\%%"
+    // 바인딩 문자열에 백슬래시+%가 연속으로 포함되어야 함(리터럴 %)
+    expect(boundPattern).toContain("50\\%");
+  });
+
+  it("이스케이프: 'a_b' 검색 시 바인딩 pattern에 'a\\_b'가 포함됨(_ 와일드카드로 해석 안 됨)", async () => {
+    const row = makePrismaRow({ id: "esc2" });
+    productQueryRaw.mockResolvedValue([row]);
+
+    await searchProducts("a_b");
+
+    const callArgs = productQueryRaw.mock.calls[0] as unknown[];
+    const values = callArgs.slice(1);
+    const boundPattern = values.find(
+      (v) => typeof v === "string" && v.includes("a")
+    ) as string | undefined;
+    expect(boundPattern).toBeDefined();
+    // "a_b" → escaped: "a\_b" → pattern: "%a\_b%"
+    expect(boundPattern).toContain("a\\_b");
+  });
+
+  it("tags 검색: $queryRaw 호출됨 + 행의 tags 배열이 결과에 그대로 매핑됨", async () => {
+    const row = makePrismaRow({ id: "s3", tags: ["자켓", "가을"] });
+    productQueryRaw.mockResolvedValue([row]);
+
+    const results = await searchProducts("자켓");
+
+    expect(productQueryRaw).toHaveBeenCalledTimes(1);
+    expect(results[0].tags).toEqual(["자켓", "가을"]);
   });
 });
 

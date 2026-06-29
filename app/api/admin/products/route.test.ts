@@ -45,13 +45,20 @@ function jpeg(name = "test.jpg", size = 1000): File {
 }
 
 // FormData 기반 fake Request 헬퍼 (ootd 패턴 — jsdom 환경 안정성)
+// fields 값이 string[]인 경우 다중 append — tags 등 getAll() 기반 필드 지원
 function adminPostReq(
-  fields: Record<string, string>,
+  fields: Record<string, string | string[]>,
   imageFile?: File
 ): NextRequest {
   const fd = new FormData();
   for (const [k, v] of Object.entries(fields)) {
-    fd.append(k, v);
+    if (Array.isArray(v)) {
+      for (const item of v) {
+        fd.append(k, item);
+      }
+    } else {
+      fd.append(k, v);
+    }
   }
   if (imageFile) {
     fd.append("image", imageFile);
@@ -240,6 +247,29 @@ describe("POST /api/admin/products", () => {
     expect(callArg.price).toBe(29900);
     expect(callArg.category).toBe("Top");
     expect(callArg.imageUrl).toBe("https://storage.example.com/products/abc.jpg");
+  });
+
+  // ─── tags 다중 append ────────────────────────────────────────────────────────
+
+  it("tags 3개 다중 append → createProduct 인자 tags 길이 3(콤마 합산 아님)", async () => {
+    // FormData 비대칭 silent-bug 방어: tags.join(',')으로 1개로 합쳐지지 않고 개별 3개로 전달되어야 함
+    const req = adminPostReq(
+      { ...VALID_FIELDS, tags: ["데님", "자켓", "가을"] },
+      jpeg()
+    );
+    await POST(req);
+    expect(createProductMock).toHaveBeenCalledTimes(1);
+    const callArg = createProductMock.mock.calls[0][0] as { tags: string[] };
+    expect(callArg.tags).toHaveLength(3);
+    expect(callArg.tags).toEqual(["데님", "자켓", "가을"]);
+  });
+
+  it("tags 미전송 → createProduct 인자 tags = []", async () => {
+    // tags 필드 없이 전송 → getAll('tags')=[]] → 빈 배열 전달
+    const req = adminPostReq(VALID_FIELDS, jpeg());
+    await POST(req);
+    const callArg = createProductMock.mock.calls[0][0] as { tags: string[] };
+    expect(callArg.tags).toEqual([]);
   });
 
   // ─── 보상 (Compensation) ─────────────────────────────────────────────────────
