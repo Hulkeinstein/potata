@@ -182,6 +182,23 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 )}
                             </div>
 
+                            {/* Tags */}
+                            {product.tags && product.tags.length > 0 && (
+                                <div className="space-y-3">
+                                    <label className="text-sm font-medium text-zinc-300">태그</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {product.tags.map((tag) => (
+                                            <span
+                                                key={tag}
+                                                className="px-4 py-2 rounded-full border border-brand-neon/40 bg-brand-neon/15 text-brand-neon text-sm"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Selection Summary */}
                             <AnimatePresence>
                                 {(selectedSize || selectedColor) && (

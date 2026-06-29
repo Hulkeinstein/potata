@@ -77,6 +77,17 @@ export async function POST(req: NextRequest) {
       ? colorsRaw.split(",").map((c) => c.trim()).filter((c) => c.length > 0)
       : undefined;
 
+    // 태그 칩은 다중 append(form.getAll) — sizes/colors의 단일 콤마 split과 다른 경로.
+    // Zero Trust 서버 가드: trim·빈값제거·각 20자 이하·중복제거·최대 10개(클라 가드 우회 방어).
+    const tags = Array.from(
+      new Set(
+        form.getAll("tags")
+          .map(String)
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0 && s.length <= 20)
+      )
+    ).slice(0, 10);
+
     // 불리언 플래그 ("true"/"on"/"1" → true)
     const toBool = (v: FormDataEntryValue | null) =>
       v === "true" || v === "on" || v === "1";
@@ -197,6 +208,7 @@ export async function POST(req: NextRequest) {
         description,
         sizes,
         colors,
+        tags,
         isNew,
         isBest,
       };

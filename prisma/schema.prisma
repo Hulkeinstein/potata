@@ -79,6 +79,7 @@ model Product {
   description   String?
   sizes         String[]          @default([])
   colors        String[]          @default([])
+  tags          String[]          @default([])
   rating        Float?
   reviewCount   Int?
   viewCount     Int               @default(0) // 상품 조회수(HOT 랭킹용)

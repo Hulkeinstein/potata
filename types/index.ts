@@ -18,6 +18,7 @@ export interface Product {
   description?: string;
   sizes?: string[];
   colors?: string[];
+  tags?: string[];
   stock?: number;
   images?: string[];
   rating?: number;
@@ -192,6 +193,7 @@ export interface CreateProductInput {
   description?: string;
   sizes?: string[];
   colors?: string[];
+  tags?: string[];
   isNew?: boolean;
   isBest?: boolean;
   isHot?: boolean;

@@ -12,15 +12,15 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 
 ## 지금 작업
 
-**상품 검색 기능** 트랙 — `/plan`+momus(~95%) 완료, **단일 PR 실행 중**. Plan: `docs/work-plans/product-search.md`. (리뷰·리뷰이미지·Q&A 트랙 #41~#45 전부 머지 완료.)
+**상품 태그(tags)** 트랙 — `/plan`+momus(APPROVE ~94%) 완료, **단일 PR 실행 중**. Plan: `docs/work-plans/product-tags.md`. (리뷰·리뷰이미지·Q&A·검색 트랙 #41~#46 전부 머지 완료.)
 
-**Objective**: 비작동 SearchOverlay(제출 핸들러 없음)를 카탈로그 DB 검색으로 연결. 엔터/브랜드칩 → `/search?q=` 결과 페이지(server component) → name/brand/category 부분일치(대소문자 무시) 상품 ProductCard 그리드. 공개(인증 불필요).
+**Objective**: admin 상품 등록 폼에서 태그를 칩(chip)으로 추가/삭제 → DB `Product.tags String[]` 저장 → 검색 부분매칭(`$queryRaw` UNNEST+ILIKE)으로 한글 태그 검색 가능 → 상품 상세에 읽기전용 칩 표시. 단일 PR.
 
-**확정 결정**: 검색 UX=결과 페이지 이동(server component 직접 조회, API 없음) · 검색 대상=name/brand/category(contains insensitive, description 제외) · 스키마·의존성 무변경(name 인덱스·use-debounce·풀텍스트 OUT). searchProducts는 unstable_cache 미사용(동적). q 위생: trim·최소 2자·encodeURIComponent.
+**확정 결정**: 입력=칩(엔터/쉼표 add·x/backspace remove·중복방지·최대10개/20자) · 검색=부분매칭 `$queryRaw`(has 정확매칭 아님, 와일드카드 %/_/\ 이스케이프·파라미터 바인딩) · 표시=ProductDetailClient 읽기전용 칩(ProductCard 제외) · 스키마=`Product.tags String[] @default([])`(db push) · sizes/colors는 콤마 유지(tags만 칩). FormData=`forEach append`→`getAll`(콤마 split과 다른 경로).
 
-**진행**: 단일 PR = Task 1~5(W1 searchProducts 헬퍼·/search 페이지 → W2 SearchOverlay 제출 연결 → W3 테스트 2). 검증 F1~F13 + Tier2.
+**진행**: 단일 PR = Task 1~7(W1 schema·types·lib/products[toAppProduct+createProduct+searchProducts raw] → W2 admin route → W3 AdminProductForm 칩·ProductDetailClient 표시 → W4 테스트 2). 검증 F1~F9 + Tier2(validator+oracle).
 
-**브랜치**: `feat/product-search`. 운영 선결 없음(스키마/의존성 무변경 — `git diff schema.prisma package.json` 빈 출력 유지).
+**브랜치**: `feat/product-tags`. 스키마 1줄 추가(tags) 외 의존성 무변경(`git diff package.json` 빈 출력 유지).
 
 ---
 
