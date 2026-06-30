@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { Heart, Plus, X, Trash2, Loader2, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ProductTagPicker } from "@/components/ootd/ProductTagPicker";
+import { HandleSetupBanner } from "@/components/profile/HandleSetupBanner";
 import type {
   ApiResponse,
   OOTDFeedData,
@@ -29,10 +30,11 @@ export function WhatToWearClient({ products }: { products: Product[] }) {
   const [items, setItems] = useState<OOTDFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [tab, setTab] = useState<"all" | "following">("all");
 
   const loadFeed = useCallback(async () => {
     try {
-      const res = await fetch("/api/ootd");
+      const res = await fetch("/api/ootd?tab=" + tab);
       if (res.ok) {
         const json = (await res.json()) as ApiResponse<OOTDFeedData>;
         if (json.success && json.data) setItems(json.data.items);
@@ -42,11 +44,10 @@ export function WhatToWearClient({ products }: { products: Product[] }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tab]);
 
   useEffect(() => {
-    // 마운트 시 1회 피드 로드. setState는 fetch await 이후(동기 아님)라 규칙 false positive.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // tab 변경 또는 마운트 시 피드 로드.
     loadFeed();
   }, [loadFeed]);
 
@@ -103,15 +104,48 @@ export function WhatToWearClient({ products }: { products: Product[] }) {
 
   return (
     <div className="min-h-screen bg-black pb-20 pt-16 text-white">
+      {/* handle 없는 로그인 유저 비강제 유도 배너 */}
+      <div className="px-4 pt-4">
+        <HandleSetupBanner returnTo="/what-to-wear" />
+      </div>
+
       {/* Header */}
-      <div className="sticky top-16 z-10 bg-black/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 h-14">
-        <h1 className="text-lg font-bold tracking-tight">What to Wear?</h1>
-        <button
-          onClick={() => requireLogin() && setShowForm(true)}
-          className="text-xs font-bold bg-white text-black px-4 py-1.5 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-1"
-        >
-          <Plus className="w-3.5 h-3.5" /> Post My Look
-        </button>
+      <div className="sticky top-16 z-10 bg-black/80 backdrop-blur-md border-b border-white/5 px-4 h-14">
+        <div className="flex items-center justify-between h-full">
+          {/* 탭 버튼 */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setTab("all")}
+              className={`text-sm font-bold px-3 py-1 rounded-full transition-colors ${
+                tab === "all"
+                  ? "text-brand-neon underline underline-offset-4"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              전체
+            </button>
+            <button
+              onClick={() => {
+                if (!requireLogin()) return;
+                setTab("following");
+              }}
+              className={`text-sm font-bold px-3 py-1 rounded-full transition-colors ${
+                tab === "following"
+                  ? "text-brand-neon underline underline-offset-4"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              팔로잉
+            </button>
+          </div>
+
+          <button
+            onClick={() => requireLogin() && setShowForm(true)}
+            className="text-xs font-bold bg-white text-black px-4 py-1.5 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5" /> Post My Look
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -167,8 +201,9 @@ function OOTDCard({
 }) {
   const cover = item.imageUrls[0];
   const shopProduct = item.products[0];
+  const avatarSeed = item.author.handle ?? item.author.id;
   const avatar =
-    item.author.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.author.id}`;
+    item.author.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
 
   return (
     <div className="break-inside-avoid relative group rounded-xl overflow-hidden bg-zinc-900 mb-4 border border-white/5 hover:border-purple-500/50 transition-colors">
@@ -215,12 +250,24 @@ function OOTDCard({
       </div>
 
       {/* 작성자 */}
-      <div className="absolute top-2 left-2 flex items-center gap-2">
-        <div className="w-6 h-6 rounded-full bg-zinc-800 overflow-hidden border border-white/20">
-          <Image src={avatar} alt="avatar" width={24} height={24} />
+      {item.author.handle ? (
+        <Link
+          href={`/profile/${item.author.handle}`}
+          className="absolute top-2 left-2 flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
+          <div className="w-6 h-6 rounded-full bg-zinc-800 overflow-hidden border border-white/20">
+            <Image src={avatar} alt="avatar" width={24} height={24} />
+          </div>
+          <span className="text-xs font-bold text-white drop-shadow-md">{item.author.name}</span>
+        </Link>
+      ) : (
+        <div className="absolute top-2 left-2 flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-zinc-800 overflow-hidden border border-white/20">
+            <Image src={avatar} alt="avatar" width={24} height={24} />
+          </div>
+          <span className="text-xs font-bold text-white drop-shadow-md">{item.author.name}</span>
         </div>
-        <span className="text-xs font-bold text-white drop-shadow-md">{item.author.name}</span>
-      </div>
+      )}
 
       {/* 좋아요 + 본인 삭제 */}
       <div className="absolute top-2 right-2 flex items-center gap-2">

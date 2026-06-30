@@ -18,9 +18,9 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 
 **확정 결정**: 라우트 `app/profile/[handle]`(@는 UI 표기) · 전체 탭=비로그인 공개(tab=all GET만 401 완화, 쓰기/팔로잉 탭 401 유지) · handle=`String? @unique` nullable(이메일 가입 폼 입력+중복체크, OAuth·기존=null→온보딩[PR2], 비가역 backfill 회피) · 팔로우=멱등 토글(IDOR: follower=session만, self-follow 차단) · 프로필 MVP. Follow+User.handle 스키마 승인.
 
-**진행(PR1)**: Wave1(T1 schema Follow+handle·T2 lib/handle.ts·T3 types) → Wave2(T4 signup handle+중복체크 API·T5 팔로우 API·T6 피드 공개·팔로잉 필터) → Wave3(T7 테스트). F1~F8 + Tier2(IDOR·공개경계·비가역 다중 적대검증).
+**진행**: PR1(백엔드) #48 머지 완료(`4b8d8c3`). **PR2(UI) 실행 완료** — T8 공개 프로필(`/profile/[handle]`)·T10 온보딩+`PATCH /api/users/me/handle`·T9 피드 전체/팔로잉 탭+프로필 링크·T12 테스트. F-PR2 + Tier2(validator INTENT_PASS·oracle MEDIUM[handle rename 차단] 반영) 통과. 커밋/PR 단계.
 
-**브랜치**: `feat/social-graph`. 스키마 변경(Follow+User.handle) 외 의존성 무변경.
+**브랜치**: PR1=`feat/social-graph`(머지·삭제), PR2=`feat/social-graph-pr2`. 스키마/auth.ts/의존성 무변경(PR2는 순수 UI+저장 API 1개). 백로그(oracle 비차단): handle/check rate-limit·미인증 squat 회수·posts pagination·차단 기능. 다음 트랙: P2 댓글+알림(fashion-social-research.md).
 
 ---
 
