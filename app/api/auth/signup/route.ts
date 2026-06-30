@@ -10,6 +10,7 @@ import {
   normalizeEmail,
   normalizeName,
 } from "@/lib/auth";
+import { validateHandle } from "@/lib/handle";
 import { prisma } from "@/lib/prisma";
 import type { SignupRequest } from "@/types";
 
@@ -24,6 +25,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: "이름, 이메일, 비밀번호를 모두 입력해주세요." },
         { status: 400 }
+      );
+    }
+
+    // handle 서버 재검증 — 폼 클라이언트 입력 신뢰 금지(Zero Trust)
+    const handleValidation = validateHandle(body.handle ?? "");
+    if (!handleValidation.ok) {
+      return NextResponse.json(
+        { success: false, error: `핸들: ${handleValidation.error}` },
+        { status: 400 }
+      );
+    }
+    const handle = handleValidation.value;
+
+    // handle unique 선행 체크 — Prisma P2002 경쟁 방어는 아래 catch에서
+    const existingHandle = await prisma.user.findUnique({
+      where: { handle },
+      select: { id: true },
+    });
+    if (existingHandle) {
+      return NextResponse.json(
+        { success: false, error: "이미 사용 중인 핸들입니다." },
+        { status: 409 }
       );
     }
 
@@ -60,6 +83,7 @@ export async function POST(req: NextRequest) {
       prisma.user.upsert({
         where: { email },
         update: {
+          // 재가입 시 handle은 변경하지 않음 — 기존 핸들 보존
           name,
           passwordHash,
           emailVerified: false,
@@ -69,6 +93,7 @@ export async function POST(req: NextRequest) {
           name,
           passwordHash,
           emailVerified: false,
+          handle, // 신규 가입 시에만 handle 주입
         },
       }),
       prisma.verificationCode.deleteMany({
@@ -100,6 +125,17 @@ export async function POST(req: NextRequest) {
       ...(process.env.NODE_ENV === "development" && { devCode: code }),
     });
   } catch (error) {
+    // Prisma unique 제약 위반(P2002) — 동시 가입 경쟁 최종 방어
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error as { code: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "이미 사용 중인 핸들 또는 이메일입니다." },
+        { status: 409 }
+      );
+    }
     console.error("[signup] error:", error);
     return NextResponse.json(
       { success: false, error: extractErrorMessage(error) },

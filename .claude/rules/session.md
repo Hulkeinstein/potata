@@ -12,15 +12,15 @@ potata = 한국→UAE 패션 커머스. 인증·커머스 MVP·카탈로그 DB·
 
 ## 지금 작업
 
-**상품 태그(tags)** 트랙 — `/plan`+momus(APPROVE ~94%) 완료, **단일 PR 실행 중**. Plan: `docs/work-plans/product-tags.md`. (리뷰·리뷰이미지·Q&A·검색 트랙 #41~#46 전부 머지 완료.)
+**P1 소셜 그래프**(패션 SNS 전환) 트랙 — `/plan`+momus(APPROVE ~94%) 완료, **PR1(백엔드) 실행 중**. Plan: `docs/work-plans/social-graph.md`. 비전: `docs/work-plans/fashion-social-research.md`. (상품 태그 #47까지 머지 완료.)
 
-**Objective**: admin 상품 등록 폼에서 태그를 칩(chip)으로 추가/삭제 → DB `Product.tags String[]` 저장 → 검색 부분매칭(`$queryRaw` UNNEST+ILIKE)으로 한글 태그 검색 가능 → 상품 상세에 읽기전용 칩 표시. 단일 PR.
+**Objective**: 기존 OOTD 피드 위에 소셜 그래프 — 팔로우/언팔로우 + `@handle` 공개 프로필 + `/what-to-wear` "전체/팔로잉" 탭. 2 PR: **PR1=백엔드**(Follow 스키마·handle·팔로우 API·피드 공개·팔로잉 필터·테스트), PR2=UI(프로필 페이지·탭·온보딩).
 
-**확정 결정**: 입력=칩(엔터/쉼표 add·x/backspace remove·중복방지·최대10개/20자) · 검색=부분매칭 `$queryRaw`(has 정확매칭 아님, 와일드카드 %/_/\ 이스케이프·파라미터 바인딩) · 표시=ProductDetailClient 읽기전용 칩(ProductCard 제외) · 스키마=`Product.tags String[] @default([])`(db push) · sizes/colors는 콤마 유지(tags만 칩). FormData=`forEach append`→`getAll`(콤마 split과 다른 경로).
+**확정 결정**: 라우트 `app/profile/[handle]`(@는 UI 표기) · 전체 탭=비로그인 공개(tab=all GET만 401 완화, 쓰기/팔로잉 탭 401 유지) · handle=`String? @unique` nullable(이메일 가입 폼 입력+중복체크, OAuth·기존=null→온보딩[PR2], 비가역 backfill 회피) · 팔로우=멱등 토글(IDOR: follower=session만, self-follow 차단) · 프로필 MVP. Follow+User.handle 스키마 승인.
 
-**진행**: 단일 PR = Task 1~7(W1 schema·types·lib/products[toAppProduct+createProduct+searchProducts raw] → W2 admin route → W3 AdminProductForm 칩·ProductDetailClient 표시 → W4 테스트 2). 검증 F1~F9 + Tier2(validator+oracle).
+**진행(PR1)**: Wave1(T1 schema Follow+handle·T2 lib/handle.ts·T3 types) → Wave2(T4 signup handle+중복체크 API·T5 팔로우 API·T6 피드 공개·팔로잉 필터) → Wave3(T7 테스트). F1~F8 + Tier2(IDOR·공개경계·비가역 다중 적대검증).
 
-**브랜치**: `feat/product-tags`. 스키마 1줄 추가(tags) 외 의존성 무변경(`git diff package.json` 빈 출력 유지).
+**브랜치**: `feat/social-graph`. 스키마 변경(Follow+User.handle) 외 의존성 무변경.
 
 ---
 

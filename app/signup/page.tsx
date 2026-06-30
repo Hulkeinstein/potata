@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, ArrowRight, X, User, Lock } from "lucide-react";
+import { Mail, ArrowRight, X, User, Lock, Hash } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth";
 import type { AuthApiResponse, SignupRequest } from "@/types";
@@ -15,6 +15,7 @@ const INITIAL_FORM: SignupRequest & { confirmPassword: string } = {
     email: "",
     password: "",
     confirmPassword: "",
+    handle: "",
 };
 
 export default function SignupPage() {
@@ -23,6 +24,9 @@ export default function SignupPage() {
     const [form, setForm] = useState(INITIAL_FORM);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    // handle 실시간 중복체크 상태 (null=미확인, true=사용가능, false=불가)
+    const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
+    const [handleChecking, setHandleChecking] = useState(false);
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,6 +52,7 @@ export default function SignupPage() {
                     email: form.email,
                     password: form.password,
                     name: form.name,
+                    handle: form.handle,
                 } satisfies SignupRequest),
             });
 
@@ -69,6 +74,24 @@ export default function SignupPage() {
 
     const updateField = (field: keyof typeof INITIAL_FORM, value: string) => {
         setForm((current) => ({ ...current, [field]: value }));
+        // handle 필드 변경 시 중복체크 결과 초기화
+        if (field === "handle") setHandleAvailable(null);
+    };
+
+    // handle onBlur 중복체크 — 포커스 잃을 때 1회 호출
+    const checkHandleAvailable = async () => {
+        const raw = form.handle.trim();
+        if (!raw) return;
+        setHandleChecking(true);
+        try {
+            const res = await fetch(`/api/auth/handle/check?handle=${encodeURIComponent(raw)}`);
+            const data = (await res.json()) as { available: boolean };
+            setHandleAvailable(data.available);
+        } catch {
+            setHandleAvailable(null);
+        } finally {
+            setHandleChecking(false);
+        }
     };
 
     return (
@@ -186,6 +209,38 @@ export default function SignupPage() {
                                                 placeholder="홍길동"
                                             />
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-xs text-zinc-400 font-medium ml-1">핸들 @</label>
+                                        <div className="relative">
+                                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                                            <input
+                                                type="text"
+                                                value={form.handle}
+                                                onChange={(e) => updateField("handle", e.target.value)}
+                                                onBlur={checkHandleAvailable}
+                                                required
+                                                className={`w-full h-12 bg-black/50 border rounded-lg pl-11 pr-4 text-white focus:outline-none transition-colors ${
+                                                    handleAvailable === true
+                                                        ? "border-green-500 focus:border-green-400"
+                                                        : handleAvailable === false
+                                                          ? "border-red-500 focus:border-red-400"
+                                                          : "border-white/10 focus:border-brand-neon"
+                                                }`}
+                                                placeholder="my_handle (영소문자·숫자·밑줄, 3~20자)"
+                                            />
+                                        </div>
+                                        {/* 중복체크 피드백 */}
+                                        {handleChecking && (
+                                            <p className="text-xs text-zinc-400 ml-1">확인 중...</p>
+                                        )}
+                                        {!handleChecking && handleAvailable === true && (
+                                            <p className="text-xs text-green-400 ml-1">사용 가능한 핸들입니다.</p>
+                                        )}
+                                        {!handleChecking && handleAvailable === false && (
+                                            <p className="text-xs text-red-400 ml-1">이미 사용 중이거나 사용할 수 없는 핸들입니다.</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-1">

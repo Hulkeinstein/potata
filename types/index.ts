@@ -85,6 +85,7 @@ export interface SignupRequest {
   email: string;
   password: string;
   name: string;
+  handle: string;
 }
 
 export interface VerifyEmailRequest {
@@ -163,7 +164,7 @@ export interface OOTDFeedItem {
   imageUrls: string[];
   caption: string | null;
   createdAt: string;
-  author: { id: string; name: string; avatar: string | null };
+  author: { id: string; name: string; handle: string | null; avatar: string | null };
   products: Pick<Product, "id" | "name" | "brand" | "imageUrl">[]; // 태그 상품(SHOP 링크용)
   likeCount: number;
   isLiked: boolean; // 현재 로그인 유저 기준
@@ -179,6 +180,33 @@ export interface OOTDCreateMeta {
 }
 // 좋아요 토글 응답
 export type OOTDLikeData = { postId: string; liked: boolean; likeCount: number };
+
+// 소셜 그래프 — 팔로우/공개 프로필 API 계약 타입
+export interface Follow {
+  id: string;
+  followerId: string;
+  followingId: string;
+  createdAt: string;
+}
+
+// 팔로우 토글 API 응답 (OOTDLikeData 스타일)
+export interface FollowToggleData {
+  targetUserId: string;
+  following: boolean;    // 토글 후 팔로우 상태
+  followerCount: number; // 대상의 팔로워 수
+}
+
+// 공개 프로필(MVP) — 민감 필드(email/passwordHash/order) 절대 미포함
+export interface PublicProfile {
+  id: string;
+  handle: string | null;
+  name: string;
+  avatar: string | null;
+  followerCount: number;
+  followingCount: number;
+  postCount: number;
+  isFollowing: boolean; // 현재 로그인 유저 기준(비로그인 시 false)
+}
 
 // 관리자 상품 등록 입력 — createProduct 헬퍼 + POST /api/admin/products 폼 필드
 export interface CreateProductInput {

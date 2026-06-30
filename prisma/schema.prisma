@@ -15,6 +15,7 @@ model User {
   passwordHash  String? // nullable: OAuth(Google) 유저는 비밀번호 없음
   emailVerified Boolean        @default(false)
   avatar        String?
+  handle        String?        @unique // 공개 프로필 식별자(nullable — 기존 유저 backfill 회피)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   orders        Order[]
@@ -26,8 +27,22 @@ model User {
   reviews       Review[]
   questions     Question[]
   answers       Answer[]
+  following     Follow[]       @relation("UserFollowing") // 내가 follower인 행 = 내가 팔로우하는 사람들
+  followers     Follow[]       @relation("UserFollowers") // 내가 following(대상)인 행 = 나를 팔로우하는 사람들
 
   @@index([email])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // 주체: 팔로우하는 사람
+  followingId String   // 대상: 팔로우당하는 사람
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])  // 멱등: 1쌍 1관계
+  @@index([followingId])               // 역관계 조회("나를 팔로우하는") + 피드 필터
 }
 
 enum OrderStatus {
