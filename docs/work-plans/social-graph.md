@@ -50,9 +50,10 @@
 - backfill 비가역 → nullable로 회피(마이그레이션 무가드 backfill 없음).
 
 ## Prerequisites
-- [ ] 브랜치 `feat/social-graph` 체크아웃(생성됨, 최신 main #47 기반).
-- [ ] `git diff prisma/schema.prisma package.json` 시작 시점 빈 출력 확인(의존성 무변경 기준선).
-- [ ] dev DB 접근(`npx prisma db push` 가능 — CLAUDE.md Allowed).
+- [x] (PR1) 브랜치 `feat/social-graph` — PR1(T1~7) 머지 완료(#48).
+- [ ] (PR2) 브랜치 `feat/social-graph-pr2` 체크아웃(생성됨, main #48 기반).
+- [ ] (PR2) `git diff prisma/schema.prisma package.json auth.ts` 시작 시점 빈 출력 확인(스키마·의존성·JWT 무변경 기준선 — PR2는 UI + 저장 API만).
+- [ ] dev DB 접근(`npx prisma db push` 가능 — CLAUDE.md Allowed). PR2는 스키마 무변경이라 push 불필요.
 
 ---
 
@@ -233,29 +234,143 @@ Critical Path: Task 1 → Task 5 → Task 7
 
 ---
 
-## PR2 (Skeleton — PR1 머지 후 상세화)
+## PR2 (UI — 완벽본, PR1 #48 머지 후 refine 완료)
 
-> Rolling-wave: 아래는 skeleton(Goal + DoD 방향 + 영향범위)만. PR1 머지 후 grep stale 재확인하며 완벽본으로 채운다. **이번 /start-work 대상 아님.**
+> **REFINE 기록**: PR1(T1~7) 머지 후 grep stale 재확인 완료(2026-06-30). 핵심 발견 — PR1이 백엔드를 예상보다 더 완성: `app/api/ootd/route.ts`는 이미 `?tab=all|following` + author.handle 노출(L104,118,127,140), `types/index.ts:184-209`는 `PublicProfile`(화이트리스트)·`FollowToggleData` 선반영, `app/api/auth/handle/check`(`?handle=`→`{available}`)·`lib/handle.ts:validateHandle` 재사용 가능. **→ PR2는 순수 UI + 온보딩 저장 API(PATCH) 1개만 신규.** OOTD/follow/handle-check 라우트는 클라이언트 fetch만(라우트 무변경).
+>
+> **Task 순서(의존)**: 브랜치 `feat/social-graph-pr2`(main #48 기반). T8(프로필 페이지+팔로우 버튼·독립) ∥ T10(온보딩 페이지+저장 API+배너·독립) → Wave 4. T9+T11은 동일 파일(`WhatToWearClient.tsx`)이라 **한 task로 통합**(탭 + 카드 링크를 1회 편집 — 충돌 회피) → Wave 5. 저장 API 단위 + 프로필 데이터 헬퍼 테스트 → Wave 6.
 
-### Wave 4 (PR2 — UI, PR1 머지 후)
-- [ ] 8. 공개 프로필 페이지 `app/profile/[handle]/page.tsx` (server component, 공개) `category:visual-engineering`
-  **Goal(방향)**: handle로 User 조회 → 없으면 `notFound()`(404). 아바타(dicebear seed=handle 통일) + name + 팔로워/팔로잉 count + 팔로우 버튼(client) + 유저 OOTD 그리드.
-  **DoD 방향**: select 화이트리스트(email/order/passwordHash 노출 금지 — Tier2), handle null 도달 불가 확인, 비로그인 열람 가능.
-  **영향범위**: 신규 page + 프로필용 데이터 헬퍼(`lib/profile.ts`?) + 팔로우 버튼 컴포넌트.
+### Wave 4 (PR2 — 독립 신규 페이지, 병렬)
 
-- [ ] 9. `/what-to-wear` "전체/팔로잉" 탭 + loadFeed `?tab=` 연결 `category:visual-engineering`
-  **Goal(방향)**: `WhatToWearClient.tsx:33-45` loadFeed에 tab state + `?tab=all|following` 추가. sticky 헤더(line 107)에 탭 UI(기본=전체). 팔로잉 탭은 비로그인 시 로그인 유도.
-  **DoD 방향**: 전체=공개 로드, 팔로잉=인증 필요, 다크+brand-neon 디자인.
-  **영향범위**: `WhatToWearClient.tsx`(loadFeed·헤더), OOTDCard dicebear seed → handle 통일(author.handle 도착).
+- [x] 8. 공개 프로필 페이지 `app/profile/[handle]/page.tsx` (server, 공개) + 팔로우 버튼(client) + 데이터 헬퍼 `category:visual-engineering`
+  **Goal**: 비로그인도 열람 가능한 `/profile/[handle]` 서버 컴포넌트. handle로 User 조회 → 없으면 `notFound()`(404). 헤더(dicebear avatar seed=handle + name + 팔로워/팔로잉/게시물 수) + 팔로우 버튼(client, 낙관적 토글) + 유저 OOTD 그리드. 데이터는 헬퍼 `lib/profile.ts`의 `getPublicProfile(handle, viewerId)`로 조회(테스트 가능 분리).
+  **References** (WHY):
+  - `types/index.ts:199-209` `PublicProfile` — **화이트리스트 계약(이미 PR1 정의)**: `{id, handle, name, avatar, followerCount, followingCount, postCount, isFollowing}`. 헬퍼 반환 타입 = 이것 그대로. email/passwordHash/order **타입에 없음**(누설 컴파일 차단).
+  - `prisma/schema.prisma:11-25` User — `select: { id, name, avatar, handle }`만(화이트리스트). `ootdPosts` 관계(25) = 그리드 소스. `prisma.oOTDPost`(client accessor, 소문자 oO).
+  - `prisma/schema.prisma:36-46` Follow — followerCount=`prisma.follow.count({where:{followingId:user.id}})`, followingCount=`count({where:{followerId:user.id}})`, isFollowing=비로그인 false / 로그인 `prisma.follow.findUnique({where:{followerId_followingId:{followerId:viewerId, followingId:user.id}}})` !== null. postCount=`prisma.oOTDPost.count({where:{userId:user.id}})`.
+  - `app/mypage/page.tsx:48-74` — 프로필 헤더 마크업 참조(아바타 wrapper 53-62: `bg-linear-to-r from-brand-neon to-purple-500` 링 + dicebear `fill`, name 64-66, 통계 그리드 77-98). **dicebear seed=handle**(공개 프로필 전용 — mypage의 seed=user.name은 변경 금지).
+  - `app/api/users/[id]/follow/route.ts:66` — 팔로우 버튼이 소비할 응답 `{targetUserId, following, followerCount}`. 버튼은 `POST /api/users/${profileUserId}/follow`.
+  - `components/ootd/WhatToWearClient.tsx:53-61` `requireLogin` + L64-92 `toggleLike` 낙관적 토글 — 팔로우 버튼(client 분리 파일 `components/profile/FollowButton.tsx`)이 동일 패턴 복제(낙관적 setState → fetch → 실패 롤백, 비로그인 시 confirm→`/login`).
+  - `app/api/ootd/route.ts:135-149` OOTDFeedItem map — 유저 그리드 카드는 신규 마크업(또는 단순 이미지 그리드). MVP라 OOTDCard 재사용보다 단순 `<Image>` 그리드 권장(좋아요/삭제 불필요).
+  **Must NOT do**: profile select에 `email`/`passwordHash`/`orders`/`passwordHash` **절대 포함 금지**(Tier2 누설 — 화이트리스트 `{id,name,avatar,handle}`만). `auth.ts`/JWT 수정 금지(비로그인 열람 = `auth()` optional, session 없어도 200). `prisma.user.findUnique({where:{handle:null}})` 같은 null handle 조회 금지(URL에 handle 세그먼트 필수 = null 도달 불가). 팔로우 버튼에 follower를 client에서 주입 금지(서버 session — PR1이 강제). `/profile`을 middleware matcher에 추가 금지(공개 유지). OOTD/follow 라우트 수정 금지(소비만).
+  **QA Scenarios** (agent-executable):
+  - Happy path(비로그인 공개): 미인증 상태로 `/profile/{존재handle}` 렌더 → 200, 헤더(name·avatar·count 3종)·OOTD 그리드 표시. `getPublicProfile` 단위: 존재 handle → `PublicProfile` 반환, isFollowing=false(viewerId null).
+  - Happy path(로그인 isFollowing): 팔로우한 유저 프로필 → isFollowing=true(버튼 "팔로잉" 상태). 팔로우 버튼 클릭 → 낙관적 토글 + `POST /api/users/{id}/follow` → followerCount 갱신.
+  - Edge(404): `/profile/nonexistent_handle` → `notFound()`(Next 404 페이지). `getPublicProfile("nonexistent", null)` → null(또는 notFound 트리거 값).
+  - Negative(누설 차단): `grep -n "email\|passwordHash\|orders" app/profile/[handle]/page.tsx lib/profile.ts` → User 민감필드 select 매치 없음. `grep -n "select:" lib/profile.ts` → `{ id: true, name: true, avatar: true, handle: true }` 화이트리스트만.
+  - Negative(비로그인 팔로우 버튼): 미인증 클릭 → confirm→`/login` 유도(API 호출 전 차단). 직접 `POST` 시도해도 PR1 401(이중 방어).
 
-- [ ] 10. handle 온보딩 게이트 `app/onboarding/handle/page.tsx` + 가드 `category:ultrabrain`
-  **Goal(방향)**: handle null 로그인 유저(OAuth·기존) → 온보딩 유도. handle 입력 + 중복체크(T4 API 재사용) + 저장 API. JWT에 handle 없으므로 server-component/client 가드.
-  **DoD 방향**: 이메일/OAuth/기존 유저 단일 경로 통일, 저장 후 리다이렉트.
-  **영향범위**: 신규 page + handle 저장 API(PATCH) + 가드 진입점(layout 또는 server check).
+- [x] 10. handle 온보딩 페이지 `app/onboarding/handle/page.tsx` (client) + 저장 API `PATCH /api/users/me/handle` + 진입점 배너 `category:ultrabrain`
+  **Goal**: handle null 로그인 유저를 위한 **비강제** 핸들 설정. (a) `/onboarding/handle` 클라 폼(handle 입력 + 실시간 중복체크 재사용 + 저장 후 `router.push`로 복귀), (b) 저장 API `PATCH /api/users/me/handle`(auth → validateHandle → unique → `prisma.user.update`, P2002 409), (c) handle null 로그인 유저용 "핸들 설정" 배너 진입점(피드/마이페이지 헤더). **강제 redirect 가드 없음 — handle 없어도 앱 이용 가능.**
+  **References** (WHY):
+  - `app/api/auth/handle/check/route.ts:13-36` — `GET ?handle=` → `{available:boolean}`. 온보딩 폼 실시간 중복체크 **재사용**(신규 API 금지). signup 폼의 중복체크 UX 패턴과 동일.
+  - `lib/handle.ts:59` `validateHandle(raw)` → `{ok,value}|{ok,error}` — 저장 API 서버 재검증(Zero Trust — 폼 신뢰 금지). 정규화된 `value` 저장.
+  - `app/api/auth/signup/route.ts:31-51` — handle 서버 재검증 + unique 선행 체크 + 409 패턴 **복제**. 저장 API는 여기에 `auth()` 게이트 + `prisma.user.update({where:{id:session.user.id}, data:{handle}})` + catch P2002→409 추가.
+  - `app/api/users/[id]/follow/route.ts:13-16` — `auth()` → `session.user.id` 게이트 패턴(저장 API actor=session.user.id, **client body의 userId 신뢰 금지**).
+  - `app/signup/page.tsx`(handle 필드 폼 — PR1 T4) — 온보딩 폼 입력/중복체크 UX 복제(별도 페이지). 다크+brand-neon.
+  - `app/mypage/page.tsx:29-41` — `useSession` + status 가드 패턴(온보딩 페이지도 로그인 필요: unauthenticated → `/login`). 배너 진입점: `session.user` 있고 `handle` 정보가 필요 → **JWT에 handle 없으므로**(auth.ts 무변경 결정) 배너는 `GET /api/users/me/handle`(또는 프로필 조회) 또는 클라에서 `/api/auth/handle/check` 불가 → **배너는 서버 컴포넌트에서 `prisma.user.findUnique({where:{id}, select:{handle}})`로 handle null 판정** 후 조건부 렌더(layout/page server check). client 페이지면 `GET /api/users/me/handle` 신규 경량 조회 허용.
+  **Must NOT do**: `auth.ts` 수정 금지(JWT에 handle 추가 안 함 — 결정 ④). 강제 redirect 가드(handle 없으면 모든 페이지 차단) 금지(**비강제 유도** — 배너만). 저장 API actor를 client body에서 받지 말 것(`session.user.id`만 — IDOR). `validateHandle` 서버 재검증 생략 금지(Zero Trust). 중복체크 신규 API 생성 금지(`/api/auth/handle/check` 재사용). handle 변경(이미 set된 유저의 rename) 허용 금지(MVP — OUT, 저장 API는 신규 설정만 또는 멱등 허용은 prometheus 판단 — 단 null→set 경로 보장). middleware matcher에 `/onboarding` 추가 금지.
+  **QA Scenarios** (agent-executable):
+  - Happy path(저장): 로그인 + handle null 유저가 `/onboarding/handle`에서 "newhandle1" 입력 → 중복체크 available → 저장 `PATCH /api/users/me/handle {handle:"newhandle1"}` → 200, `prisma.user.update` 호출. 단위(mock): auth=user → validateHandle ok → findUnique(handle) miss → update → 200.
+  - Edge(중복): 이미 사용 중 handle 저장 시도 → 409("이미 사용 중"). 단위: findUnique(handle) hit → 409. 또는 update에서 P2002 catch → 409.
+  - Negative(서버 재검증): `PATCH` body `{handle:"ab"}`(3자) → 400(validateHandle 거부). `{handle:"admin"}` → 400(예약어). `{handle:"a.b"}` → 400(허용문자).
+  - Negative(인증): 비로그인 `PATCH /api/users/me/handle` → 401. body에 다른 userId 주입 시도 → 무시(session.user.id만 — `grep -n "session.user.id" app/api/users/me/handle/route.ts` 존재, body userId 읽는 코드 없음).
+  - Negative(비강제): handle null 유저가 `/what-to-wear`·`/mypage` 접근 → 정상 렌더(차단 없음) + "핸들 설정" 배너만 노출. `grep -rn "redirect.*onboarding" app/ middleware.ts` → 강제 redirect 매치 없음.
 
-- [ ] 11. OOTDCard·작성자 → 프로필 링크 연쇄(author.handle) `category:visual-engineering`
-  **Goal(방향)**: 피드 카드 작성자명/아바타 → `/profile/[handle]` 링크. author.handle null이면 링크 비활성.
-  **영향범위**: `WhatToWearClient.tsx` OOTDCard(218-223), 피드 GET include(이미 T6에서 handle 추가), types(이미 T3).
+### Wave 5 (Wave 4 완료 후 — 피드 클라이언트 단일 편집)
 
-### PR2 Final Verification (skeleton)
-- [ ] F-PR2. tsc/lint/test + 공개 프로필 비로그인 열람 + 탭 전환 + 온보딩 흐름 + Tier2(공개 필드 누설 재검증).
+- [x] 9. `WhatToWearClient.tsx` "전체/팔로잉" 탭(`?tab=`) + 작성자 → 프로필 링크 + dicebear seed (T9+T11 통합) `category:visual-engineering`
+  **Goal**: `WhatToWearClient.tsx` 1회 편집으로 (a) "전체/팔로잉" 탭 + loadFeed `?tab=` 연결(기본=전체), (b) OOTDCard 작성자명/아바타 → `/profile/[handle]` 링크(handle null이면 비활성), (c) OOTDCard dicebear seed = `author.handle ?? author.id`. 동일 파일이므로 충돌 회피 위해 단일 task.
+  **References** (WHY):
+  - `components/ootd/WhatToWearClient.tsx:33-45` `loadFeed` — `useCallback`에 tab 의존: `const [tab, setTab] = useState<"all"|"following">("all")`(L29 근처 state) → `fetch("/api/ootd?tab=" + tab)`(L35) → deps `[tab]`(L45). `useEffect` deps에 `loadFeed` 유지(tab 변경 시 재로드).
+  - `app/api/ootd/route.ts:104,111,118` — **라우트는 이미 `?tab=` 지원**(PR1): tab=following 비로그인 401, tab=all 공개. 클라는 fetch만. 팔로잉 탭 클릭 시 `requireLogin()`(L53-61) 선차단(비로그인 → /login 유도, 401 fetch 방지).
+  - `components/ootd/WhatToWearClient.tsx:107-115` sticky 헤더 — 탭 UI 삽입 위치(`What to Wear?` 제목 옆/아래). 다크+brand-neon(활성 탭 `text-brand-neon` 또는 underline). "전체"/"팔로잉" 2버튼.
+  - `components/ootd/WhatToWearClient.tsx:218-223` OOTDCard 작성자 div(아바타 219-221 + name 222) — `item.author.handle` 있으면 `<Link href={'/profile/' + item.author.handle}>`로 래핑, null이면 현 div 유지(비활성). `next/link` 이미 import(L5).
+  - `components/ootd/WhatToWearClient.tsx:170-171` avatar dicebear — seed `item.author.id` → `item.author.handle ?? item.author.id`(handle 있으면 고유·불변 seed, null이면 id 폴백). `types/index.ts:167` author.handle은 이미 `string | null`(PR1).
+  **Must NOT do**: `/api/ootd` 라우트 수정 금지(클라 fetch만 — PR1 완성). 팔로잉 탭을 비로그인에 공개 호출 금지(`requireLogin` 선차단 — 401 노이즈 방지). author.handle null인데 `/profile/null` 링크 생성 금지(조건부 — null이면 링크 없음). mypage/PostForm dicebear seed 변경 금지(OOTDCard만). 탭 기본값을 following으로 두지 말 것(기본=all — 결정 ②). 좋아요/게시 로직(toggleLike/PostForm) 변경 금지(surgical — 탭·링크만).
+  **QA Scenarios** (agent-executable):
+  - Happy path(탭): 초기 로드 "전체" 활성 → `fetch("/api/ootd?tab=all")`. "팔로잉" 클릭(로그인) → `fetch("/api/ootd?tab=following")` → 팔로우 유저 게시물만. `grep -n "tab=\|setTab\|useState<\"all\"" components/ootd/WhatToWearClient.tsx` → 탭 state/fetch 매치.
+  - Happy path(프로필 링크): author.handle 있는 카드 작성자 클릭 → `/profile/{handle}` 이동. `grep -n "/profile/" components/ootd/WhatToWearClient.tsx` → Link href 매치.
+  - Edge(null handle): author.handle null인 카드 → 작성자명 비링크(div 유지, `/profile/null` 미생성). dicebear seed = author.id 폴백.
+  - Negative(팔로잉 비로그인): 비로그인 "팔로잉" 클릭 → `requireLogin` confirm→/login(401 fetch 안 함). 탭 기본값 = "전체"(`grep -n 'useState<"all"' ...` 확인).
+  - 정합: `npx tsc --noEmit` exit 0(author.handle 타입 기존 일치), `npm run lint` exit 0.
+
+### Wave 6 (Wave 5 완료 후 — 테스트)
+
+- [x] 12. 테스트: 온보딩 저장 API(PATCH) 단위 + 공개 프로필 데이터 헬퍼 단위 `category:ultrabrain`
+  **Goal**: Vitest 테스트 추가 — `PATCH /api/users/me/handle`(인증·서버검증·unique·P2002·IDOR) + `lib/profile.ts:getPublicProfile`(화이트리스트 select·count 정확·isFollowing 비로그인 false). `npm run test` exit 0, 기존 회귀 0.
+  **References** (WHY):
+  - `app/api/users/[id]/follow/route.test.ts:1-47` — **vi.hoisted + vi.mock prisma 패턴 정확 복제**: `vi.hoisted`로 mock fn 초기화, `vi.mock("@/auth")` + `vi.mock("@/lib/prisma")`, `makeReq`/`makeParams` 헬퍼. 저장 API 테스트는 `prisma.user.findUnique`/`update` mock.
+  - `app/api/users/me/handle/route.ts`(T10) — 시나리오: auth null→401, validateHandle 거부→400, 중복(findUnique hit 또는 P2002)→409, 정상→200 + update 호출 인자(`data:{handle}`) 단언, body userId 무시(session.user.id 사용) 단언.
+  - `lib/profile.ts`(T8) — `getPublicProfile` mock: user findUnique→select 화이트리스트 호출 인자 단언, follow.count 2회(follower/following), oOTDPost.count, follow.findUnique(isFollowing). viewerId null → isFollowing false 단언.
+  - `lib/handle.test.ts`(PR1 T7) — handle 검증 테스트 이미 존재. 중복 금지(저장 API의 검증 호출만 mock 경유 확인).
+  **Must NOT do**: 실제 DB 연결 금지(prisma mock — 격리·CI 비용). 기존 테스트(follow/handle/ootd/auth) 수정·삭제 금지(회귀 — 신규 파일만). **테스트 통과 위해 검증/화이트리스트 완화 금지**(Test Inversion 방지 — DoD 약화 금지, failing test 삭제 금지). flaky 실시간 의존(Date.now 미고정) 금지.
+  **QA Scenarios** (agent-executable):
+  - Happy path: `npm run test` → exit 0, 신규 2개 파일(`route.test.ts` for me/handle + `profile.test.ts`) 통과.
+  - 커버리지(보안): 저장 API IDOR(body userId 무시·session만)·401(비로그인)·409(중복)·400(예약어/형식) + 프로필 헬퍼 화이트리스트(select 인자에 email/passwordHash/orders 없음)·isFollowing 비로그인 false 케이스 각각 명시적 존재(`grep -rn "401\|409\|IDOR\|화이트\|isFollowing\|session.user.id" app/api/users/me/handle/route.test.ts lib/profile.test.ts` 매치).
+  - Negative(회귀): `npm run test` 전체 — 기존 테스트 0 fail.
+
+---
+
+## PR2 Task Dependency Graph
+
+| Task | Depends On | Reason |
+|------|-----------|--------|
+| 8 | PR1(완료) | PublicProfile 타입·Follow·follow API·handle. 신규 페이지 독립 |
+| 10 | PR1(완료) | validateHandle·handle/check·User.handle. 신규 페이지+API 독립 |
+| 9 | PR1(완료) | OOTD `?tab=`·author.handle 완비. T8 프로필 라우트 존재 후 링크 유효(소프트 의존 — `/profile/[handle]` 경로) |
+| 12 | 8, 10 | 저장 API(T10)·프로필 헬퍼(T8) 구현 후 테스트 |
+
+---
+
+## PR2 Parallel Execution Graph
+
+Wave 4 (PR2 시작, 병렬 — 독립 신규):
+├── Task 8: 공개 프로필 페이지 + 팔로우 버튼 + lib/profile.ts
+└── Task 10: 온보딩 페이지 + 저장 API(PATCH) + 배너
+
+Wave 5 (T8 머지 후 — 링크 대상 라우트 존재):
+└── Task 9: WhatToWearClient 탭 + 프로필 링크 + dicebear seed (T9+T11 통합)
+
+Wave 6 (Wave 4 완료 후):
+└── Task 12: 저장 API 단위 + 프로필 헬퍼 단위 테스트
+
+Critical Path: Task 8 → Task 9 → Task 12
+
+---
+
+## PR2 Category + Skills
+
+| Task | Category | Category Reason |
+|------|----------|----------------|
+| 8 | visual-engineering | 공개 프로필 UI(헤더·그리드·팔로우 버튼) — 디자인 우선. 단 select 화이트리스트는 보안 주의 |
+| 10 | ultrabrain | 저장 API 인증(P0)·Zero Trust 재검증·IDOR·P2002 경쟁 — 신중 분석 |
+| 9 | visual-engineering | 피드 탭·링크 UI(다크+brand-neon) — 디자인 우선 |
+| 12 | ultrabrain | 보안 시나리오(IDOR/401/409/화이트리스트) 검증 테스트 |
+
+---
+
+## PR2 Final Verification Wave
+
+- [x] F-PR2-1. `npx prisma generate && npx tsc --noEmit` → exit 0 (PR2 신규 파일 타입 정합)
+- [x] F-PR2-2. `npm run lint` → exit 0 (T8/T9/T10/T12 신규 파일 포함)
+- [x] F-PR2-3. `npm run test` → exit 0 (T12 신규 테스트 + 기존 회귀 0)
+- [x] F-PR2-4. `git diff --stat package.json prisma/schema.prisma auth.ts` → **빈 출력**(의존성·스키마·JWT 무변경 — Must NOT do 전역)
+- [x] F-PR2-5. 공개 프로필 비로그인 열람: 미인증으로 `/profile/{존재handle}` → 200(헤더·count·그리드). `/profile/nonexistent` → 404(notFound)
+- [x] F-PR2-6. 탭 전환: `/what-to-wear` 기본=전체(`?tab=all` 공개 로드). "팔로잉" 클릭(로그인) → `?tab=following` 팔로우 유저만. 비로그인 "팔로잉" → /login 유도
+- [x] F-PR2-7. 온보딩 저장: 로그인+handle null 유저 `/onboarding/handle` 입력→중복체크→`PATCH /api/users/me/handle` 200 저장. 비로그인 PATCH → 401, 중복 → 409, 예약어/형식 → 400
+- [x] F-PR2-8. 프로필 링크 연쇄: 피드 카드 작성자(handle 有) 클릭 → `/profile/{handle}`. handle null 작성자 → 비링크(div). dicebear seed = handle ?? id
+- [x] F-PR2-9. 비강제 검증: handle null 유저가 `/what-to-wear`·`/mypage` 정상 이용(차단 없음) + "핸들 설정" 배너만. `grep -rn "redirect.*onboarding" app/ middleware.ts` → 강제 redirect 매치 없음
+- [x] F-PR2-10. **Tier2 적대검증(validator + oracle)** — `coding-workflow.md` 위험 #1(보안: 공개 프로필 민감필드 누설·온보딩 저장 IDOR/인증)·#3(아키텍처: auth.ts 무변경 비강제 게이트). 다중 적대검증: ① 공개 프로필 select 화이트리스트(email/passwordHash/orders 누설 0 — `grep -n "select" lib/profile.ts` 검증) ② 저장 API follower/actor=session만(body userId 무시) ③ handle null 안전성(링크·온보딩·피드 깨짐 0) ④ 탭 인증 경계(all 공개 / following 401)
+
+---
+
+## PR2 Test Strategy
+- [ ] tests-after (Vitest + prisma mock). 신규: `app/api/users/me/handle/route.test.ts`(저장 API 인증·검증·unique·P2002·IDOR) + `lib/profile.test.ts`(getPublicProfile 화이트리스트 select·count·isFollowing). follow route test 패턴 복제. 기존 회귀 0.
+
+## PR2 Success Criteria
+> **PR2 경계**: PR1 백엔드 위에 **UI 노출**(공개 프로필·피드 탭·온보딩·프로필 링크) + 온보딩 저장 API(PATCH) 1개. auth.ts/JWT·스키마·의존성 무변경.
+- [ ] `/profile/[handle]` 비로그인 공개 열람(존재→200·부재→404), 민감필드(email/passwordHash/order) 누설 0(화이트리스트).
+- [ ] `/what-to-wear` "전체/팔로잉" 탭(기본=전체·공개), 팔로잉=인증 필요. 작성자→`/profile/[handle]` 링크(null 비활성).
+- [ ] handle null 로그인 유저 **비강제** 온보딩 유도(배너), `PATCH /api/users/me/handle` 저장(인증·서버재검증·unique·409). 강제 redirect 0, auth.ts 무변경. handle 없어도 앱 이용 가능.
+- [ ] `npx tsc --noEmit` + `npm run lint` + `npm run test` 전부 exit 0, `git diff --stat package.json prisma/schema.prisma auth.ts` 빈 출력.
