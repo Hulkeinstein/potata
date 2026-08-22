@@ -4,20 +4,25 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const InitialLoader = () => {
-    const [isLoading, setIsLoading] = useState(() => {
-        if (typeof window === "undefined") {
-            return false;
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (sessionStorage.getItem("potata-visit") === "true") {
+            return;
         }
 
-        return sessionStorage.getItem("potata-visit") !== "true";
-    });
+        const showTimer = setTimeout(() => {
+            sessionStorage.setItem("potata-visit", "true");
+            setIsLoading(true);
+        }, 0);
+
+        return () => clearTimeout(showTimer);
+    }, []);
 
     useEffect(() => {
         if (!isLoading) {
             return;
         }
-
-        sessionStorage.setItem("potata-visit", "true");
 
         const timer = setTimeout(() => {
             setIsLoading(false);

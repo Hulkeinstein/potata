@@ -167,6 +167,7 @@ export interface OOTDFeedItem {
   author: { id: string; name: string; handle: string | null; avatar: string | null };
   products: Pick<Product, "id" | "name" | "brand" | "imageUrl">[]; // 태그 상품(SHOP 링크용)
   likeCount: number;
+  commentCount: number;
   isLiked: boolean; // 현재 로그인 유저 기준
 }
 export interface OOTDFeedData {
@@ -180,6 +181,87 @@ export interface OOTDCreateMeta {
 }
 // 좋아요 토글 응답
 export type OOTDLikeData = { postId: string; liked: boolean; likeCount: number };
+
+export type OOTDCommentItem = {
+  id: string;
+  postId: string;
+  content: string;
+  createdAt: string;
+  author: { id: string; name: string; handle: string | null; avatar: string | null };
+  isMine: boolean;
+};
+
+export type OOTDCommentPage = {
+  items: OOTDCommentItem[];
+  nextCursor: string | null;
+};
+
+export type OOTDCommentCreateRequest = { content: string };
+
+export type NotificationItem = {
+  id: string;
+  type: "COMMENT" | "LIKE";
+  readAt: string | null;
+  createdAt: string;
+  actor: { id: string; name: string; handle: string | null; avatar: string | null };
+  post: { id: string; imageUrl: string | null; caption: string | null };
+};
+
+export type NotificationPage = {
+  items: NotificationItem[];
+  nextCursor: string | null;
+  unreadCount: number;
+};
+
+export type NotificationReadAllData = { updatedCount: number };
+
+export type MyPostItem =
+  | {
+      readonly type: "ootd";
+      readonly id: string;
+      readonly caption: string | null;
+      readonly imageUrls: readonly string[];
+      readonly createdAt: string;
+      readonly likeCount: number;
+      readonly commentCount: number;
+    }
+  | {
+      readonly type: "review";
+      readonly id: string;
+      readonly productId: string;
+      readonly productName: string;
+      readonly productImageUrl: string | null;
+      readonly rating: number;
+      readonly comment: string;
+      readonly imageUrls: readonly string[];
+      readonly createdAt: string;
+      readonly updatedAt: string;
+    }
+  | {
+      readonly type: "question";
+      readonly id: string;
+      readonly productId: string;
+      readonly productName: string;
+      readonly productImageUrl: string | null;
+      readonly content: string;
+      readonly answerCount: number;
+      readonly createdAt: string;
+      readonly updatedAt: string;
+    };
+
+export type MyOOTDPost = Extract<MyPostItem, { readonly type: "ootd" }>;
+export type MyReviewPost = Extract<MyPostItem, { readonly type: "review" }>;
+export type MyQuestionPost = Extract<MyPostItem, { readonly type: "question" }>;
+
+export type MyPostsData = {
+  readonly items: readonly MyPostItem[];
+  readonly nextCursor: string | null;
+};
+
+export type MyPostsResponse = {
+  readonly success: true;
+  readonly data: MyPostsData;
+};
 
 // 소셜 그래프 — 팔로우/공개 프로필 API 계약 타입
 export interface Follow {

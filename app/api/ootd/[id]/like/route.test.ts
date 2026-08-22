@@ -1,81 +1,96 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { Prisma } from "@prisma/client";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { authMock, postFindUnique, likeFindUnique, likeDelete, likeCreateMany, likeCount } =
-  vi.hoisted(() => ({
-    authMock: vi.fn(),
-    postFindUnique: vi.fn(),
-    likeFindUnique: vi.fn(),
-    likeDelete: vi.fn(),
-    likeCreateMany: vi.fn(),
-    likeCount: vi.fn(),
-  }));
-
-vi.mock("@/auth", () => ({ auth: authMock }));
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    oOTDPost: { findUnique: postFindUnique },
-    oOTDLike: {
-      findUnique: likeFindUnique,
-      delete: likeDelete,
-      createMany: likeCreateMany,
-      count: likeCount,
-    },
-  },
+const mocks = vi.hoisted(() => ({
+  auth: vi.fn(), postFindUnique: vi.fn(), likeFindUnique: vi.fn(), likeCreate: vi.fn(),
+  likeDelete: vi.fn(), likeCount: vi.fn(), notificationCreate: vi.fn(), transaction: vi.fn(),
 }));
+vi.mock("@/auth", () => ({ auth: mocks.auth }));
+vi.mock("@/lib/prisma", () => ({ prisma: {
+  oOTDPost: { findUnique: mocks.postFindUnique },
+  oOTDLike: { findUnique: mocks.likeFindUnique, count: mocks.likeCount },
+  $transaction: mocks.transaction,
+} }));
 
-import { POST } from "./route";
 import type { NextRequest } from "next/server";
+import { POST } from "./route";
 
-const req = () =>
-  new Request("http://localhost/api/ootd/p1/like", { method: "POST" }) as unknown as NextRequest;
-const ctx = (id = "p1") => ({ params: Promise.resolve({ id }) });
+const request = new Request("http://localhost/api/ootd/p1/like", { method: "POST" }) as NextRequest;
+const context = { params: Promise.resolve({ id: "p1" }) };
+const tx = {
+  oOTDPost: { findUnique: mocks.postFindUnique },
+  oOTDLike: { findUnique: mocks.likeFindUnique, create: mocks.likeCreate, delete: mocks.likeDelete, count: mocks.likeCount },
+  notification: { create: mocks.notificationCreate },
+};
 
 describe("POST /api/ootd/[id]/like", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  it("미인증은 401", async () => {
-    authMock.mockResolvedValue(null);
-    const res = await POST(req(), ctx());
-    expect(res.status).toBe(401);
-    expect(postFindUnique).not.toHaveBeenCalled();
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.transaction.mockImplementation(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx));
   });
 
-  it("없는 게시물은 404", async () => {
-    authMock.mockResolvedValue({ user: { id: "u1" } });
-    postFindUnique.mockResolvedValue(null);
-    const res = await POST(req(), ctx("nope"));
-    expect(res.status).toBe(404);
+  it("returns 401 when unauthenticated", async () => {
+    mocks.auth.mockResolvedValue(null);
+    expect((await POST(request, context)).status).toBe(401);
+    expect(mocks.postFindUnique).not.toHaveBeenCalled();
   });
 
-  it("첫 좋아요: createMany + liked:true", async () => {
-    authMock.mockResolvedValue({ user: { id: "u1" } });
-    postFindUnique.mockResolvedValue({ id: "p1" });
-    likeFindUnique.mockResolvedValue(null);
-    likeCount.mockResolvedValue(1);
-
-    const res = await POST(req(), ctx());
-    expect(res.status).toBe(200);
-    const json = (await res.json()) as { data: { liked: boolean; likeCount: number } };
-    expect(json.data.liked).toBe(true);
-    expect(json.data.likeCount).toBe(1);
-    expect(likeCreateMany).toHaveBeenCalledWith({
-      data: [{ userId: "u1", postId: "p1" }],
-      skipDuplicates: true,
-    });
-    expect(likeDelete).not.toHaveBeenCalled();
+  it("returns 404 when the post is absent", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "u1" } });
+    mocks.postFindUnique.mockResolvedValue(null);
+    expect((await POST(request, context)).status).toBe(404);
   });
 
-  it("재호출(취소): delete + liked:false", async () => {
-    authMock.mockResolvedValue({ user: { id: "u1" } });
-    postFindUnique.mockResolvedValue({ id: "p1" });
-    likeFindUnique.mockResolvedValue({ id: "like1" });
-    likeCount.mockResolvedValue(0);
+  it("creates a like and source-linked notification in one transaction", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "actor" } });
+    mocks.postFindUnique.mockResolvedValue({ id: "p1", userId: "owner" });
+    mocks.likeFindUnique.mockResolvedValue(null);
+    mocks.likeCreate.mockResolvedValue({ id: "l1" });
+    mocks.likeCount.mockResolvedValue(1);
+    const response = await POST(request, context);
+    expect(mocks.notificationCreate).toHaveBeenCalledWith({ data: { recipientId: "owner", actorId: "actor", postId: "p1", type: "LIKE", sourceLikeId: "l1" } });
+    expect(await response.json()).toMatchObject({ data: { liked: true, likeCount: 1 } });
+  });
 
-    const res = await POST(req(), ctx());
-    expect(res.status).toBe(200);
-    const json = (await res.json()) as { data: { liked: boolean } };
-    expect(json.data.liked).toBe(false);
-    expect(likeDelete).toHaveBeenCalledWith({ where: { id: "like1" } });
-    expect(likeCreateMany).not.toHaveBeenCalled();
+  it("does not notify for a self-like", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "owner" } });
+    mocks.postFindUnique.mockResolvedValue({ id: "p1", userId: "owner" });
+    mocks.likeFindUnique.mockResolvedValue(null);
+    mocks.likeCreate.mockResolvedValue({ id: "l1" });
+    mocks.likeCount.mockResolvedValue(1);
+    await POST(request, context);
+    expect(mocks.notificationCreate).not.toHaveBeenCalled();
+  });
+
+  it("deletes an existing like and relies on source cascade cleanup", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "actor" } });
+    mocks.postFindUnique.mockResolvedValue({ id: "p1", userId: "owner" });
+    mocks.likeFindUnique.mockResolvedValue({ id: "l1" });
+    mocks.likeDelete.mockResolvedValue({ id: "l1" });
+    mocks.likeCount.mockResolvedValue(0);
+    const response = await POST(request, context);
+    expect(mocks.likeDelete).toHaveBeenCalledWith({ where: { id: "l1" } });
+    expect(await response.json()).toMatchObject({ data: { liked: false, likeCount: 0 } });
+  });
+
+  it("recovers P2002 by reading the concurrent committed like", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "actor" } });
+    mocks.postFindUnique.mockResolvedValue({ id: "p1", userId: "owner" });
+    mocks.likeFindUnique.mockResolvedValueOnce({ id: "race-like" });
+    mocks.likeCount.mockResolvedValue(1);
+    mocks.transaction
+      .mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError("duplicate", { code: "P2002", clientVersion: "test" }))
+      .mockImplementationOnce(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx));
+    const response = await POST(request, context);
+    expect(await response.json()).toMatchObject({ data: { liked: true, likeCount: 1 } });
+    expect(mocks.notificationCreate).not.toHaveBeenCalled();
+  });
+
+  it("returns a sanitized 500 on database failure", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "actor" } });
+    mocks.postFindUnique.mockRejectedValue(new Error("secret database detail"));
+    const response = await POST(request, context);
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ success: false, error: "서버 오류가 발생했습니다." });
   });
 });

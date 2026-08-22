@@ -1,6 +1,6 @@
 # potata Master Roadmap
 
-> 마지막 업데이트: 2026-06-24
+> 마지막 업데이트: 2026-08-22
 > 목적: P0~P3 작업 인덱스. 각 항목의 상세 plan은 링크된 문서 참조.
 > 이 파일은 인덱스만 — 상세 plan 작성 금지.
 
@@ -14,15 +14,28 @@
 
 ---
 
-## 🔧 로그인 실유저 가용성 — 선결 (config/ops, 코드 아님)
+## ⏳ External waitlist — 운영 배포·실유저 가동
 
-> 로그인 *로직*은 검증 완료. 실유저가 실제 로그인하려면 아래 env/ops 선결 필요(대시보드/환경).
+> 기능 개발은 계속 진행한다. 아래 외부 항목은 owner가 대상 프로젝트·접근 권한·설정값을 제공하고 별도 적용을 승인할 때까지 대기하며, 완료로 간주하지 않는다.
+
+### 로컬 준비 완료
 
 - [x] 로컬 `.env.local` `DATABASE_URL`에 `?pgbouncer=true` (42P05 prepared-statement 오류 해소 확인)
-- [ ] **Vercel `DATABASE_URL`에도 `?pgbouncer=true` 필수** — 누락 시 프로덕션 간헐 오류 재발
-- [ ] Vercel 환경변수 6종: `DATABASE_URL` `DIRECT_URL` `NEXTAUTH_SECRET` `NEXTAUTH_URL` `RESEND_API_KEY` `REPLICATE_API_TOKEN` (현재 Vercel 배포 실패 원인)
-- [ ] Resend 도메인 인증 — 실 신규 유저 인증 코드 메일(미설정 시 샌드박스라 미수신 → verify 불가)
+- [x] migration baseline 파일·신규 DB deploy 경로 준비 — production `db push` 금지 정책 유지
+- [x] 개발 전용 PostgreSQL baseline·seed 및 preview signup → verification → login 검증
+- [x] DB-backed production build와 ephemeral PostgreSQL CI migration/status/schema parity 경로 검증
+
+### 외부 설정 대기
+
+- [ ] Resend 발신 도메인 인증, `EMAIL_FROM`·API key·테스트 수신 주소 제공 후 실메일 검증
+- [ ] 운영 DB backup/restore 증거와 read-only schema drift·migration history 확인 후 baseline resolve **별도 승인** — 절차 SSoT: [ADR-009](../adr/adr-009-prisma-migration-baseline.md)
+- [ ] Vercel 환경변수: DB(`DATABASE_URL`에 `?pgbouncer=true`, `DIRECT_URL`), Auth(`NEXTAUTH_SECRET` `NEXTAUTH_URL`), 운영(`ADMIN_EMAILS` `NEXT_PUBLIC_BASE_URL`)
+- [ ] Supabase 대상 project·Storage bucket 및 server-only key 설정 확인
+- [ ] Google OAuth 운영 callback/client 설정과 Replicate access 확인
+- [ ] 운영 deployment 대상 확인 및 **별도 배포 승인** 후 smoke test
 - [ ] (선택) 풀러 URL `&connection_limit=1` — 서버리스 튜닝
+
+운영 DB 명령과 deployment는 접근 정보만 제공되어도 자동 실행하지 않으며, 각각 명시적인 별도 승인 전에는 수행하지 않는다.
 
 ---
 
@@ -57,12 +70,11 @@ P3(카탈로그 DB) 이후 머지된 트랙들:
 
 ---
 
-## P2b — 나머지 UX (예정)
+## ✅ P2b — 검색·상품 참여 UX (완료, #41~#47)
 
-- 검색 기능 (`SearchOverlay` → 실 필터/결과 페이지)
-- mypage 하위 라우트 (coupons/points/notifications/settings)
-- 상품 리뷰 작성
-- **결제 게이트웨이** (커머스 MVP 후속 트랙 — `/plan` 권장)
+- 상품 리뷰 작성·수정·삭제, 이미지 0~3장, 관리자 구매 게이트 우회 (#41~#43)
+- 상품 Q&A 질문·관리자 답변 UI/API (#44~#45)
+- 검색 결과 페이지와 상품 태그 부분검색 (#46~#47)
 
 **관련**: [style-analysis.md](../style-analysis.md)
 
@@ -90,6 +102,18 @@ P3(카탈로그 DB) 이후 머지된 트랙들:
 
 ---
 
-## ▶ 다음 작업 — 상품 리뷰 작성
+## ✅ P1 소셜 그래프 (완료, #48~#49)
 
-로그인 유저가 상품 리뷰(별점+코멘트)를 작성·조회. `components/product/ProductDetailClient.tsx`에 **Review 탭·"Write a Review" UI 골격이 이미 존재(비작동)** → 백엔드(Review 모델·작성/조회 API) 연결 + `Product.rating`/`reviewCount` 재집계(→ BEST 배지 자동 연동). **선결(다음 `/plan`)**: Review 스키마(별점/코멘트/@@unique) · rating/reviewCount 집계 방식 · 리뷰 권한(전체 로그인 vs 구매자만). 경위·시작절차: [handoff/2026-06-24-product-reviews.md](./handoff/2026-06-24-product-reviews.md).
+팔로우/언팔로우, `@handle` 공개 프로필, 전체/팔로잉 OOTD 피드와 handle 온보딩을 구현했다. 상세: [social-graph.md](./social-graph.md).
+
+## ✅ My Posts (완료)
+
+`/mypage/posts`에서 로그인 사용자가 본인의 OOTD·Reviews·Q&A를 URL 기반 탭으로 모아보고 수정·삭제할 수 있다. `/mypage`에는 설명형 진입 메뉴 1개만 추가했으며, OOTD image-first grid, Review/Q&A 상품 맥락 카드, 공개 프로필 CTA를 제공한다. 기존 모델만 사용해 별도 migration은 추가하지 않았다. 상세: [my-posts.md](../../plans/my-posts.md).
+
+## ▶ 다음 후보
+
+1. **Navbar unread notification badge**: 기존 알림 API의 `unreadCount`와 전체 읽음 흐름을 재사용해 전역 navigation에서 새 알림을 발견할 수 있게 한다. 신규 외부 서비스나 schema 변경 없이 진행하는 다음 1순위다.
+2. **Follow notifications**: 팔로우 발생을 알림으로 연결한다. `NotificationType` 확장, 중복 방지·소유권 계약, migration과 UI 회귀 검증을 별도 계획으로 수행한다.
+3. **결제 연동**: 기존 checkout·Order(PENDING/PAID/CANCELLED)를 실제 gateway와 연결한다. provider, webhook idempotency, 환불·실패 정책과 외부 계정 승인을 먼저 확정하며 쿠폰/포인트/재고는 별도 범위로 유지한다.
+
+**External waitlist 유지**: Vercel/Supabase/Resend/Google/Replicate 설정, 운영 DB baseline, 실제 운영 배포는 owner 접근·설정값 및 항목별 별도 승인 전까지 구현 순위와 분리해 대기한다.

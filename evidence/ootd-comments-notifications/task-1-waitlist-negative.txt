@@ -1,0 +1,6 @@
+Task 1 false-completion scan
+
+Command pattern:
+rg -n "\[x\].*(Resend|도메인|Vercel|Supabase|Google|Replicate|운영.*(배포|DB))" docs/work-plans/roadmap.md
+
+Result: no matches. No external service setup, live email delivery, production database action, or deployment is marked complete.

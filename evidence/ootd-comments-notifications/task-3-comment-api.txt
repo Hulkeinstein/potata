@@ -1,0 +1,13 @@
+Task 3 — OOTD comment API evidence
+
+Implemented:
+- Public newest-first cursor pagination with exact post-scoped cursor validation.
+- Auth-first create, safe JSON/content validation, and post existence check.
+- Comment plus COMMENT notification in one transaction, excluding self-comments.
+- Owner-only delete constrained by both postId and commentId; notification cleanup uses the source FK cascade.
+- Public author projection excludes email and other private fields; unexpected errors return a generic message.
+
+Verification:
+- Focused Vitest suite: PASS (included in 40/40 backend API tests; root combined suite later reported 50/50 PASS).
+- TypeScript: npx tsc --noEmit PASS.
+- ESLint: 0 errors; 3 unrelated pre-existing warnings.

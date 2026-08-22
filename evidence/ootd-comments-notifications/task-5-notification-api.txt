@@ -1,0 +1,13 @@
+Task 5 — notification APIs and feed count evidence
+
+Implemented:
+- Authenticated recipient-scoped notification list with exact cursor validation and public actor/post preview projection.
+- Total unread count is queried across all pages for only the current recipient.
+- Read-all updates only current-recipient rows where readAt is null and returns the exact updated count.
+- Feed commentCount mapping and tests were preserved from the concurrent contract change.
+- Unexpected errors return a generic message.
+
+Verification:
+- Focused Vitest suite: PASS (backend routes plus feed; root combined suite later reported 50/50 PASS).
+- TypeScript: npx tsc --noEmit PASS.
+- git diff --check: PASS (line-ending notices only).

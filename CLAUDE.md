@@ -6,7 +6,7 @@
 
 ## Stack
 
-- Next.js 15 (App Router) + React 19, TypeScript strict
+- Next.js 16 (App Router) + React 19, TypeScript strict
 - Tailwind CSS v4, Zustand, Framer Motion
 - Supabase Postgres + Prisma 6 + NextAuth v5 beta (JWT)
 - bcryptjs (비밀번호 해시), Resend (이메일), Replicate (AI try-on)
@@ -24,19 +24,21 @@
 | 테스트 (watch) | `npm run test:watch` |
 | 타입 검사 | `npx tsc --noEmit` |
 | Prisma 클라이언트 재생성 | `npx prisma generate` |
-| DB 스키마 push (dev) | `npx prisma db push` |
+| 신규/CI DB migration 적용 | `npm run db:migrate:deploy` |
+| DB migration 상태 확인 | `npm run db:migrate:status` |
 
 ## Boundaries
 
 ### 🟢 Allowed
 - feature branch 생성 + PR 경유 merge
 - `npm run test`, `npx tsc --noEmit`, `npm run lint` 실행
-- `npx prisma generate`, `npx prisma db push` (dev/CI 전용)
+- `npx prisma generate`, `npm run db:migrate:deploy` (신규/CI DB 전용)
 - `.env.local` 읽기 (수정 가능, commit 금지)
 - `docs/`, `docs/adr/`, `.claude/rules/` 문서 편집
 
 ### 🟡 Ask First
 - Prisma schema 변경 (`prisma/schema.prisma`)
+- migration 생성·운영 DB 적용·`migrate resolve` 실행
 - `package.json` 의존성 추가/버전 변경
 - NextAuth 설정(`auth.ts`) 수정
 - `app/api/` 라우트 핸들러 구조 변경
@@ -50,6 +52,7 @@
 - `data/dummy.ts` 의존성 영구화 (P3 카탈로그 DB화 전까지 신규 의존 추가 금지)
 - signup/login/authorize 해시 알고리즘 불일치 (모두 bcrypt 통일 유지)
 - 가짜 user 객체(`user-${Date.now()}`) 코드 복원/추가
+- 운영 DB에 baseline `migration.sql` 직접 실행 또는 `prisma db push` 실행
 
 ## Anti-Patterns
 

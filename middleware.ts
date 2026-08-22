@@ -20,7 +20,7 @@ export default auth((req) => {
   }
 
   // 보호 라우트 목록 (로그인만 필요)
-  const protectedPaths = ["/mypage", "/liked"];
+  const protectedPaths = ["/mypage", "/liked", "/notifications"];
   const isProtected = protectedPaths.some((path) =>
     nextUrl.pathname.startsWith(path)
   );
@@ -35,5 +35,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/mypage/:path*", "/liked/:path*", "/admin", "/admin/:path*"],
+  matcher: ["/mypage/:path*", "/liked/:path*", "/notifications/:path*", "/admin", "/admin/:path*"],
 };

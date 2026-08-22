@@ -1,0 +1,12 @@
+Task 4 — transactional like notification evidence
+
+Implemented:
+- Like creation and source-linked LIKE notification share one transaction.
+- Self-likes do not notify; unlike deletes the source like and relies on cascade cleanup.
+- P2002 recovery reads committed state, retries once only when absent, and never emits a duplicate notification.
+- Existing response contract remains postId, liked, likeCount; counts are read after writes.
+- Unexpected errors return a generic message.
+
+Verification:
+- Focused Vitest suite: PASS, including auth, missing post, like, unlike, self-like, P2002 recovery, and sanitized failure.
+- TypeScript: npx tsc --noEmit PASS.

@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
         products: { include: { product: true } },
         // 비로그인(userId=null) 시 "__none__"으로 빈 배열 보장 → isLiked false
         likes: { where: { userId: userId ?? "__none__" }, select: { id: true } },
-        _count: { select: { likes: true } },
+        _count: { select: { likes: true, comments: true } },
       },
     });
 
@@ -145,6 +145,7 @@ export async function GET(req: NextRequest) {
         imageUrl: op.product.imageUrl,
       })),
       likeCount: p._count.likes,
+      commentCount: p._count.comments,
       isLiked: p.likes.length > 0,
     }));
 

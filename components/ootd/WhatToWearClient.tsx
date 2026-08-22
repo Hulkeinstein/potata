@@ -9,6 +9,7 @@ import { Heart, Plus, X, Trash2, Loader2, ImageIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ProductTagPicker } from "@/components/ootd/ProductTagPicker";
 import { HandleSetupBanner } from "@/components/profile/HandleSetupBanner";
+import { OOTDComments } from "@/components/ootd/OOTDComments";
 import type {
   ApiResponse,
   OOTDFeedData,
@@ -169,6 +170,10 @@ export function WhatToWearClient({ products }: { products: Product[] }) {
               isMine={!!myId && item.author.id === myId}
               onLike={() => toggleLike(item)}
               onDelete={() => deletePost(item)}
+              authStatus={status}
+              currentUserId={myId}
+              onRequireLogin={() => { requireLogin(); }}
+              onCommentCountChange={(delta) => setItems((current) => current.map((post) => post.id === item.id ? { ...post, commentCount: Math.max(0, post.commentCount + delta) } : post))}
             />
           ))}
         </div>
@@ -193,11 +198,19 @@ function OOTDCard({
   isMine,
   onLike,
   onDelete,
+  authStatus,
+  currentUserId,
+  onRequireLogin,
+  onCommentCountChange,
 }: {
   item: OOTDFeedItem;
   isMine: boolean;
   onLike: () => void;
   onDelete: () => void;
+  authStatus: "authenticated" | "loading" | "unauthenticated";
+  currentUserId?: string;
+  onRequireLogin: () => void;
+  onCommentCountChange: (delta: number) => void;
 }) {
   const cover = item.imageUrls[0];
   const shopProduct = item.products[0];
@@ -289,6 +302,7 @@ function OOTDCard({
           <span className="text-xs font-bold">{item.likeCount}</span>
         </button>
       </div>
+      <OOTDComments postId={item.id} initialCount={item.commentCount} currentUserId={currentUserId} authStatus={authStatus} onRequireLogin={onRequireLogin} onCountChange={onCommentCountChange} />
     </div>
   );
 }

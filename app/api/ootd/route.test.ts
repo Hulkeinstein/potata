@@ -48,6 +48,7 @@ interface FeedJson {
   data: {
     items: Array<{
       likeCount: number;
+      commentCount: number;
       isLiked: boolean;
       author: { name: string };
       products: Array<{ id: string; name: string; brand: string; imageUrl: string }>;
@@ -150,7 +151,7 @@ describe("GET /api/ootd", () => {
         user: { id: "u2", name: "B", handle: null, avatar: null },
         products: [],
         likes: [], // 비로그인 → "__none__" userId로 조회 → 항상 빈 배열
-        _count: { likes: 5 },
+        _count: { likes: 5, comments: 2 },
       },
     ]);
     const res = await GET(getReq()); // tab 파라미터 없음 = all
@@ -183,7 +184,7 @@ describe("GET /api/ootd", () => {
 
   // ── 피드 매핑 (기존 유지) ─────────────────────────────────────────────────
 
-  it("피드 매핑: likeCount/isLiked/author/products(Pick)", async () => {
+  it("피드 매핑: likeCount/commentCount/isLiked/author/products(Pick)", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
     postFindMany.mockResolvedValue([
       {
@@ -194,7 +195,7 @@ describe("GET /api/ootd", () => {
         user: { id: "u2", name: "B", handle: null, avatar: null },
         products: [{ product: { id: "1", name: "N", brand: "Br", imageUrl: "img", description: "x" } }],
         likes: [{ id: "l1" }],
-        _count: { likes: 3 },
+        _count: { likes: 3, comments: 7 },
       },
     ]);
     const res = await GET(getReq());
@@ -202,6 +203,7 @@ describe("GET /api/ootd", () => {
     const json = (await res.json()) as FeedJson;
     expect(json.data.items).toHaveLength(1);
     expect(json.data.items[0].likeCount).toBe(3);
+    expect(json.data.items[0].commentCount).toBe(7);
     expect(json.data.items[0].isLiked).toBe(true);
     expect(json.data.items[0].author.name).toBe("B");
     expect(json.data.items[0].products[0]).toEqual({ id: "1", name: "N", brand: "Br", imageUrl: "img" });

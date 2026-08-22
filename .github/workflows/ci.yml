@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   ci:
-    name: Lint + Typecheck + Test
+    name: Migration + Build + Quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -52,7 +52,13 @@ jobs:
         run: npx tsc --noEmit
       - name: Lint
         run: npm run lint
-      - name: Push schema to test DB
-        run: npx prisma db push --skip-generate
+      - name: Apply migrations to test DB
+        run: npm run db:migrate:deploy
+      - name: Verify migration status
+        run: npm run db:migrate:status
+      - name: Verify migration and schema parity
+        run: npx prisma migrate diff --from-url "$DIRECT_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+      - name: Production build
+        run: npm run build
       - name: Unit tests
         run: npm run test

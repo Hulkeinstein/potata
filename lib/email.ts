@@ -2,11 +2,9 @@ import { Resend } from "resend";
 import { VerificationEmail } from "@/emails/VerificationEmail";
 import { render } from "@react-email/render";
 
-export interface EmailDeliveryResult {
-  success: boolean;
-  error?: string;
-  messageId?: string;
-}
+export type EmailDeliveryResult =
+  | { readonly success: true; readonly messageId?: string }
+  | { readonly success: false; readonly error: string };
 
 function getResendClient(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
@@ -19,6 +17,21 @@ export async function sendVerificationEmail(
   code: string
 ): Promise<EmailDeliveryResult> {
   try {
+    if (
+      process.env.NODE_ENV === "development" &&
+      process.env.EMAIL_DELIVERY_MODE === "preview"
+    ) {
+      return { success: true, messageId: "local-preview" };
+    }
+
+    const sender = process.env.EMAIL_FROM;
+    if (process.env.NODE_ENV === "production" && !sender) {
+      return {
+        success: false,
+        error: "EMAIL_FROM 가 설정되지 않았습니다. 서버 설정을 확인해주세요.",
+      };
+    }
+
     const resend = getResendClient();
     if (!resend) {
       return {
@@ -32,7 +45,7 @@ export async function sendVerificationEmail(
     const htmlContent = await render(VerificationEmail({ name, code }));
 
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM ?? "onboarding@resend.dev",
+      from: sender ?? "onboarding@resend.dev",
       to: [email],
       subject: "Potata 플랫폼 이메일 인증 코드가 도착했습니다",
       html: htmlContent,

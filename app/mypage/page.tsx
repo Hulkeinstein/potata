@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
 import {
     Package, Ticket, Coins, ChevronRight, Settings,
-    Heart, FileText, Bell, LogOut
+    Heart, FileText, Bell, LogOut, Images
 } from "lucide-react";
 
 // Mock Data
@@ -20,6 +20,7 @@ const MY_STATS = [
 
 const MY_MENU = [
     { label: "Order History", icon: FileText, href: "/mypage/orders" },
+    { label: "My Posts", description: "OOTD · Reviews · Q&A 관리", icon: Images, href: "/mypage/posts" },
     { label: "Wishlist", icon: Heart, href: "/wishlist" },
     { label: "Notifications", icon: Bell, href: "/notifications" },
     { label: "Settings", icon: Settings, href: "/settings" },
@@ -114,9 +115,12 @@ export default function MyPage() {
                                 <div className="p-2 bg-zinc-800 rounded-lg text-zinc-400 group-hover:text-white transition-colors">
                                     <item.icon className="w-5 h-5" />
                                 </div>
-                                <span className="font-medium text-zinc-300 group-hover:text-white transition-colors">
-                                    {item.label}
-                                </span>
+                                <div>
+                                    <span className="font-medium text-zinc-300 group-hover:text-white transition-colors">
+                                        {item.label}
+                                    </span>
+                                    {item.description && <span className="block text-xs text-zinc-500">{item.description}</span>}
+                                </div>
                             </div>
                             <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
                         </Link>

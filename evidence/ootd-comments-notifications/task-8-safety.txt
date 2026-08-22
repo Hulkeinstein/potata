@@ -1,0 +1,17 @@
+Local DB safety gate
+- DATABASE_URL host: 127.0.0.1; database: potata_dev
+- DIRECT_URL host: 127.0.0.1; database: potata_dev
+- .env.local is ignored by .gitignore; no values were recorded.
+- Applied only 20260821120000_ootd_comments_notifications with prisma migrate deploy.
+- prisma migrate status: 2 migrations found; database schema is up to date.
+- prisma migrate diff from DIRECT_URL to schema: no difference detected (exit 0).
+- No production/external DB, deploy, commit, or push command was run.
+
+Quality gates
+- prisma validate: PASS
+- prisma generate: PASS after stopping only the verified Potata dev processes holding the Windows DLL
+- tsc --noEmit: PASS
+- eslint: PASS with 0 errors and 3 pre-existing warnings
+- vitest: 313 passed, 6 skipped
+- next build: PASS; /notifications and all new API routes included
+- Potata dev server restarted at http://localhost:3000

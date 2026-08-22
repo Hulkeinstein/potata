@@ -1,0 +1,13 @@
+Two-user localhost E2E
+- Prepared two preview-verified disposable local QA users and one local OOTD post.
+- Actor logged in through the real Credentials UI.
+- Actor liked Owner's post and created "Great layering from browser QA" in the expanded comment panel.
+- UI displayed likeCount=1, commentCount=1, comment author, content, and owner-only delete control.
+- Owner logged in and opened /notifications.
+- UI displayed exactly two typed rows: COMMENT and LIKE, both with actor and post preview.
+- First successful list marked both rows read; repeat read-all returned updatedCount=0.
+- Desktop and 390x844 responsive screenshots were captured.
+- Actor removed the comment and unliked using normal localhost API routes.
+- Owner's notification list then returned 0 rows, proving source cascade cleanup.
+- Owner deleted the disposable post through its owner-only API route.
+- Disposable QA users remain because the app has no user-deletion route; no existing local user data was removed.

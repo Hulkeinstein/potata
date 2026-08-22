@@ -1,0 +1,9 @@
+Task 1 waitlist acceptance evidence
+
+- README Deployment readiness keeps Locally verified separate from operator-provided values and external-console evidence.
+- Master roadmap groups completed local PostgreSQL baseline/seed, preview auth flow, build, and ephemeral-PostgreSQL CI under "로컬 준비 완료".
+- Domain/Resend live delivery, production DB history/drift/baseline approval, Vercel, Supabase, Google, Replicate, and deployment remain unchecked under "외부 설정 대기".
+- ADR-009 remains the authoritative production database baseline procedure.
+- Production database commands and deployment require separate explicit approval.
+
+Verification: acceptance rg found all required states; git diff --check passed.

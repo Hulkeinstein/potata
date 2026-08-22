@@ -1,0 +1,12 @@
+My Posts browser QA (local-only, 2026-08-22)
+
+- Unauthenticated `/mypage/posts` redirected to `/login?callbackUrl=%2Fmypage%2Fposts`.
+- Created one disposable local QA user with OOTD, Review, Question, and purchase-order fixture in `potata_dev`.
+- Authenticated `/mypage/posts` rendered the owner-only OOTD grid, Review product-context card, and Q&A product-context card.
+- Header exposed exactly one public-profile CTA for the QA handle.
+- Tab clicks updated URLs to `?tab=reviews` and `?tab=questions`.
+- OOTD caption edit persisted through the real PATCH route and updated the visible row.
+- Desktop 1280x900 and mobile 390x844 layouts exposed non-overlapping tab/card actions.
+- Browser console: 0 errors. Existing Framer Motion transparent-color warnings and one Next Image LCP advisory remained non-blocking.
+- Disposable QA order/content/user fixture was deleted after verification. Pre-existing QA users were retained.
+- Dev server was restarted and `http://localhost:3000` returned 200; home remains open.

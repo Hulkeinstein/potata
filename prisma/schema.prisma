@@ -9,40 +9,43 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  name          String
-  passwordHash  String? // nullable: OAuth(Google) 유저는 비밀번호 없음
-  emailVerified Boolean        @default(false)
-  avatar        String?
-  handle        String?        @unique // 공개 프로필 식별자(nullable — 기존 유저 backfill 회피)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  orders        Order[]
-  wishlistItems WishlistItem[]
-  cartItems     CartItem[]
-  recentTryOns  RecentTryOn[]
-  ootdPosts     OOTDPost[]
-  ootdLikes     OOTDLike[]
-  reviews       Review[]
-  questions     Question[]
-  answers       Answer[]
-  following     Follow[]       @relation("UserFollowing") // 내가 follower인 행 = 내가 팔로우하는 사람들
-  followers     Follow[]       @relation("UserFollowers") // 내가 following(대상)인 행 = 나를 팔로우하는 사람들
+  id                    String         @id @default(cuid())
+  email                 String         @unique
+  name                  String
+  passwordHash          String? // nullable: OAuth(Google) 유저는 비밀번호 없음
+  emailVerified         Boolean        @default(false)
+  avatar                String?
+  handle                String?        @unique // 공개 프로필 식별자(nullable — 기존 유저 backfill 회피)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  orders                Order[]
+  wishlistItems         WishlistItem[]
+  cartItems             CartItem[]
+  recentTryOns          RecentTryOn[]
+  ootdPosts             OOTDPost[]
+  ootdLikes             OOTDLike[]
+  ootdComments          OOTDComment[]
+  receivedNotifications Notification[] @relation("NotificationRecipient")
+  actedNotifications    Notification[] @relation("NotificationActor")
+  reviews               Review[]
+  questions             Question[]
+  answers               Answer[]
+  following             Follow[]       @relation("UserFollowing") // 내가 follower인 행 = 내가 팔로우하는 사람들
+  followers             Follow[]       @relation("UserFollowers") // 내가 following(대상)인 행 = 나를 팔로우하는 사람들
 
   @@index([email])
 }
 
 model Follow {
   id          String   @id @default(cuid())
-  followerId  String   // 주체: 팔로우하는 사람
-  followingId String   // 대상: 팔로우당하는 사람
+  followerId  String // 주체: 팔로우하는 사람
+  followingId String // 대상: 팔로우당하는 사람
   follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
   following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 
-  @@unique([followerId, followingId])  // 멱등: 1쌍 1관계
-  @@index([followingId])               // 역관계 조회("나를 팔로우하는") + 피드 필터
+  @@unique([followerId, followingId]) // 멱등: 1쌍 1관계
+  @@index([followingId]) // 역관계 조회("나를 팔로우하는") + 피드 필터
 }
 
 enum OrderStatus {
@@ -163,22 +166,64 @@ model OOTDPost {
   caption   String?
   createdAt DateTime @default(now())
 
-  likes    OOTDLike[]
-  products OOTDPostProduct[]
+  likes         OOTDLike[]
+  comments      OOTDComment[]
+  notifications Notification[]
+  products      OOTDPostProduct[]
 
   @@index([createdAt]) // 피드 최신순 cursor 정렬 키
 }
 
 model OOTDLike {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId    String
-  post      OOTDPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId       String
+  post         OOTDPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  notification Notification?
 
   @@unique([userId, postId]) // 한 유저가 한 게시물에 좋아요 1회(멱등)
   @@index([postId]) // _count.likes 집계 인덱스
+}
+
+enum NotificationType {
+  COMMENT
+  LIKE
+}
+
+model OOTDComment {
+  id           String        @id @default(cuid())
+  postId       String
+  post         OOTDPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content      String        @db.Text
+  createdAt    DateTime      @default(now())
+  notification Notification?
+
+  @@index([postId, createdAt, id])
+  @@index([userId])
+}
+
+model Notification {
+  id              String           @id @default(cuid())
+  recipientId     String
+  recipient       User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actorId         String
+  actor           User             @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  postId          String
+  post            OOTDPost         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  type            NotificationType
+  sourceCommentId String?          @unique
+  sourceComment   OOTDComment?     @relation(fields: [sourceCommentId], references: [id], onDelete: Cascade)
+  sourceLikeId    String?          @unique
+  sourceLike      OOTDLike?        @relation(fields: [sourceLikeId], references: [id], onDelete: Cascade)
+  readAt          DateTime?
+  createdAt       DateTime         @default(now())
+
+  @@index([recipientId, createdAt, id])
+  @@index([recipientId, readAt])
 }
 
 model OOTDPostProduct {

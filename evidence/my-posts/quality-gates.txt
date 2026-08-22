@@ -1,0 +1,11 @@
+My Posts final quality gates (2026-08-22)
+
+- Focused API/UI regression: 8 files / 64 tests passed before expanded card coverage.
+- Expanded mutation UI coverage: components/mypage 3 files / 18 tests passed.
+- Full Vitest: 40 files passed, 2 skipped; 350 tests passed, 6 skipped.
+- TypeScript: `npx tsc --noEmit` passed.
+- ESLint: 0 errors; repository baseline has 3 unrelated warnings.
+- Production build: Next.js 16.3.1 compiled, typechecked, and generated 47/47 pages/routes.
+- `git diff --check`: no whitespace errors (Windows line-ending warnings only).
+- New source pure LOC: aggregate 90, OOTD route 102, page 11, client 94, cards 38/62; all under 250.
+- My Posts added no Prisma schema, migration, dependency, env, external service, production DB, deploy, commit, or push change.

@@ -1,0 +1,10 @@
+Task 7 — notifications page and route protection
+
+- `/notifications` is protected and redirects anonymous requests to login with the callback path preserved.
+- The page renders loading, empty, populated, list failure/retry, older-page append, and typed COMMENT/LIKE messages.
+- A successful initial list makes one read-all attempt. Failure keeps unread styling and exposes an explicit retry.
+- Notification rows link to the existing `/what-to-wear` route; no nonexistent detail route or navbar badge was added.
+- Verification: focused UI/page/middleware/backend/feed suite 50/50 passed; TypeScript passed; changed-file ESLint passed.
+- Focused contribution: notifications page 3/3 and middleware 2/2 tests passed.
+
+No browser screenshot was captured in this task; final local browser QA is owned by Task 8.

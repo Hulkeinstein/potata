@@ -1,0 +1,10 @@
+Task 6 — collapsible OOTD comments UI
+
+- Collapsed cards issue no comment request; first expansion fetches and later expansions reuse state.
+- Public reading, empty/loading/error retry, cursor pagination with duplicate filtering, and accessible controls are covered.
+- Authenticated create trims input, prevents duplicate submit, prepends the server result, and increments feed count.
+- Delete is confirmed and non-optimistic; failures preserve the list/count and show an inline error.
+- Verification: focused UI/page/middleware/backend/feed suite 50/50 passed; TypeScript passed; changed-file ESLint passed.
+- Focused component suite contribution: OOTDComments tests 5/5 passed.
+
+No browser screenshot was captured in this task; final local browser QA is owned by Task 8.
