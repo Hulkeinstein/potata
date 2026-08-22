@@ -198,19 +198,27 @@ export type OOTDCommentPage = {
 
 export type OOTDCommentCreateRequest = { content: string };
 
-export type NotificationItem = {
-  id: string;
-  type: "COMMENT" | "LIKE";
-  readAt: string | null;
-  createdAt: string;
-  actor: { id: string; name: string; handle: string | null; avatar: string | null };
-  post: { id: string; imageUrl: string | null; caption: string | null };
+type NotificationBase = {
+  readonly id: string;
+  readonly readAt: string | null;
+  readonly createdAt: string;
+  readonly actor: { readonly id: string; readonly name: string; readonly handle: string | null; readonly avatar: string | null };
 };
 
+export type NotificationItem =
+  | (NotificationBase & {
+      readonly type: "COMMENT" | "LIKE";
+      readonly post: { readonly id: string; readonly imageUrl: string | null; readonly caption: string | null };
+    })
+  | (NotificationBase & {
+      readonly type: "FOLLOW";
+      readonly post: null;
+    });
+
 export type NotificationPage = {
-  items: NotificationItem[];
-  nextCursor: string | null;
-  unreadCount: number;
+  readonly items: readonly NotificationItem[];
+  readonly nextCursor: string | null;
+  readonly unreadCount: number;
 };
 
 export type NotificationReadAllData = { updatedCount: number };

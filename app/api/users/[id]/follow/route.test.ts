@@ -5,16 +5,20 @@ const {
   authMock,
   userFindUniqueMock,
   followFindUniqueMock,
-  followDeleteMock,
+  followDeleteManyMock,
   followCreateManyMock,
   followCountMock,
+  notificationCreateMock,
+  transactionMock,
 } = vi.hoisted(() => ({
   authMock: vi.fn(),
   userFindUniqueMock: vi.fn(),
   followFindUniqueMock: vi.fn(),
-  followDeleteMock: vi.fn(),
+  followDeleteManyMock: vi.fn(),
   followCreateManyMock: vi.fn(),
   followCountMock: vi.fn(),
+  notificationCreateMock: vi.fn(),
+  transactionMock: vi.fn(),
 }));
 
 vi.mock("@/auth", () => ({ auth: authMock }));
@@ -23,10 +27,12 @@ vi.mock("@/lib/prisma", () => ({
     user: { findUnique: userFindUniqueMock },
     follow: {
       findUnique: followFindUniqueMock,
-      delete: followDeleteMock,
+      deleteMany: followDeleteManyMock,
       createMany: followCreateManyMock,
       count: followCountMock,
     },
+    notification: { create: notificationCreateMock },
+    $transaction: transactionMock,
   },
 }));
 
@@ -49,6 +55,11 @@ function makeReq(body?: Record<string, unknown>): NextRequest {
 describe("POST /api/users/[id]/follow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    const tx = {
+      follow: { findUnique: followFindUniqueMock, deleteMany: followDeleteManyMock, createMany: followCreateManyMock, count: followCountMock },
+      notification: { create: notificationCreateMock },
+    };
+    transactionMock.mockImplementation(async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx));
   });
 
   // ── 인증 ────────────────────────────────────────────────────────────────
@@ -88,7 +99,7 @@ describe("POST /api/users/[id]/follow", () => {
   it("기존 Follow 없음 → createMany 호출 + following:true 반환", async () => {
     authMock.mockResolvedValue({ user: { id: "user1" } });
     userFindUniqueMock.mockResolvedValue({ id: "target2" });
-    followFindUniqueMock.mockResolvedValue(null); // 기존 없음
+    followFindUniqueMock.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: "follow1" }).mockResolvedValueOnce({ id: "follow1" });
     followCreateManyMock.mockResolvedValue({ count: 1 });
     followCountMock.mockResolvedValue(5);
 
@@ -98,7 +109,8 @@ describe("POST /api/users/[id]/follow", () => {
     expect(json.data.following).toBe(true);
     expect(json.data.followerCount).toBe(5);
     expect(followCreateManyMock).toHaveBeenCalledTimes(1);
-    expect(followDeleteMock).not.toHaveBeenCalled();
+    expect(notificationCreateMock).toHaveBeenCalledWith({ data: { recipientId: "target2", actorId: "user1", type: "FOLLOW", sourceFollowId: "follow1" } });
+    expect(followDeleteManyMock).not.toHaveBeenCalled();
   });
 
   // ── 멱등 토글 — 언팔로우(기존 존재) ─────────────────────────────────────
@@ -106,8 +118,8 @@ describe("POST /api/users/[id]/follow", () => {
   it("기존 Follow 존재 → delete 호출 + following:false 반환", async () => {
     authMock.mockResolvedValue({ user: { id: "user1" } });
     userFindUniqueMock.mockResolvedValue({ id: "target2" });
-    followFindUniqueMock.mockResolvedValue({ id: "follow1", followerId: "user1", followingId: "target2" });
-    followDeleteMock.mockResolvedValue({ id: "follow1" });
+    followFindUniqueMock.mockResolvedValueOnce({ id: "follow1" }).mockResolvedValueOnce(null);
+    followDeleteManyMock.mockResolvedValue({ count: 1 });
     followCountMock.mockResolvedValue(4);
 
     const res = await POST(makeReq(), makeParams("target2"));
@@ -115,8 +127,9 @@ describe("POST /api/users/[id]/follow", () => {
     const json = (await res.json()) as { data: { following: boolean; followerCount: number } };
     expect(json.data.following).toBe(false);
     expect(json.data.followerCount).toBe(4);
-    expect(followDeleteMock).toHaveBeenCalledTimes(1);
+    expect(followDeleteManyMock).toHaveBeenCalledWith({ where: { followerId: "user1", followingId: "target2" } });
     expect(followCreateManyMock).not.toHaveBeenCalled();
+    expect(notificationCreateMock).not.toHaveBeenCalled();
   });
 
   // ── IDOR 방어: body의 followerId가 무시되고 session.user.id 사용 ──────────
@@ -125,7 +138,7 @@ describe("POST /api/users/[id]/follow", () => {
     // session user = "honest_user"
     authMock.mockResolvedValue({ user: { id: "honest_user" } });
     userFindUniqueMock.mockResolvedValue({ id: "target3" });
-    followFindUniqueMock.mockResolvedValue(null);
+    followFindUniqueMock.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: "follow2" }).mockResolvedValueOnce({ id: "follow2" });
     followCreateManyMock.mockResolvedValue({ count: 1 });
     followCountMock.mockResolvedValue(1);
 
@@ -143,12 +156,53 @@ describe("POST /api/users/[id]/follow", () => {
     expect(callArg.data[0].followerId).not.toBe("attacker_id");
   });
 
+  it("동시 팔로우 경쟁에서 createMany count 0이면 알림을 중복 생성하지 않는다", async () => {
+    authMock.mockResolvedValue({ user: { id: "user1" } });
+    userFindUniqueMock.mockResolvedValue({ id: "target2" });
+    followFindUniqueMock.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: "winner" });
+    followCreateManyMock.mockResolvedValue({ count: 0 });
+    followCountMock.mockResolvedValue(1);
+
+    const response = await POST(makeReq(), makeParams("target2"));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ data: { following: true, followerCount: 1 } });
+    expect(notificationCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("stale unfollow는 deleteMany count 0이어도 500 없이 실제 상태를 반환한다", async () => {
+    authMock.mockResolvedValue({ user: { id: "user1" } });
+    userFindUniqueMock.mockResolvedValue({ id: "target2" });
+    followFindUniqueMock.mockResolvedValueOnce({ id: "stale" }).mockResolvedValueOnce(null);
+    followDeleteManyMock.mockResolvedValue({ count: 0 });
+    followCountMock.mockResolvedValue(0);
+
+    const response = await POST(makeReq(), makeParams("target2"));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ data: { following: false, followerCount: 0 } });
+  });
+
+  it("transaction 내부 오류 메시지를 클라이언트에 노출하지 않는다", async () => {
+    authMock.mockResolvedValue({ user: { id: "user1" } });
+    userFindUniqueMock.mockResolvedValue({ id: "target2" });
+    transactionMock.mockRejectedValue(new Error("Prisma constraint sourceFollowId_key failed"));
+
+    const response = await POST(makeReq(), makeParams("target2"));
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      success: false,
+      error: "팔로우 상태를 변경하지 못했습니다.",
+    });
+  });
+
   // ── followerCount는 count 쿼리로 집계 ───────────────────────────────────
 
   it("팔로우 후 followerCount는 prisma.follow.count 결과를 사용", async () => {
     authMock.mockResolvedValue({ user: { id: "user1" } });
     userFindUniqueMock.mockResolvedValue({ id: "target2" });
-    followFindUniqueMock.mockResolvedValue(null);
+    followFindUniqueMock.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: "follow3" }).mockResolvedValueOnce({ id: "follow3" });
     followCreateManyMock.mockResolvedValue({ count: 1 });
     followCountMock.mockResolvedValue(42); // count 쿼리 결과
 

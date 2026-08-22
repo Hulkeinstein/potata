@@ -29,6 +29,21 @@ describe("GET /api/notifications", () => {
     expect(mocks.count).toHaveBeenCalledWith({ where: { recipientId: "recipient", readAt: null } });
   });
 
+  it("serializes a FOLLOW notification without an OOTD post", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "recipient" } });
+    mocks.findMany.mockResolvedValue([{ ...row, type: "FOLLOW", post: null }]);
+    mocks.count.mockResolvedValue(1);
+
+    const response = await GET(request());
+
+    expect(await response.json()).toMatchObject({
+      data: {
+        items: [{ type: "FOLLOW", actor: { id: "a1", name: "Actor", handle: "actor", avatar: null }, post: null }],
+        unreadCount: 1,
+      },
+    });
+  });
+
   it("rejects a cursor not owned by the recipient", async () => {
     mocks.auth.mockResolvedValue({ user: { id: "recipient" } });
     mocks.findFirst.mockResolvedValue(null);

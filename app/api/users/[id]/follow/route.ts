@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
 
 // POST: 팔로우/언팔로우 멱등 토글 (like 패턴 복제)
 // [id] = 팔로우 대상(target) userId — follower는 session에서만 취득(IDOR 방어)
@@ -39,37 +38,45 @@ export async function POST(
       );
     }
 
-    // 멱등 토글: findUnique → delete(언팔로우) or createMany skipDuplicates(팔로우)
-    const existing = await prisma.follow.findUnique({
-      where: { followerId_followingId: { followerId, followingId: targetId } },
-    });
-
-    let following: boolean;
-    if (existing) {
-      await prisma.follow.delete({ where: { id: existing.id } });
-      following = false;
-    } else {
-      // 연타/경쟁 조건 → skipDuplicates로 멱등 흡수(unique 위반 500 방지)
-      await prisma.follow.createMany({
-        data: [{ followerId, followingId: targetId }],
-        skipDuplicates: true,
+    const state = await prisma.$transaction(async (tx) => {
+      const pair = { followerId, followingId: targetId };
+      const existing = await tx.follow.findUnique({
+        where: { followerId_followingId: pair },
+        select: { id: true },
       });
-      following = true;
-    }
 
-    // 대상의 팔로워 수(비정규화 금지 — 항상 count 쿼리)
-    const followerCount = await prisma.follow.count({
-      where: { followingId: targetId },
+      if (existing) {
+        await tx.follow.deleteMany({ where: pair });
+      } else {
+        const created = await tx.follow.createMany({ data: [pair], skipDuplicates: true });
+        if (created.count === 1) {
+          const follow = await tx.follow.findUnique({
+            where: { followerId_followingId: pair },
+            select: { id: true },
+          });
+          if (follow) {
+            await tx.notification.create({
+              data: { recipientId: targetId, actorId: followerId, type: "FOLLOW", sourceFollowId: follow.id },
+            });
+          }
+        }
+      }
+
+      const [committedFollow, followerCount] = await Promise.all([
+        tx.follow.findUnique({ where: { followerId_followingId: pair }, select: { id: true } }),
+        tx.follow.count({ where: { followingId: targetId } }),
+      ]);
+      return { following: committedFollow !== null, followerCount };
     });
 
     return NextResponse.json(
-      { success: true, data: { targetUserId: targetId, following, followerCount } },
+      { success: true, data: { targetUserId: targetId, ...state } },
       { status: 200 }
     );
   } catch (error) {
     console.error("[follow toggle] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: "팔로우 상태를 변경하지 못했습니다." },
       { status: 500 }
     );
   }

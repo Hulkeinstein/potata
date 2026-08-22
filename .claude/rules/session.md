@@ -6,17 +6,17 @@
 
 ## 북극성 골
 
-potata = 한국→UAE 패션 커머스·SNS. 인증·커머스 MVP·카탈로그·리뷰·Q&A·검색·OOTD·소셜 그래프·My Posts까지 정착 완료. 운영 배포·실유저 가동은 External waitlist에서 별도 관리한다.
+potata = 한국→UAE 패션 커머스·SNS. 인증·커머스 MVP·카탈로그·리뷰·Q&A·검색·OOTD·소셜 그래프·My Posts·팔로우 알림까지 정착 완료. 운영 배포·실유저 가동은 External waitlist에서 별도 관리한다.
 
 ---
 
 ## 지금 작업
 
-**My Posts 기능 완료** 상태. 로컬 배포 준비는 완료됐고, 도메인/Resend 실발송·운영 DB baseline 승인·Vercel/Supabase/Google/Replicate 설정·실제 배포는 owner 접근/설정 및 별도 승인 대기의 External waitlist로 분리했다.
+**My Posts·Navbar unread badge·팔로우 알림 완료** 상태. 로컬 배포 준비는 완료됐고, 도메인/Resend 실발송·운영 DB baseline 승인·Vercel/Supabase/Google/Replicate 설정·실제 배포는 owner 접근/설정 및 별도 승인 대기의 External waitlist로 분리했다.
 
-**현재 기준선**: TypeScript 통과, lint 0 errors(기존 경고 3), Vitest 350 passed/6 skipped. 로컬 `potata_dev`에서 production build 47/47 route generation이 통과한다.
+**현재 기준선**: TypeScript 통과, lint 0 errors(기존 경고 3), Vitest 359 passed/6 skipped. 로컬 `potata_dev`에서 production build 47/47 route generation이 통과한다.
 
-**진행**: OOTD 댓글·좋아요 알림과 마이페이지 알림 목록·전체 읽음 MVP, `/mypage/posts`의 OOTD·Reviews·Q&A 모아보기/수정/삭제가 완료됐다. Navbar badge·팔로우 알림은 후속 범위다. 외부 계정·비밀값·운영 DB·실제 배포는 접근 정보와 각각의 별도 승인 전까지 변경 금지.
+**진행**: OOTD 댓글·좋아요·팔로우 알림, 마이페이지 알림 목록·전체 읽음, Navbar unread badge, `/mypage/posts`의 OOTD·Reviews·Q&A 모아보기/수정/삭제가 완료됐다. 다음 제품 후보는 결제 gateway 연동이며, 외부 계정·비밀값·운영 DB·실제 배포는 접근 정보와 각각의 별도 승인 전까지 변경 금지.
 
 **외부 대기**: 운영 DB는 ADR-009에 따라 backup/restore와 read-only drift/history를 먼저 증명하고 별도 승인 후 baseline 이력만 등록한다. Resend 실메일과 운영 배포 smoke는 도메인·대상 프로젝트·비밀값·승인이 제공된 뒤 수행한다.
 

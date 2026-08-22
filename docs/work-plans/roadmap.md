@@ -110,10 +110,12 @@ P3(카탈로그 DB) 이후 머지된 트랙들:
 
 `/mypage/posts`에서 로그인 사용자가 본인의 OOTD·Reviews·Q&A를 URL 기반 탭으로 모아보고 수정·삭제할 수 있다. `/mypage`에는 설명형 진입 메뉴 1개만 추가했으며, OOTD image-first grid, Review/Q&A 상품 맥락 카드, 공개 프로필 CTA를 제공한다. 기존 모델만 사용해 별도 migration은 추가하지 않았다. 상세: [my-posts.md](../../plans/my-posts.md).
 
+## ✅ Navbar unread badge · Follow notifications (완료)
+
+Navbar에서 읽지 않은 알림 수를 접근 가능한 badge로 표시하고, 알림 전체 읽음 후 즉시 숨긴다. 팔로우 생성은 같은 transaction에서 source-linked `FOLLOW` 알림을 한 건만 만들며, 언팔로우 시 cascade 삭제한다. 알림 목록은 팔로워의 공개 프로필로 연결하고 handle이 없으면 안전한 비링크 행을 표시한다. `NotificationType`과 정확한 source 조합을 검증하는 migration을 추가했으며 로컬·빈 DB migration, DB invariant, 전체 테스트와 production build를 검증했다. 상세: [follow-notifications.md](../../plans/follow-notifications.md).
+
 ## ▶ 다음 후보
 
-1. **Navbar unread notification badge**: 기존 알림 API의 `unreadCount`와 전체 읽음 흐름을 재사용해 전역 navigation에서 새 알림을 발견할 수 있게 한다. 신규 외부 서비스나 schema 변경 없이 진행하는 다음 1순위다.
-2. **Follow notifications**: 팔로우 발생을 알림으로 연결한다. `NotificationType` 확장, 중복 방지·소유권 계약, migration과 UI 회귀 검증을 별도 계획으로 수행한다.
-3. **결제 연동**: 기존 checkout·Order(PENDING/PAID/CANCELLED)를 실제 gateway와 연결한다. provider, webhook idempotency, 환불·실패 정책과 외부 계정 승인을 먼저 확정하며 쿠폰/포인트/재고는 별도 범위로 유지한다.
+1. **결제 연동**: 기존 checkout·Order(PENDING/PAID/CANCELLED)를 실제 gateway와 연결한다. provider, webhook idempotency, 환불·실패 정책과 외부 계정 승인을 먼저 확정하며 쿠폰/포인트/재고는 별도 범위로 유지한다.
 
 **External waitlist 유지**: Vercel/Supabase/Resend/Google/Replicate 설정, 운영 DB baseline, 실제 운영 배포는 owner 접근·설정값 및 항목별 별도 승인 전까지 구현 순위와 분리해 대기한다.

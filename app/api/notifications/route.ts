@@ -39,14 +39,21 @@ export async function GET(request: NextRequest) {
       }),
       prisma.notification.count({ where: { recipientId, readAt: null } }),
     ]);
-    const items: NotificationItem[] = rows.map((row) => ({
-      id: row.id,
-      type: row.type,
-      readAt: row.readAt?.toISOString() ?? null,
-      createdAt: row.createdAt.toISOString(),
-      actor: row.actor,
-      post: { id: row.post.id, imageUrl: row.post.imageUrls[0] ?? null, caption: row.post.caption },
-    }));
+    const items: NotificationItem[] = rows.map((row) => {
+      const base = {
+        id: row.id,
+        readAt: row.readAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+        actor: row.actor,
+      };
+      if (row.type === "FOLLOW") return { ...base, type: "FOLLOW", post: null };
+      if (!row.post) throw new TypeError("COMMENT and LIKE notifications require a post");
+      return {
+        ...base,
+        type: row.type,
+        post: { id: row.post.id, imageUrl: row.post.imageUrls[0] ?? null, caption: row.post.caption },
+      };
+    });
     return NextResponse.json({
       success: true,
       data: {

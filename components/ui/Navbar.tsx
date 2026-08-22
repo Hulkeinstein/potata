@@ -10,6 +10,7 @@ import { NAV_LINKS } from "@/lib/constants";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
+import { NotificationNavLink } from "@/components/ui/NotificationNavLink";
 
 export function Navbar() {
     const { data: session, status } = useSession();
@@ -89,6 +90,8 @@ export function Navbar() {
                                     <Heart className="w-5 h-5" />
                                 </div>
                             </Link>
+
+                            {isLoggedIn && <NotificationNavLink />}
 
                             {isLoggedIn && (
                                 <span
