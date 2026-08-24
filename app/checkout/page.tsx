@@ -255,7 +255,7 @@ export default function CheckoutPage() {
                                 {isSubmitting ? "주문 처리 중..." : "주문하기"}
                             </button>
                             <p className="text-xs text-zinc-500 text-center mt-3">
-                                주문하기 버튼을 누르면 결제가 진행됩니다
+                                주문은 결제 대기 상태로 저장됩니다. 실제 결제는 아직 진행되지 않습니다.
                             </p>
                         </motion.div>
                     </>

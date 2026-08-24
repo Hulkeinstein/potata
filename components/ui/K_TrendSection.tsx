@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { TRENDS } from "@/data/dummy";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export function K_TrendSection() {
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -35,7 +36,7 @@ export function K_TrendSection() {
             {/* Horizontal Scroll Container */}
             <div ref={scrollRef} className="flex gap-6 overflow-x-auto px-4 sm:px-6 lg:px-8 pb-8 no-scrollbar snap-x scroll-smooth">
                 {TRENDS.map((trend) => (
-                    <div key={trend.id} className="relative min-w-[300px] md:min-w-[400px] aspect-video rounded-xl overflow-hidden shrink-0 snap-center group cursor-pointer border border-white/5 hover:border-purple-500/50 transition-colors">
+                    <Link href={`/search?q=${encodeURIComponent(trend.title)}`} key={trend.id} className="relative min-w-[300px] md:min-w-[400px] aspect-video rounded-xl overflow-hidden shrink-0 snap-center group border border-white/5 hover:border-purple-500/50 transition-colors">
                         <Image
                             src={trend.imageUrl}
                             alt={trend.title}
@@ -47,7 +48,7 @@ export function K_TrendSection() {
                             <h3 className="text-xl font-bold mb-1">{trend.title}</h3>
                             <p className="text-gray-300 text-sm">{trend.description}</p>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
         </section>

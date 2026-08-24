@@ -3,18 +3,16 @@
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { AICoordinatorPopup } from "./AICoordinatorPopup";
 
 export function Hero() {
     const { data: session, status } = useSession();
-    const isLoggedIn = status === "authenticated";
-
     return (
         <section className="relative w-full h-[90vh] overflow-hidden bg-cinematic-900 text-white">
             <GuestHero />
-            {/* 로그인 시 AI COORDINATOR는 패널 대신 팝업으로 (끄기/하루동안 보지 않기) */}
-            {isLoggedIn && <AICoordinatorPopup name={session?.user.name} />}
+            {status === "authenticated" && <AICoordinatorPopup name={session?.user.name} />}
         </section>
     );
 }
@@ -64,13 +62,13 @@ function GuestHero() {
                     transition={{ delay: 0.8 }}
                     className="flex flex-col sm:flex-row items-center justify-center gap-4"
                 >
-                    <button className="px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-brand-neon hover:text-black transition-colors flex items-center gap-2">
+                    <Link href="/shop" className="px-8 py-4 bg-white text-black font-bold rounded-full hover:bg-brand-neon hover:text-black transition-colors flex items-center gap-2">
                         Explore Collection
-                    </button>
-                    <button className="px-8 py-4 border border-white/20 hover:border-brand-neon hover:text-brand-neon rounded-full transition-colors backdrop-blur-sm flex items-center gap-2">
+                    </Link>
+                    <Link href="/try-on" className="px-8 py-4 border border-white/20 hover:border-brand-neon hover:text-brand-neon rounded-full transition-colors backdrop-blur-sm flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
                         Try AI Studio
-                    </button>
+                    </Link>
                 </motion.div>
             </div>
         </div >

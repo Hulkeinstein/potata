@@ -2,24 +2,22 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import { Star, Heart, Share2, Plus, Minus, X } from "lucide-react";
+import Link from "next/link";
+import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCartStore } from "@/store/cart-store";
 import type { Product } from "@/types";
 import { formatPrice } from "@/lib/utils";
 import { ReviewSection } from "@/components/product/ReviewSection";
 import { QASection } from "@/components/product/QASection";
+import { ProductPurchaseActions } from "@/components/product/ProductPurchaseActions";
 
 interface ProductDetailClientProps {
     product: Product;
 }
 
 export function ProductDetailClient({ product }: ProductDetailClientProps) {
-    const [selectedSize, setSelectedSize] = useState<string | null>(null);
-    const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || "Default");
     const [activeTab, setActiveTab] = useState("detail");
-    const { addItem } = useCartStore();
+    const tabsRef = useRef<HTMLDivElement>(null);
 
     // HOT 랭킹용 조회수 트래킹 — 세션당 1회, fire-and-forget
     const viewTracked = useRef(false);
@@ -39,33 +37,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
     // Fallback values for optional fields
     const productImages = product.images && product.images.length > 0 ? product.images : [product.imageUrl];
-    const productSizes = product.sizes || ["Free"];
-    const productColors = product.colors || ["Default"];
     const productRating = product.rating || 0;
     const productReviewCount = product.reviewCount || 0;
     const productDiscount = product.discountRate || 0;
     const productOriginalPrice = product.originalPrice || product.price;
-
-    const handleAddToCart = () => {
-        if (!selectedSize && productSizes[0] !== "Free" && productSizes[0] !== "One Size") {
-            if (productSizes.length > 0 && !selectedSize) {
-                alert("Please select a size.");
-                return;
-            }
-        }
-
-        const sizeToUse = selectedSize || productSizes[0];
-
-        addItem({
-            product: {
-                ...product,
-                imageUrl: productImages[0],
-            },
-            quantity: 1,
-            color: selectedColor,
-            size: sizeToUse,
-        });
-    };
 
     return (
         <div className="min-h-screen bg-black text-white pt-20 pb-32">
@@ -95,9 +70,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
 
                             {/* Brand & Title */}
                             <div>
-                                <h3 className="text-zinc-400 font-medium tracking-wide mb-2 hover:text-white transition-colors cursor-pointer w-fit">
+                                <Link href={`/search?q=${encodeURIComponent(product.brand)}`} className="text-zinc-400 font-medium tracking-wide mb-2 hover:text-white transition-colors w-fit block">
                                     {product.brand} &rarr;
-                                </h3>
+                                </Link>
                                 <h1 className="text-3xl font-bold font-outfit leading-tight mb-2">
                                     {product.name}
                                 </h1>
@@ -107,9 +82,9 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                         <span className="ml-1 font-bold text-white">{productRating.toFixed(1)}</span>
                                     </div>
                                     <span className="w-1 h-1 bg-zinc-700 rounded-full" />
-                                    <span className="underline decoration-zinc-700 hover:text-white cursor-pointer">
+                                    <button onClick={() => { setActiveTab("review"); tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="underline decoration-zinc-700 hover:text-white">
                                         {productReviewCount} Reviews
-                                    </span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -130,58 +105,6 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 )}
                             </div>
 
-                            {/* Options */}
-                            <div className="space-y-6">
-                                {/* Colors */}
-                                {productColors.length > 0 && (
-                                    <div className="space-y-3">
-                                        <label className="text-sm font-medium text-zinc-300">Color</label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {productColors.map((color) => (
-                                                <button
-                                                    key={color}
-                                                    onClick={() => setSelectedColor(color)}
-                                                    className={cn(
-                                                        "px-4 py-2 rounded-full border text-sm transition-all",
-                                                        selectedColor === color
-                                                            ? "border-brand-neon text-brand-neon bg-brand-neon/10"
-                                                            : "border-white/10 text-zinc-400 hover:border-white/30"
-                                                    )}
-                                                >
-                                                    {color}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Sizes */}
-                                {productSizes.length > 0 && (
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-sm font-medium text-zinc-300">Size</label>
-                                            <span className="text-xs text-zinc-400 underline cursor-pointer hover:text-white">Size Guide</span>
-                                        </div>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            {productSizes.map((size) => (
-                                                <button
-                                                    key={size}
-                                                    onClick={() => setSelectedSize(size)}
-                                                    className={cn(
-                                                        "py-3 rounded-lg border text-sm font-medium transition-all",
-                                                        selectedSize === size
-                                                            ? "border-brand-neon text-black bg-brand-neon"
-                                                            : "border-white/10 text-zinc-400 hover:border-white/30 hover:bg-white/5"
-                                                    )}
-                                                >
-                                                    {size}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
                             {/* Tags */}
                             {product.tags && product.tags.length > 0 && (
                                 <div className="space-y-3">
@@ -199,58 +122,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                 </div>
                             )}
 
-                            {/* Selection Summary */}
-                            <AnimatePresence>
-                                {(selectedSize || selectedColor) && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: "auto" }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-2 overflow-hidden"
-                                    >
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-zinc-300">
-                                                {product.name}
-                                                <div className="text-zinc-400 text-xs mt-0.5">
-                                                    {selectedColor} {selectedSize ? `/ ${selectedSize}` : ""}
-                                                </div>
-                                            </span>
-                                            <X className="w-4 h-4 text-zinc-400 cursor-pointer hover:text-white" onClick={() => { setSelectedSize(null); setSelectedColor(productColors[0]) }} />
-                                        </div>
-                                        <div className="flex justify-between items-end border-t border-white/5 pt-2 mt-2">
-                                            <div className="flex items-center gap-3 bg-black/20 rounded px-2 py-1">
-                                                <button className="p-1 hover:text-white text-zinc-400"><Minus className="w-3 h-3" /></button>
-                                                <span className="text-sm font-medium">1</span>
-                                                <button className="p-1 hover:text-white text-zinc-400"><Plus className="w-3 h-3" /></button>
-                                            </div>
-                                            <span className="font-bold text-lg text-white">{formatPrice(product.price)}</span>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            <div className="flex gap-4 pt-4">
-                                <button
-                                    onClick={handleAddToCart}
-                                    className="flex-1 bg-white text-black h-14 rounded-xl font-bold text-lg hover:bg-brand-neon transition-colors flex items-center justify-center gap-2"
-                                >
-                                    Add to Cart
-                                </button>
-                                <button className="w-14 h-14 rounded-xl border border-white/10 flex items-center justify-center hover:border-brand-neon hover:text-brand-neon transition-colors">
-                                    <Heart className="w-6 h-6" />
-                                </button>
-                                <button className="w-14 h-14 rounded-xl border border-white/10 flex items-center justify-center hover:border-white/50 transition-colors">
-                                    <Share2 className="w-6 h-6" />
-                                </button>
-                            </div>
-
-                            {/* Banner */}
-                            <div className="p-4 rounded-xl bg-zinc-900/50 border border-white/5 backdrop-blur-sm">
-                                <p className="text-sm text-zinc-300">
-                                    <span className="text-brand-neon font-bold mr-2">N pay</span>
-                                    <span className="font-bold">20 AED</span> 적립 받기
-                                </p>
-                            </div>
+                            <ProductPurchaseActions product={product} imageUrl={productImages[0]} />
 
                         </div>
                     </div>
@@ -258,7 +130,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                 </div>
 
                 {/* Bottom Section: Sticky Tabs & Content */}
-                <div className="mt-24">
+                <div ref={tabsRef} className="mt-24 scroll-mt-20">
                     {/* Sticky Tabs */}
                     <div className="sticky top-16 z-30 bg-black/80 backdrop-blur-md border-b border-white/10 mb-12">
                         <div className="flex gap-8">

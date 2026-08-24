@@ -90,6 +90,14 @@ function renderOpen(onClose = vi.fn()) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 describe("SearchOverlay", () => {
+  it("Popular Now 항목을 실제 검색 경로에 연결한다", () => {
+    const { onClose } = renderOpen();
+    const link = screen.getByRole("link", { name: /Cargo Pants/ });
+    expect(link.getAttribute("href")).toBe("/search?q=Cargo%20Pants");
+    fireEvent.click(link);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   // 케이스 ①: Happy path — 2자 이상 검색어 → router.push + onClose
   it("검색어 2자 이상 입력 후 form submit → router.push('/search?q=denim') + onClose 호출", () => {
     const { input, onClose } = renderOpen();

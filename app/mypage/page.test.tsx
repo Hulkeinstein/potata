@@ -16,4 +16,12 @@ describe("MyPage navigation", () => {
     expect(screen.getAllByText("My Posts")).toHaveLength(1);
     expect(screen.getByText("OOTD · Reviews · Q&A 관리")).toBeTruthy();
   });
+
+  it("지원되는 메뉴만 노출하고 Wishlist를 실제 경로로 연결한다", () => {
+    render(<MyPage />);
+    expect(screen.getByRole("link", { name: /Wishlist/ }).getAttribute("href")).toBe("/liked");
+    expect(screen.queryByText("Coupons")).toBeNull();
+    expect(screen.queryByText("Points")).toBeNull();
+    expect(screen.queryByText("Settings")).toBeNull();
+  });
 });

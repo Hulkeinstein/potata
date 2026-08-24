@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 
 import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 
@@ -114,7 +115,7 @@ export function BrandsContent({ products }: BrandsContentProps) {
                         onScroll={onScroll}
                     >
                         {INFINITE_ITEMS.map((item, i) => (
-                            <div key={i} className="relative shrink-0 w-72 aspect-3/4 rounded-2xl overflow-hidden cursor-pointer group transition-all duration-500 hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] border border-white/10 hover:border-purple-500/50">
+                            <div key={`${item.brand}-${i}`} className="relative shrink-0 w-72 aspect-3/4 rounded-2xl overflow-hidden group transition-all duration-500 hover:shadow-[0_0_30px_rgba(139,92,246,0.3)] border border-white/10 hover:border-purple-500/50">
                                 <Image
                                     src={item.image}
                                     alt={item.brand}
@@ -127,6 +128,7 @@ export function BrandsContent({ products }: BrandsContentProps) {
                                     </div>
                                     <h3 className="text-white text-2xl font-black leading-none mb-2 whitespace-pre-line uppercase tracking-tight shadow-black drop-shadow-lg">{item.title}</h3>
                                     <p className="text-gray-400 text-sm font-medium tracking-widest">{item.brand}</p>
+                                    <Link href={`/search?q=${encodeURIComponent(item.brand)}`} className="mt-3 w-fit text-xs font-bold text-white underline decoration-purple-400 underline-offset-4">View brand products</Link>
                                 </div>
                             </div>
                         ))}
@@ -139,13 +141,13 @@ export function BrandsContent({ products }: BrandsContentProps) {
                         <h3 className="text-xl font-bold text-white">Trending Now</h3>
                         <div className="flex gap-2 text-sm text-gray-400">
                             <span>Sort by:</span>
-                            <span className="text-purple-400 font-bold cursor-pointer">Popular</span>
+                            <span className="text-purple-400 font-bold">Popular</span>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10">
-                        {products.map((product, i) => (
-                            <div key={i} className="group cursor-pointer flex flex-col gap-3">
+                        {products.map((product) => (
+                            <Link href={`/product/${product.id}`} key={product.id} className="group flex flex-col gap-3">
                                 {/* Image */}
                                 <div className="relative aspect-3/4 bg-zinc-900 rounded-xl overflow-hidden border border-white/5 group-hover:border-purple-500/30 transition-colors">
                                     <Image
@@ -154,12 +156,6 @@ export function BrandsContent({ products }: BrandsContentProps) {
                                         fill
                                         className="object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-300"
                                     />
-                                    {/* Quick Add Overlay */}
-                                    <div className="absolute bottom-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                                        <div className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-purple-600 text-white border border-white/10">
-                                            +
-                                        </div>
-                                    </div>
                                 </div>
 
                                 {/* Info */}
@@ -171,7 +167,7 @@ export function BrandsContent({ products }: BrandsContentProps) {
                                         <span className="text-xs text-zinc-400 line-through">{(Math.round(product.price * 0.004)).toLocaleString()}</span>
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 </section>

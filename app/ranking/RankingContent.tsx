@@ -1,21 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { cn, formatPrice } from "@/lib/utils";
+import Link from "next/link";
+import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/types";
-
-// Mock Categories
-const CATEGORIES = ["ALL", "TOP", "OUTER", "PANTS", "DRESS", "SKIRT", "BAG", "SHOES", "ACC"];
 
 interface RankingContentProps {
     products: Product[]; // 서버에서 price 내림차순으로 정렬해 전달
 }
 
 export function RankingContent({ products }: RankingContentProps) {
-    const [activeCategory, setActiveCategory] = useState("ALL");
-    const [selectedType, setSelectedType] = useState("Products"); // Products | Brands
-
     return (
         <div className="min-h-screen bg-black pt-20 pb-20">
             <div className="max-w-7xl mx-auto px-4">
@@ -27,48 +21,13 @@ export function RankingContent({ products }: RankingContentProps) {
                         <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full tracking-normal align-middle animate-pulse">Updated</span>
                     </h2>
 
-                    {/* Category Filter (Capsule) */}
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4">
-                        {CATEGORIES.map((cat) => (
-                            <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat)}
-                                className={cn(
-                                    "px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 border",
-                                    activeCategory === cat
-                                        ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.4)] scale-105"
-                                        : "bg-zinc-900/50 text-gray-400 border-white/10 hover:border-white/30 hover:text-white"
-                                )}
-                            >
-                                {cat}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Type Tabs (Underline) */}
-                    <div className="flex gap-8 border-b border-white/10">
-                        {["Products", "Brands"].map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setSelectedType(tab)}
-                                className={cn(
-                                    "pb-3 text-sm font-bold uppercase tracking-wider transition-all relative",
-                                    selectedType === tab ? "text-white" : "text-gray-400 hover:text-gray-300"
-                                )}
-                            >
-                                {tab}
-                                {selectedType === tab && (
-                                    <span className="absolute bottom-0 left-0 w-full h-[2px] bg-linear-to-r from-purple-500 to-blue-500 shadow-[0_0_10px_rgba(139,92,246,0.8)]" />
-                                )}
-                            </button>
-                        ))}
-                    </div>
+                    <p className="text-sm text-gray-400">Products ranked by the current catalog order.</p>
                 </header>
 
                 {/* 2. Ranking Grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-12">
                     {products.map((product, i) => (
-                        <div key={i} className="group cursor-pointer flex flex-col gap-3 relative">
+                        <Link href={`/product/${product.id}`} key={product.id} className="group flex flex-col gap-3 relative">
                             {/* Ranking Badge (Cinematic Style) */}
                             <div className="absolute top-0 left-0 z-10 w-10 h-10 bg-black text-white flex items-center justify-center font-black text-lg border-b border-r border-white/10 rounded-br-2xl shadow-lg">
                                 {i + 1}
@@ -82,12 +41,6 @@ export function RankingContent({ products }: RankingContentProps) {
                                     fill
                                     className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
                                 />
-                                {/* Quick Add Overlay */}
-                                <div className="absolute bottom-3 right-3 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                                    <div className="w-8 h-8 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-purple-600 text-white border border-white/10">
-                                        +
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Info */}
@@ -99,7 +52,7 @@ export function RankingContent({ products }: RankingContentProps) {
                                     {i < 3 && <span className="text-xs text-red-500 font-bold animate-pulse">HOT</span>}
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </div>

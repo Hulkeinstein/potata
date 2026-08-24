@@ -175,18 +175,6 @@ export function TryOnContent({ products }: TryOnContentProps) {
                         </div>
                     ) : (
                         <>
-                            {/* Body Profile Inputs (Optional - currently just visual) */}
-                            <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-6">
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-3 focus-within:border-purple-500 transition-colors">
-                                    <label className="text-xs text-gray-400 block mb-1">Height (cm)</label>
-                                    <input type="number" placeholder="170" className="w-full bg-transparent text-white font-bold outline-none placeholder-gray-600" />
-                                </div>
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-3 focus-within:border-purple-500 transition-colors">
-                                    <label className="text-xs text-gray-400 block mb-1">Weight (kg)</label>
-                                    <input type="number" placeholder="60" className="w-full bg-transparent text-white font-bold outline-none placeholder-gray-600" />
-                                </div>
-                            </div>
-
                             {/* Upload/Preview Zone */}
                             <div className="w-full max-w-md aspect-[3/4] relative group cursor-pointer rounded-2xl overflow-hidden bg-zinc-900 shadow-[0_0_40px_-10px_rgba(168,85,247,0.3)]">
                                 {/* Rotating Gradient Layers */}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowRight, RefreshCcw, Check, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 
 const HIDE_KEY = "aiCoordinatorHiddenUntil";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -81,29 +81,8 @@ export function AICoordinatorPopup({ name }: { name?: string | null }) {
                             .
                         </h2>
                         <p className="text-gray-400 text-sm leading-relaxed mb-5">
-                            Based on your recent interest in <i>&quot;Minimalist Streetwear&quot;</i> and Dubai&apos;s
-                            current weather (24°C).
+                            개인화 코디 추천 기능을 준비하고 있습니다. 현재는 AI Studio에서 직접 스타일을 체험할 수 있습니다.
                         </p>
-
-                        <div className="p-4 bg-white/5 rounded-xl border border-white/10 mb-4">
-                            <h4 className="text-xs text-gray-400 uppercase tracking-wider mb-2">Current Outfit</h4>
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="font-medium text-white">Oversized Blazer Set</p>
-                                    <p className="text-xs text-brand-neon">AED 349</p>
-                                </div>
-                                <ArrowRight className="text-gray-400 w-4 h-4" />
-                            </div>
-                        </div>
-
-                        <div className="flex gap-3 mb-5">
-                            <button className="flex-1 py-3 bg-brand-neon text-black font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-white transition-colors">
-                                <Check className="w-4 h-4" /> Save Look
-                            </button>
-                            <button className="flex-1 py-3 bg-transparent border border-white/20 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-white/10 transition-colors">
-                                <RefreshCcw className="w-4 h-4" /> Regenerate
-                            </button>
-                        </div>
 
                         {/* 끄기 / 하루동안 보지 않기 */}
                         <div className="flex items-center justify-between gap-3 pt-4 border-t border-white/10 text-sm">

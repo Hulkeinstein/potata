@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/constants";
 import type { Product, ProductCategory } from "@/types";
@@ -49,13 +48,6 @@ export function ShopContent({ products }: ShopContentProps) {
                         role="tablist"
                         aria-label="Product categories"
                     >
-                        <button
-                            className="flex items-center gap-2 text-sm font-bold border border-white/10 rounded-full px-3 py-1 hover:border-purple-500 hover:text-purple-400 transition-colors focus:outline-none"
-                            aria-label="Open filters"
-                        >
-                            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
-                            Filter
-                        </button>
                         {CATEGORIES.map((cat) => (
                             <button
                                 key={cat}
@@ -74,13 +66,9 @@ export function ShopContent({ products }: ShopContentProps) {
                         ))}
                     </div>
 
-                    <button
-                        className="flex items-center gap-1 text-sm font-medium text-gray-400 cursor-pointer hover:text-white transition-colors focus:outline-none rounded"
-                        aria-label="Sort options"
-                    >
+                    <p className="text-sm font-medium text-gray-400">
                         Sort by: <span className="text-white">Newest</span>
-                        <ChevronDown className="w-3 h-3" aria-hidden="true" />
-                    </button>
+                    </p>
                 </div>
             </div>
 

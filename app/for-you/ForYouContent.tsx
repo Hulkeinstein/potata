@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Sparkles, RefreshCcw } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { ProductCard } from "@/components/ui/ProductCard";
 import type { Product } from "@/types";
@@ -17,11 +17,8 @@ export function ForYouContent({ products }: ForYouContentProps) {
             <div className="max-w-7xl mx-auto min-h-screen">
 
                 <div className="px-5 mb-6">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="mb-2">
                         <h1 className="text-2xl font-bold tracking-tight">For Sarah</h1>
-                        <button className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
-                            <RefreshCcw className="w-5 h-5" />
-                        </button>
                     </div>
                     <p className="text-sm text-gray-400">Analysis based on your recent style.</p>
                 </div>
@@ -53,7 +50,7 @@ export function ForYouContent({ products }: ForYouContentProps) {
                 {/* Keyword Tags */}
                 <div className="flex gap-2 px-5 overflow-x-auto no-scrollbar mb-10">
                     {["#Minimalist", "#Office Look", "#Neutral Tone", "#Tweed"].map(tag => (
-                        <span key={tag} className="text-xs font-bold px-4 py-2 bg-white/5 border border-white/10 rounded-full text-gray-300 whitespace-nowrap hover:border-purple-500/50 hover:text-white transition-colors cursor-pointer">
+                        <span key={tag} className="text-xs font-bold px-4 py-2 bg-white/5 border border-white/10 rounded-full text-gray-300 whitespace-nowrap">
                             {tag}
                         </span>
                     ))}

@@ -110,7 +110,8 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                             </div>
                             <ul className="space-y-4">
                                 {POPULAR_SEARCHES.map((term, index) => (
-                                    <li key={term} className="group cursor-pointer flex items-center gap-4">
+                                    <li key={term}>
+                                      <Link href={`/search?q=${encodeURIComponent(term)}`} onClick={onClose} className="group flex items-center gap-4">
                                         <span className={cn(
                                             "text-lg font-bold w-6 text-center",
                                             index < 3 ? "text-white" : "text-gray-400"
@@ -120,6 +121,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                         <span className="text-xl text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all">
                                             {term}
                                         </span>
+                                      </Link>
                                     </li>
                                 ))}
                             </ul>
