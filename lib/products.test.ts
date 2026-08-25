@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // vi.hoisted: mock fn을 vi.mock 호이스팅 전에 초기화
-const { productCreate, productFindMany, productQueryRaw } = vi.hoisted(() => ({
+const { productCreate, productFindMany, productFindFirst, productQueryRaw } = vi.hoisted(() => ({
   productCreate: vi.fn(),
   productFindMany: vi.fn(),
+  productFindFirst: vi.fn(),
   productQueryRaw: vi.fn(),
 }));
 
@@ -14,6 +15,7 @@ vi.mock("@/lib/prisma", () => ({
     product: {
       create: productCreate,
       findMany: productFindMany,
+      findFirst: productFindFirst,
     },
     $queryRaw: productQueryRaw,
   },
@@ -25,7 +27,7 @@ vi.mock("next/cache", () => ({
   revalidateTag: vi.fn(),
 }));
 
-import { createProduct, getAllProducts, searchProducts } from "@/lib/products";
+import { createProduct, getAllProducts, getProductById, searchProducts } from "@/lib/products";
 import type { CreateProductInput } from "@/types";
 
 /** UUID v4 형식 정규식 */
@@ -163,7 +165,7 @@ describe("createProduct", () => {
       expect(calledWith.data.images).toEqual([baseInput.imageUrl]);
     });
 
-    it("sizes 미제공 → create data.sizes = []", async () => {
+  it("sizes 미제공 → create data.sizes = []", async () => {
       makeCreateMock();
       await createProduct(baseInput);
       const calledWith = productCreate.mock.calls[0][0] as {
@@ -179,6 +181,31 @@ describe("createProduct", () => {
         data: { isNew: boolean };
       };
       expect(calledWith.data.isNew).toBe(false);
+    });
+
+    it("initialStock 미제공 → 모든 생성 옵션의 초기 재고는 5개다", async () => {
+      makeCreateMock();
+      await createProduct(baseInput);
+      const calledWith = productCreate.mock.calls[0][0] as { data: { variants: { create: Array<{ stock: number }> } } };
+      expect(calledWith.data.variants.create.every((variant) => variant.stock === 5)).toBe(true);
+    });
+
+    it("옵션별 초기 재고 제공 → 각 사이즈·컬러 조합의 재고를 그대로 생성한다", async () => {
+      makeCreateMock();
+      await createProduct({
+        ...baseInput,
+        sizes: ["S", "M"],
+        colors: ["Black"],
+        variantStocks: [
+          { size: "S", color: "Black", stock: 2 },
+          { size: "M", color: "Black", stock: 8 },
+        ],
+      });
+      const calledWith = productCreate.mock.calls[0][0] as { data: { variants: { create: Array<{ size: string; color: string; stock: number }> } } };
+      expect(calledWith.data.variants.create).toEqual([
+        { size: "S", color: "Black", stock: 2 },
+        { size: "M", color: "Black", stock: 8 },
+      ]);
     });
   });
 
@@ -200,6 +227,24 @@ describe("createProduct", () => {
       };
       expect(calledWith.data.tags).toEqual(["a", "b"]);
     });
+  });
+});
+
+describe("고객 카탈로그 활성 상태 경계", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("목록 조회는 활성 상품만 Prisma에 요청한다", async () => {
+    productFindMany.mockResolvedValue([]);
+    await getAllProducts();
+    expect(productFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: { isActive: true } }));
+  });
+
+  it("비활성 상품은 단건 고객 조회에서 null 처리한다", async () => {
+    productFindFirst.mockResolvedValue(null);
+    await expect(getProductById("inactive-product")).resolves.toBeNull();
+    expect(productFindFirst).toHaveBeenCalledWith({ where: { id: "inactive-product", isActive: true }, include: { variants: true } });
   });
 });
 

@@ -23,6 +23,16 @@ export interface Product {
   images?: string[];
   rating?: number;
   reviewCount?: number;
+  variants?: ProductVariant[];
+  inventoryStatus?: "ON_SALE" | "SOLD_OUT";
+}
+
+export interface ProductVariant {
+  id: string;
+  size: string;
+  color: string;
+  stock: number;
+  isManuallySoldOut: boolean;
 }
 
 export type ProductCategory =
@@ -315,6 +325,14 @@ export interface CreateProductInput {
   isNew?: boolean;
   isBest?: boolean;
   isHot?: boolean;
+  initialStock?: number;
+  variantStocks?: readonly ProductVariantStockInput[];
+}
+
+export interface ProductVariantStockInput {
+  readonly size: string;
+  readonly color: string;
+  readonly stock: number;
 }
 // POST /api/admin/products 성공 데이터
 export type AdminProductCreateData = { id: string };

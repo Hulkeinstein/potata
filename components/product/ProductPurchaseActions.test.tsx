@@ -43,6 +43,13 @@ describe("ProductPurchaseActions", () => {
     expect(addItem).toHaveBeenCalledWith(expect.objectContaining({ quantity: 2, size: "M", color: "Black" }));
   });
 
+  it("수동 품절 옵션은 재고가 남아도 장바구니에 담지 않는다", () => {
+    render(<ProductPurchaseActions product={{ ...product, variants: [{ id: "v1", size: "S", color: "Black", stock: 5, isManuallySoldOut: true }, { id: "v2", size: "M", color: "Black", stock: 5, isManuallySoldOut: true }] } as never} imageUrl="/jacket.jpg" />);
+    expect(screen.getByRole("button", { name: "Sold Out" }).hasAttribute("disabled")).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Sold Out" }));
+    expect(addItem).not.toHaveBeenCalled();
+  });
+
   it("wishlist와 실제 링크 복사 동작을 제공한다", () => {
     render(<ProductPurchaseActions product={product as never} imageUrl="/jacket.jpg" />);
     expect(screen.getByRole("button", { name: "Like" })).toBeTruthy();

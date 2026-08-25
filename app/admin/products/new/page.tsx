@@ -23,7 +23,7 @@ export default async function NewProductPage() {
 
   return (
     <main className="min-h-screen bg-black py-12 px-4">
-      <div className="mx-auto mb-4 max-w-2xl text-right"><Link href="/admin/benefits" className="text-sm font-semibold text-brand-neon underline">쿠폰·포인트 관리</Link></div>
+      <div className="mx-auto mb-4 flex max-w-2xl justify-end gap-4 text-right"><Link href="/admin/products" className="text-sm font-semibold text-brand-neon underline">상품 관리</Link><Link href="/admin/benefits" className="text-sm font-semibold text-brand-neon underline">쿠폰·포인트 관리</Link></div>
       <AdminProductForm />
     </main>
   );

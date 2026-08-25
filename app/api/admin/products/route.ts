@@ -3,9 +3,11 @@ import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
 import { createProduct, type CreateProductWithGuideInput } from "@/lib/products";
+import { buildInitialProductVariants } from "@/lib/product-variants";
 import { parseSizeGuide } from "@/lib/size-guide";
 import { uploadProductImage, removeProductImagesByUrl } from "@/lib/supabase-storage";
 import type { CreateProductInput, AdminProductCreateData } from "@/types";
+import type { ProductVariantStockInput } from "@/types";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -15,6 +17,23 @@ const ALLOWED_TYPES: Record<string, string> = {
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 // DB에 저장 가능한 실제 카테고리 6종('All'은 필터 전용 — 저장 금지)
 const VALID_CATEGORIES = ["Outer", "Top", "Bottom", "Dress", "Acc", "Shoes"];
+
+function parseVariantStocks(raw: string): readonly ProductVariantStockInput[] | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed.map((item) => {
+      if (typeof item !== "object" || item === null) throw new Error("invalid option");
+      const size = Reflect.get(item, "size");
+      const color = Reflect.get(item, "color");
+      const stock = Reflect.get(item, "stock");
+      if (typeof size !== "string" || typeof color !== "string" || !Number.isInteger(stock) || stock < 0) throw new Error("invalid option");
+      return { size, color, stock };
+    });
+  } catch {
+    return null;
+  }
+}
 
 /**
  * 파일 앞 바이트(magic number)로 실제 이미지 형식 확인.
@@ -76,6 +95,10 @@ export async function POST(req: NextRequest) {
     const colors = colorsRaw
       ? colorsRaw.split(",").map((c) => c.trim()).filter((c) => c.length > 0)
       : undefined;
+    const initialStockRaw = String(form.get("initialStock") ?? "5").trim();
+    const initialStock = Number.parseInt(initialStockRaw, 10);
+    const variantStocksRaw = String(form.get("variantStocks") ?? "").trim();
+    const variantStocks = variantStocksRaw ? parseVariantStocks(variantStocksRaw) : undefined;
 
     const sizeGuideRaw = String(form.get("sizeGuide") ?? "").trim();
     let sizeGuide: CreateProductWithGuideInput["sizeGuide"];
@@ -128,6 +151,21 @@ export async function POST(req: NextRequest) {
         { success: false, error: "가격(price)은 0보다 큰 정수여야 합니다." },
         { status: 400 }
       );
+    }
+    if (!Number.isInteger(initialStock) || initialStock < 0) {
+      return NextResponse.json({ success: false, error: "초기 재고는 0 이상의 정수여야 합니다." }, { status: 400 });
+    }
+    const optionSizes = sizes?.length ? sizes : [""];
+    const optionColors = colors?.length ? colors : [""];
+    if (variantStocksRaw) {
+      if (!variantStocks) {
+        return NextResponse.json({ success: false, error: "옵션별 초기 재고 형식이 올바르지 않습니다." }, { status: 400 });
+      }
+      try {
+        buildInitialProductVariants(optionSizes, optionColors, initialStock, variantStocks);
+      } catch {
+        return NextResponse.json({ success: false, error: "옵션별 초기 재고가 상품 옵션 조합과 일치하지 않습니다." }, { status: 400 });
+      }
     }
     if (!VALID_CATEGORIES.includes(category)) {
       return NextResponse.json(
@@ -228,6 +266,8 @@ export async function POST(req: NextRequest) {
         sizeGuide,
         isNew,
         isBest,
+        initialStock,
+        variantStocks: variantStocks ?? undefined,
       };
       const product = await createProduct(productInput);
 

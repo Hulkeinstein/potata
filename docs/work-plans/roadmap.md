@@ -126,6 +126,7 @@ Navbar에서 읽지 않은 알림 수를 접근 가능한 badge로 표시하고,
 
 ## ▶ 다음 후보
 
-1. **결제 연동**: 기존 checkout·Order(PENDING/PAID/CANCELLED)를 실제 gateway와 연결한다. provider, webhook idempotency, 환불·실패 정책과 외부 계정 승인을 먼저 확정한다. Pilot 쿠폰/포인트는 위 정책이 승인되기 전까지 기록·조회 전용이다.
+1. **관리자 상품 카탈로그 관리**: 기존 등록 기능 다음 단계로, 등록 상품 목록·검색·수정·판매 중지/재노출을 추가한다. 실제 삭제는 주문 스냅샷과 운영 정책을 보호하기 위해 제외한다. 상세: [admin-product-catalog-management.md](../../plans/admin-product-catalog-management.md).
+2. **결제 연동(보류)**: 기존 checkout·Order(PENDING/PAID/CANCELLED)를 실제 gateway와 연결한다. provider, webhook idempotency, 환불·실패 정책과 외부 계정 승인을 먼저 확정한다. Pilot 쿠폰/포인트는 위 정책이 승인되기 전까지 기록·조회 전용이다.
 
 **External waitlist 유지**: Vercel/Supabase/Resend/Google/Replicate 설정, 운영 DB baseline, 실제 운영 배포는 owner 접근·설정값 및 항목별 별도 승인 전까지 구현 순위와 분리해 대기한다.

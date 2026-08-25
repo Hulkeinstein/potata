@@ -12,9 +12,11 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { Product, ProductCategory, CreateProductInput } from "@/types";
-import type { Product as PrismaProduct } from "@prisma/client";
+import type { Product as PrismaProduct, ProductVariant as PrismaProductVariant } from "@prisma/client";
 import { parseSizeGuide } from "@/lib/size-guide";
 import type { SizeGuide } from "@/lib/size-guide";
+import { getProductInventoryStatus } from "@/lib/inventory";
+import { buildInitialProductVariants } from "@/lib/product-variants";
 
 export type CreateProductWithGuideInput = CreateProductInput & {
   readonly sizeGuide?: SizeGuide;
@@ -34,7 +36,7 @@ const BEST_MIN_REVIEWS = 100;  // BEST: 최소 리뷰수(소수 리뷰 5점 배�
 const getHotProductIds = unstable_cache(
   async (): Promise<string[]> => {
     const rows = await prisma.product.findMany({
-      where: { viewCount: { gte: 1 } },
+      where: { isActive: true, viewCount: { gte: 1 } },
       orderBy: { viewCount: "desc" },
       take: 4,
       select: { id: true },
@@ -53,7 +55,9 @@ const getHotProductIds = unstable_cache(
  * - isNew/isBest: DB 저장값 무시 — createdAt·rating·reviewCount 기반 자동 파생
  * - isHot: hotIds Set 멤버십으로 파생 — viewCount 상위 4개가 HOT (독립 캐시 기반)
  */
-function toAppProduct(p: PrismaProduct, hotIds?: Set<string>): Product {
+type ProductWithVariants = PrismaProduct & { readonly variants?: readonly PrismaProductVariant[] };
+
+function toAppProduct(p: ProductWithVariants, hotIds?: Set<string>): Product {
   const sizeGuide = parseSizeGuide(p.sizeGuide, p.sizes);
   const product: Product & { readonly sizeGuide?: SizeGuide } = {
     id: p.id,
@@ -72,6 +76,8 @@ function toAppProduct(p: PrismaProduct, hotIds?: Set<string>): Product {
     description: p.description ?? undefined,
     rating: p.rating ?? undefined,
     reviewCount: p.reviewCount ?? undefined,
+    variants: p.variants?.map((variant) => ({ id: variant.id, size: variant.size, color: variant.color, stock: variant.stock, isManuallySoldOut: variant.isManuallySoldOut })),
+    ...(p.variants ? { inventoryStatus: getProductInventoryStatus(p.variants) } : {}),
     // unstable_cache JSON 직렬화 후 재역직렬화 시 createdAt이 ISO 문자열이 될 수 있음 → new Date()로 정규화
     isNew: Date.now() - new Date(p.createdAt).getTime() < NEW_WINDOW_MS,
     isBest: p.rating != null && p.rating >= BEST_MIN_RATING && (p.reviewCount ?? 0) >= BEST_MIN_REVIEWS,
@@ -85,7 +91,7 @@ function toAppProduct(p: PrismaProduct, hotIds?: Set<string>): Product {
  * HOT 랭킹 캐시(hot-products)와 독립 분리: 조회수 갱신이 이 캐시를 건드리지 않음.
  */
 const getCachedProductRows = unstable_cache(
-  async () => prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
+  async () => prisma.product.findMany({ where: { isActive: true }, include: { variants: true }, orderBy: { createdAt: "asc" } }),
   ["all-product-rows"],
   { tags: ["products"] }
 );
@@ -114,7 +120,7 @@ export async function getAllProducts(): Promise<Product[]> {
  * isHot은 getAllProducts(목록)에서만 파생하며, 상세/cart/ootd 소비처는 isHot 불필요.
  */
 export async function getProductById(id: string): Promise<Product | null> {
-  const row = await prisma.product.findUnique({ where: { id } });
+  const row = await prisma.product.findFirst({ where: { id, isActive: true }, include: { variants: true } });
   // hotIds 미전달 → isHot false (상세 소비처는 HOT 배지 미사용)
   return row ? toAppProduct(row) : null;
 }
@@ -133,12 +139,13 @@ export async function searchProducts(q: string): Promise<Product[]> {
   const pattern = `%${escaped}%`;
   // $queryRaw 태그드 템플릿: ${pattern}은 prepared-statement 파라미터로 바인딩(injection 안전).
   // 테이블/컬럼은 camelCase(@map 없음) → 쌍따옴표 quoting 필수. unnest(tags)로 배열 부분매칭.
-  const rows = await prisma.$queryRaw<PrismaProduct[]>`
+  const rows = await prisma.$queryRaw<ProductWithVariants[]>`
     SELECT * FROM "Product"
-    WHERE name ILIKE ${pattern} ESCAPE '\\'
+    WHERE "isActive" = true
+      AND (name ILIKE ${pattern} ESCAPE '\\'
        OR brand ILIKE ${pattern} ESCAPE '\\'
        OR category ILIKE ${pattern} ESCAPE '\\'
-       OR EXISTS (SELECT 1 FROM unnest(tags) AS t WHERE t ILIKE ${pattern} ESCAPE '\\')
+       OR EXISTS (SELECT 1 FROM unnest(tags) AS t WHERE t ILIKE ${pattern} ESCAPE '\\'))
     ORDER BY "createdAt" ASC
   `;
   // hotIds 미전달 → isHot false (검색 결과는 HOT 배지 불필요)
@@ -167,6 +174,11 @@ export async function createProduct(input: CreateProductWithGuideInput): Promise
   if (input.discountRate != null && (!Number.isInteger(input.discountRate) || input.discountRate < 0)) {
     throw new Error("할인율은 0 이상의 정수여야 합니다.");
   }
+  const sizes = input.sizes?.length ? input.sizes : [""];
+  const colors = input.colors?.length ? input.colors : [""];
+  const initialStock = input.initialStock ?? 5;
+  if (!Number.isInteger(initialStock) || initialStock < 0) throw new Error("초기 재고는 0 이상의 정수여야 합니다.");
+  const variants = buildInitialProductVariants(sizes, colors, initialStock, input.variantStocks);
   const row = await prisma.product.create({
     data: {
       id: crypto.randomUUID(),
@@ -188,7 +200,9 @@ export async function createProduct(input: CreateProductWithGuideInput): Promise
       isNew: input.isNew ?? false,
       isBest: input.isBest ?? false,
       isHot: input.isHot ?? false,
+      variants: { create: variants },
     },
+    include: { variants: true },
   });
   return toAppProduct(row);
 }

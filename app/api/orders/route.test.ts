@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // vi.hoisted: mock 참조를 vi.mock 호이스팅보다 먼저 초기화 (TDZ 회피)
-const { authMock, orderCreate, orderFindUnique, orderFindMany, txOrderCreate, productFindUnique } =
+const { authMock, orderCreate, orderFindUnique, orderFindFirst, orderFindMany, txOrderCreate, txProductFindMany, txVariantUpdateMany, productFindUnique } =
   vi.hoisted(() => ({
     authMock: vi.fn(),
     orderCreate: vi.fn(),
     orderFindUnique: vi.fn(),
+    orderFindFirst: vi.fn(),
     orderFindMany: vi.fn(),
     txOrderCreate: vi.fn(),
+    txProductFindMany: vi.fn(),
+    txVariantUpdateMany: vi.fn(),
     productFindUnique: vi.fn(),
   }));
 
@@ -16,6 +19,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     order: {
       findUnique: orderFindUnique,
+      findFirst: orderFindFirst,
       findMany: orderFindMany,
       create: orderCreate,
     },
@@ -24,7 +28,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     // route가 prisma.$transaction(async tx => tx.order.create(...)) 사용
     $transaction: vi.fn(async (fn: (tx: unknown) => unknown) =>
-      fn({ order: { create: txOrderCreate } })
+      fn({ product: { findMany: txProductFindMany }, productVariant: { updateMany: txVariantUpdateMany }, order: { create: txOrderCreate } })
     ),
   },
 }));
@@ -55,6 +59,11 @@ function makeReq(
 describe("POST /api/orders", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    txProductFindMany.mockImplementation(async () => {
+      const product = await productFindUnique();
+      return product ? [{ ...product, isActive: true, variants: [{ id: "v1", size: "", color: "", stock: 1000, isManuallySoldOut: false }] }] : [];
+    });
+    txVariantUpdateMany.mockResolvedValue({ count: 1 });
   });
 
   // 1. POST 미인증 → 401, DB 호출 없음
@@ -219,7 +228,7 @@ describe("POST /api/orders", () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
     productFindUnique.mockResolvedValue(p);
     const existingOrder = { id: "existing-order", userId: "u1", status: "PENDING" };
-    orderFindUnique.mockResolvedValue(existingOrder);
+    orderFindFirst.mockResolvedValue(existingOrder);
 
     const res = await POST(
       makeReq("POST", {
@@ -233,9 +242,8 @@ describe("POST /api/orders", () => {
     expect(json.success).toBe(true);
     expect(json.data).toEqual(existingOrder);
     expect(txOrderCreate).not.toHaveBeenCalled();
-    // findUnique 호출 인자 확인
-    expect(orderFindUnique).toHaveBeenCalledWith({
-      where: { idempotencyKey: "idem-key-123" },
+    expect(orderFindFirst).toHaveBeenCalledWith({
+      where: { idempotencyKey: "idem-key-123", userId: "u1" },
     });
   });
 });

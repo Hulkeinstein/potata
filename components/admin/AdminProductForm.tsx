@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, X } from "lucide-react";
@@ -59,6 +59,7 @@ export function AdminProductForm() {
   const [description, setDescription] = useState("");
   const [sizes, setSizes] = useState("");
   const [colors, setColors] = useState("");
+  const [variantStocks, setVariantStocks] = useState<Record<string, string>>({});
   const [sizeGuide, setSizeGuide] = useState("");
   // 태그 칩
   const [tags, setTags] = useState<string[]>([]);
@@ -66,6 +67,14 @@ export function AdminProductForm() {
   // 제출 상태
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const initialVariantOptions = useMemo(() => {
+    const optionSizes = sizes.split(",").map((value) => value.trim()).filter(Boolean);
+    const optionColors = colors.split(",").map((value) => value.trim()).filter(Boolean);
+    const resolvedSizes = optionSizes.length ? optionSizes : [""];
+    const resolvedColors = optionColors.length ? optionColors : [""];
+    return resolvedSizes.flatMap((size) => resolvedColors.map((color) => ({ size, color, key: JSON.stringify([size, color]) })));
+  }, [colors, sizes]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 동기 더블서밋 락 — state는 비동기 갱신이라 같은 tick 연타를 막지 못함
@@ -126,6 +135,15 @@ export function AdminProductForm() {
       setError("정가/할인율을 확인해주세요(판매가는 1 이상).");
       return;
     }
+    const initialVariantStocks = initialVariantOptions.map((option) => ({
+      size: option.size,
+      color: option.color,
+      stock: Number.parseInt(variantStocks[option.key] ?? "5", 10),
+    }));
+    if (initialVariantStocks.some((variant) => !Number.isInteger(variant.stock) || variant.stock < 0)) {
+      setError("옵션별 재고는 0 이상의 정수여야 합니다.");
+      return;
+    }
 
     submittingRef.current = true; // 락 획득(동기)
     setSubmitting(true);          // UI용 상태
@@ -150,6 +168,7 @@ export function AdminProductForm() {
       if (description.trim()) fd.append("description", description.trim());
       if (sizes.trim()) fd.append("sizes", sizes.trim());
       if (colors.trim()) fd.append("colors", colors.trim());
+      fd.append("variantStocks", JSON.stringify(initialVariantStocks));
       if (sizeGuide.trim()) fd.append("sizeGuide", sizeGuide.trim());
       tags.forEach((t) => fd.append("tags", t));
       const res = await fetch("/api/admin/products", {
@@ -351,10 +370,11 @@ export function AdminProductForm() {
 
           {/* 사이즈 */}
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400 font-medium ml-1">
+            <label htmlFor="product-sizes" className="text-xs text-zinc-400 font-medium ml-1">
               사이즈 (콤마 구분)
             </label>
             <input
+              id="product-sizes"
               type="text"
               value={sizes}
               onChange={(e) => setSizes(e.target.value)}
@@ -365,10 +385,11 @@ export function AdminProductForm() {
 
           {/* 컬러 */}
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400 font-medium ml-1">
+            <label htmlFor="product-colors" className="text-xs text-zinc-400 font-medium ml-1">
               컬러 (콤마 구분)
             </label>
             <input
+              id="product-colors"
               type="text"
               value={colors}
               onChange={(e) => setColors(e.target.value)}
@@ -392,6 +413,26 @@ export function AdminProductForm() {
             />
             <p className="ml-1 text-xs text-zinc-600">검증된 상품 실측 또는 신체 권장치만 입력하세요. rows의 사이즈는 위 상품 사이즈와 정확히 일치해야 합니다.</p>
           </div>
+
+          <section className="space-y-3 rounded-lg border border-white/10 bg-black/30 p-4" aria-labelledby="initial-inventory-heading">
+            <div>
+              <h3 id="initial-inventory-heading" className="text-xs font-medium text-zinc-300">옵션별 초기 재고</h3>
+              <p className="mt-1 text-xs text-zinc-600">사이즈·컬러를 입력하면 조합별 수량을 설정할 수 있습니다. 비어 있으면 기본 옵션 1개가 생성되며 기본값은 5개입니다.</p>
+            </div>
+            {initialVariantOptions.map((option) => (
+              <label key={option.key} className="flex items-center justify-between gap-4 text-sm text-zinc-300">
+                <span>{[option.color, option.size].filter(Boolean).join(" / ") || "기본 옵션"}</span>
+                <input
+                  aria-label={`${[option.color, option.size].filter(Boolean).join(" / ") || "기본 옵션"} 초기 재고`}
+                  className="h-10 w-24 rounded-lg border border-white/10 bg-black/50 px-3 text-white focus:border-brand-neon focus:outline-none"
+                  min="0"
+                  type="number"
+                  value={variantStocks[option.key] ?? "5"}
+                  onChange={(event) => setVariantStocks((current) => ({ ...current, [option.key]: event.target.value }))}
+                />
+              </label>
+            ))}
+          </section>
 
           {/* 태그 칩 */}
           <div className="space-y-2">

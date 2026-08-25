@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getProductById } from "@/lib/products";
 import { extractErrorMessage } from "@/lib/auth";
 import type { CartItem, CartSyncRequest } from "@/types";
+import { findPurchasableVariant } from "@/lib/product-variants";
 
 // GET: 본인 장바구니 — productId로 현재 product/가격을 재조회(Zero Trust). 삭제/품절 상품은 제외.
 export async function GET() {
@@ -24,7 +25,7 @@ export async function GET() {
     const items: CartItem[] = [];
     for (const row of rows) {
       const product = await getProductById(row.productId); // 서버 재조회값만 신뢰
-      if (!product) continue; // 삭제/품절 상품 제외
+      if (!product || (product.variants !== undefined && !findPurchasableVariant(product.variants, row))) continue;
       items.push({
         product,
         quantity: row.quantity,
@@ -88,11 +89,14 @@ export async function PUT(req: NextRequest) {
     if (lines.length > 0) {
       const ids = [...new Set(lines.map((l) => l.productId))];
       const existing = await prisma.product.findMany({
-        where: { id: { in: ids } },
-        select: { id: true },
+        where: { id: { in: ids }, isActive: true },
+        include: { variants: true },
       });
-      const existingSet = new Set(existing.map((p) => p.id));
-      lines = lines.filter((l) => existingSet.has(l.productId));
+      const products = new Map(existing.map((product) => [product.id, product]));
+      lines = lines.filter((line) => {
+        const product = products.get(line.productId);
+        return product ? (product.variants === undefined || Boolean(findPurchasableVariant(product.variants, line))) : false;
+      });
     }
 
     // 전체 교체(트랜잭션): 본인 cart 비우고 새로 생성

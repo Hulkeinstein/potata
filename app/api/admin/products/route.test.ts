@@ -245,6 +245,21 @@ describe("POST /api/admin/products", () => {
     expect(createProductMock).toHaveBeenCalledTimes(1);
   });
 
+  it("옵션별 초기 재고 JSON은 조합별 수량을 createProduct에 전달한다", async () => {
+    const variantStocks = JSON.stringify([
+      { size: "S", color: "Black", stock: 2 },
+      { size: "M", color: "Black", stock: 8 },
+    ]);
+    const res = await POST(adminPostReq({ ...VALID_FIELDS, sizes: "S, M", colors: "Black", variantStocks }, jpeg()));
+    expect(res.status).toBe(200);
+    expect(createProductMock).toHaveBeenCalledWith(expect.objectContaining({
+      variantStocks: [
+        { size: "S", color: "Black", stock: 2 },
+        { size: "M", color: "Black", stock: 8 },
+      ],
+    }));
+  });
+
   it("createProduct에 올바른 필드(name/brand/price/category/imageUrl) 전달", async () => {
     const req = adminPostReq(
       { name: "셔츠", brand: "Nike", price: "29900", category: "Top" },

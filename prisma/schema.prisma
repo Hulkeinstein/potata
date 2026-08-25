@@ -279,6 +279,7 @@ model Product {
   isNew         Boolean           @default(false)
   isBest        Boolean           @default(false)
   isHot         Boolean           @default(false)
+  isActive      Boolean           @default(true)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   wishlistItems WishlistItem[]
@@ -288,10 +289,27 @@ model Product {
   reviews       Review[]
   questions     Question[]
   sizeGuide     Json?
+  variants      ProductVariant[]
 
   @@index([category])
   @@index([brand])
   @@index([viewCount])
+  @@index([isActive, createdAt])
+}
+
+model ProductVariant {
+  id                String   @id @default(cuid())
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size              String   @default("")
+  color             String   @default("")
+  stock             Int      @default(5)
+  isManuallySoldOut Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([productId, size, color])
+  @@index([productId])
 }
 
 model WishlistItem {

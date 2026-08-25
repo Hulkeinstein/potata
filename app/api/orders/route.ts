@@ -4,10 +4,18 @@ import { prisma } from "@/lib/prisma";
 import { extractErrorMessage } from "@/lib/auth";
 import type { CreateOrderRequest, OrderItemSnapshot } from "@/types";
 import type { Prisma } from "@prisma/client";
+import { findPurchasableVariant, getVariantLabel } from "@/lib/product-variants";
 
 // 무료 배송 임계값(AED) — 서버 단일 진실 원천, 클라이언트 입력 불신
 const FREE_SHIPPING_THRESHOLD = 50000;
 const SHIPPING_FEE = 3000;
+
+type OrderLine = {
+  readonly productId: string;
+  readonly quantity: number;
+  readonly size: string;
+  readonly color: string;
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,43 +58,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. 서버 가격 재검증 — 클라이언트가 보낸 price/name 무시, DB에서 직접 조회
-    const snapshots: OrderItemSnapshot[] = [];
+    const merged = new Map<string, OrderLine>();
     for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-      });
-      if (!product) {
-        return NextResponse.json(
-          { success: false, error: `존재하지 않는 상품: ${item.productId}` },
-          { status: 400 }
-        );
-      }
-
-      snapshots.push({
-        productId: product.id,
-        name: product.name,
-        brand: product.brand,
-        price: product.price, // 서버 조회값만 사용
-        imageUrl: product.imageUrl,
-        size: item.size,
-        color: item.color,
-        quantity: item.quantity,
-      });
+      const size = item.size ?? "";
+      const color = item.color ?? "";
+      const key = `${item.productId}\u0000${size}\u0000${color}`;
+      const previous = merged.get(key);
+      merged.set(key, { productId: item.productId, size, color, quantity: (previous?.quantity ?? 0) + item.quantity });
     }
-
-    // 4. 서버 재계산 (Int 전용)
-    const subtotal = snapshots.reduce(
-      (sum, s) => sum + s.price * s.quantity,
-      0
-    );
-    const shipping = subtotal > FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-    const total = subtotal + shipping;
+    const lines = [...merged.values()];
 
     // 5. 멱등성 체크 — idempotencyKey 존재 시 중복 생성 방지
     if (idempotencyKey) {
-      const existing = await prisma.order.findUnique({
-        where: { idempotencyKey },
+      const existing = await prisma.order.findFirst({
+        where: { idempotencyKey, userId: session.user.id },
       });
       if (existing) {
         return NextResponse.json(
@@ -98,6 +83,27 @@ export async function POST(req: NextRequest) {
 
     // 6. 원자적 주문 생성
     const order = await prisma.$transaction(async (tx) => {
+      const products = await tx.product.findMany({
+        where: { id: { in: lines.map((line) => line.productId) }, isActive: true },
+        include: { variants: true },
+      });
+      const productById = new Map(products.map((product) => [product.id, product]));
+      const snapshots: OrderItemSnapshot[] = [];
+      for (const line of lines) {
+        const product = productById.get(line.productId);
+        if (!product) throw new InventoryUnavailableError(`존재하지 않는 상품: ${line.productId}`, 400);
+        const variant = findPurchasableVariant(product.variants, line);
+        if (!variant) throw new InventoryUnavailableError(`${getVariantLabel(line)} 옵션은 품절되었습니다.`);
+        const decremented = await tx.productVariant.updateMany({
+          where: { id: variant.id, stock: { gte: line.quantity }, isManuallySoldOut: false },
+          data: { stock: { decrement: line.quantity } },
+        });
+        if (decremented.count !== 1) throw new InventoryUnavailableError(`${getVariantLabel(line)} 옵션은 재고가 부족합니다.`);
+        snapshots.push({ productId: product.id, name: product.name, brand: product.brand, price: product.price, imageUrl: product.imageUrl, size: line.size, color: line.color, quantity: line.quantity });
+      }
+      const subtotal = snapshots.reduce((sum, snapshot) => sum + snapshot.price * snapshot.quantity, 0);
+      const shipping = subtotal > FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+      const total = subtotal + shipping;
       return tx.order.create({
         data: {
           userId: session.user.id,
@@ -109,15 +115,22 @@ export async function POST(req: NextRequest) {
           idempotencyKey: idempotencyKey ?? null,
         },
       });
-    });
+    }, { isolationLevel: "Serializable" });
 
     return NextResponse.json({ success: true, data: order }, { status: 200 });
   } catch (error) {
+    if (error instanceof InventoryUnavailableError) return NextResponse.json({ success: false, error: error.message }, { status: error.status });
     console.error("[orders POST] error:", error);
     return NextResponse.json(
       { success: false, error: extractErrorMessage(error) },
       { status: 500 }
     );
+  }
+}
+
+class InventoryUnavailableError extends Error {
+  constructor(message: string, readonly status = 409) {
+    super(message);
   }
 }
 
