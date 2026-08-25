@@ -13,6 +13,12 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import type { Product, ProductCategory, CreateProductInput } from "@/types";
 import type { Product as PrismaProduct } from "@prisma/client";
+import { parseSizeGuide } from "@/lib/size-guide";
+import type { SizeGuide } from "@/lib/size-guide";
+
+export type CreateProductWithGuideInput = CreateProductInput & {
+  readonly sizeGuide?: SizeGuide;
+};
 
 // NEW 배지: 등록 후 이 기간 이내인 상품을 자동으로 NEW 처리
 const NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 등록 1주일 이내 = NEW
@@ -48,7 +54,8 @@ const getHotProductIds = unstable_cache(
  * - isHot: hotIds Set 멤버십으로 파생 — viewCount 상위 4개가 HOT (독립 캐시 기반)
  */
 function toAppProduct(p: PrismaProduct, hotIds?: Set<string>): Product {
-  return {
+  const sizeGuide = parseSizeGuide(p.sizeGuide, p.sizes);
+  const product: Product & { readonly sizeGuide?: SizeGuide } = {
     id: p.id,
     name: p.name,
     brand: p.brand,
@@ -59,6 +66,7 @@ function toAppProduct(p: PrismaProduct, hotIds?: Set<string>): Product {
     sizes: p.sizes,
     colors: p.colors,
     tags: p.tags,
+    ...(sizeGuide ? { sizeGuide } : {}),
     originalPrice: p.originalPrice ?? undefined,
     discountRate: p.discountRate ?? undefined,
     description: p.description ?? undefined,
@@ -69,6 +77,7 @@ function toAppProduct(p: PrismaProduct, hotIds?: Set<string>): Product {
     isBest: p.rating != null && p.rating >= BEST_MIN_RATING && (p.reviewCount ?? 0) >= BEST_MIN_REVIEWS,
     isHot: hotIds ? hotIds.has(p.id) : false,
   };
+  return product;
 }
 
 /**
@@ -144,7 +153,7 @@ const VALID_CATEGORIES = ["Outer", "Top", "Bottom", "Dress", "Acc", "Shoes"] as 
  * id는 @default가 없으므로 crypto.randomUUID()로 서버에서 공급(시드의 숫자 id와 분리).
  * category는 6종만 허용('All'/임의값 저장 금지 — ADR-005). 위반 시 throw → 라우트 최상위 catch가 400/500 변환.
  */
-export async function createProduct(input: CreateProductInput): Promise<Product> {
+export async function createProduct(input: CreateProductWithGuideInput): Promise<Product> {
   if (!VALID_CATEGORIES.includes(input.category as (typeof VALID_CATEGORIES)[number])) {
     throw new Error("유효하지 않은 카테고리입니다.");
   }
@@ -173,6 +182,7 @@ export async function createProduct(input: CreateProductInput): Promise<Product>
       sizes: input.sizes ?? [],
       colors: input.colors ?? [],
       tags: input.tags ?? [],
+      sizeGuide: input.sizeGuide ?? undefined,
       rating: null,
       reviewCount: null,
       isNew: input.isNew ?? false,

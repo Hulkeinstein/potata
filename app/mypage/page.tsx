@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
 import {
     ChevronRight,
-    Heart, FileText, Bell, LogOut, Images
+    Heart, FileText, Bell, LogOut, Images, Settings, BadgePercent
 } from "lucide-react";
 
 const MY_MENU = [
@@ -16,6 +16,8 @@ const MY_MENU = [
     { label: "My Posts", description: "OOTD · Reviews · Q&A 관리", icon: Images, href: "/mypage/posts" },
     { label: "Wishlist", icon: Heart, href: "/liked" },
     { label: "Notifications", icon: Bell, href: "/notifications" },
+    { label: "Settings", description: "쇼핑 사이즈 · AI 코디 표시", icon: Settings, href: "/mypage/settings" },
+    { label: "Benefits", description: "발급된 쿠폰 · 포인트 내역", icon: BadgePercent, href: "/mypage/benefits" },
 ];
 
 export default function MyPage() {
@@ -57,12 +59,7 @@ export default function MyPage() {
                         <h1 className="text-3xl font-bold font-outfit mb-1">
                             Hello, <span className="text-brand-neon">{user.name}</span>
                         </h1>
-                        <div className="flex items-center gap-2 text-zinc-400 text-sm">
-                            <span className="px-2 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-xs">
-                                VIP Member
-                            </span>
-                            <span>{user.email}</span>
-                        </div>
+                        <p className="text-sm text-zinc-400">{user.email}</p>
                     </div>
                 </motion.div>
 

@@ -59,6 +59,7 @@ export function AdminProductForm() {
   const [description, setDescription] = useState("");
   const [sizes, setSizes] = useState("");
   const [colors, setColors] = useState("");
+  const [sizeGuide, setSizeGuide] = useState("");
   // 태그 칩
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
@@ -149,6 +150,7 @@ export function AdminProductForm() {
       if (description.trim()) fd.append("description", description.trim());
       if (sizes.trim()) fd.append("sizes", sizes.trim());
       if (colors.trim()) fd.append("colors", colors.trim());
+      if (sizeGuide.trim()) fd.append("sizeGuide", sizeGuide.trim());
       tags.forEach((t) => fd.append("tags", t));
       const res = await fetch("/api/admin/products", {
         method: "POST",
@@ -373,6 +375,22 @@ export function AdminProductForm() {
               placeholder="Black, White"
               className="w-full h-12 bg-black/50 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-brand-neon transition-colors"
             />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400 font-medium ml-1" htmlFor="size-guide-json">
+              Size Guide JSON (선택, cm 원본)
+            </label>
+            <textarea
+              id="size-guide-json"
+              value={sizeGuide}
+              onChange={(event) => setSizeGuide(event.target.value)}
+              rows={6}
+              spellCheck={false}
+              placeholder={'{"version":1,"measurementType":"garment","unit":"cm","columns":[{"key":"chest","label":"가슴 단면"}],"rows":[{"size":"M","measurements":{"chest":55}}]}' }
+              className="w-full resize-y rounded-lg border border-white/10 bg-black/50 px-4 py-3 font-mono text-xs text-white focus:border-brand-neon focus:outline-none"
+            />
+            <p className="ml-1 text-xs text-zinc-600">검증된 상품 실측 또는 신체 권장치만 입력하세요. rows의 사이즈는 위 상품 사이즈와 정확히 일치해야 합니다.</p>
           </div>
 
           {/* 태그 칩 */}

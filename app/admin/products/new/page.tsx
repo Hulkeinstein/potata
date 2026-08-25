@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
 import { AdminProductForm } from "@/components/admin/AdminProductForm";
+import Link from "next/link";
 
 /**
  * 관리자 상품 등록 페이지
@@ -22,6 +23,7 @@ export default async function NewProductPage() {
 
   return (
     <main className="min-h-screen bg-black py-12 px-4">
+      <div className="mx-auto mb-4 max-w-2xl text-right"><Link href="/admin/benefits" className="text-sm font-semibold text-brand-neon underline">쿠폰·포인트 관리</Link></div>
       <AdminProductForm />
     </main>
   );

@@ -1,6 +1,6 @@
 # potata Master Roadmap
 
-> 마지막 업데이트: 2026-08-22
+> 마지막 업데이트: 2026-08-24
 > 목적: P0~P3 작업 인덱스. 각 항목의 상세 plan은 링크된 문서 참조.
 > 이 파일은 인덱스만 — 상세 plan 작성 금지.
 
@@ -114,8 +114,18 @@ P3(카탈로그 DB) 이후 머지된 트랙들:
 
 Navbar에서 읽지 않은 알림 수를 접근 가능한 badge로 표시하고, 알림 전체 읽음 후 즉시 숨긴다. 팔로우 생성은 같은 transaction에서 source-linked `FOLLOW` 알림을 한 건만 만들며, 언팔로우 시 cascade 삭제한다. 알림 목록은 팔로워의 공개 프로필로 연결하고 handle이 없으면 안전한 비링크 행을 표시한다. `NotificationType`과 정확한 source 조합을 검증하는 migration을 추가했으며 로컬·빈 DB migration, DB invariant, 전체 테스트와 production build를 검증했다. 상세: [follow-notifications.md](../../plans/follow-notifications.md).
 
+## ✅ 쿠폰·포인트 기록 Pilot (로컬 완료, checkout 미연동)
+
+관리자는 할인율·최대 AED·전체/브랜드 범위가 있는 캠페인을 만들고 인증 사용자 개인 또는 서버 스냅샷 전체에 발급할 수 있다. 사용자는 `/mypage/benefits`에서 본인 쿠폰과 append-only 포인트 원장을 조회한다. 구매 포인트 정책은 `PURCHASE_CONFIRMED`용 버전 규칙으로만 저장하며 현재 `PENDING` 주문에서는 적립하지 않는다. 쿠폰 적용·포인트 사용·주문 합계·결제에는 연결하지 않았다. 상세: [coupon-points-pilot.md](../../plans/coupon-points-pilot.md).
+
+### 실제 사용 활성화 전 정책 결정
+
+- 쿠폰: 최소 주문 금액, 중복/stacking, 개인·전체 사용 횟수, redemption reserve/release, 취소·환불 복구.
+- 포인트: AED 전환율, 적립·사용·만료, 환불 reversal과 음수 잔액 정책.
+- 공통: 신뢰할 수 있는 결제/구매확정 이벤트, payment state 연동, 운영 승인과 migration/deployment 승인.
+
 ## ▶ 다음 후보
 
-1. **결제 연동**: 기존 checkout·Order(PENDING/PAID/CANCELLED)를 실제 gateway와 연결한다. provider, webhook idempotency, 환불·실패 정책과 외부 계정 승인을 먼저 확정하며 쿠폰/포인트/재고는 별도 범위로 유지한다.
+1. **결제 연동**: 기존 checkout·Order(PENDING/PAID/CANCELLED)를 실제 gateway와 연결한다. provider, webhook idempotency, 환불·실패 정책과 외부 계정 승인을 먼저 확정한다. Pilot 쿠폰/포인트는 위 정책이 승인되기 전까지 기록·조회 전용이다.
 
 **External waitlist 유지**: Vercel/Supabase/Resend/Google/Replicate 설정, 운영 DB baseline, 실제 운영 배포는 owner 접근·설정값 및 항목별 별도 승인 전까지 구현 순위와 분리해 대기한다.

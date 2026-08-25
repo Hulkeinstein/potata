@@ -5,14 +5,34 @@ import { Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { AICoordinatorPopup } from "./AICoordinatorPopup";
+import type { ApiResponse } from "@/types";
+import type { UserSettingsData } from "@/lib/user-settings";
 
 export function Hero() {
     const { data: session, status } = useSession();
+    const [coordinatorEnabled, setCoordinatorEnabled] = useState(false);
+    useEffect(() => {
+        if (status !== "authenticated") return;
+        let active = true;
+        async function loadSettings() {
+            try {
+                const response = await fetch("/api/users/me/settings");
+                if (!response.ok) return;
+                const payload: ApiResponse<UserSettingsData> = await response.json();
+                if (active && payload.success && payload.data) setCoordinatorEnabled(payload.data.aiCoordinatorEnabled);
+            } catch {
+                if (active) setCoordinatorEnabled(false);
+            }
+        }
+        void loadSettings();
+        return () => { active = false; };
+    }, [status]);
     return (
         <section className="relative w-full h-[90vh] overflow-hidden bg-cinematic-900 text-white">
             <GuestHero />
-            {status === "authenticated" && <AICoordinatorPopup name={session?.user.name} />}
+            {status === "authenticated" && coordinatorEnabled && <AICoordinatorPopup name={session?.user.name} />}
         </section>
     );
 }

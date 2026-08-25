@@ -145,6 +145,12 @@ export default function CategoryPage() {
                                 {selectedCategory.name}
                             </h1>
                             <p className="text-zinc-400 text-sm mt-1">Explore the latest {selectedCategory.name} trends</p>
+                            <Link
+                                href={`/shop?category=${selectedCategory.id}`}
+                                className="mt-4 inline-flex items-center gap-1 rounded-full bg-brand-neon px-4 py-2 text-sm font-bold text-black"
+                            >
+                                Shop {selectedCategory.name} <ArrowRight className="h-4 w-4" />
+                            </Link>
                         </div>
                     </div>
                 </motion.div>
@@ -153,27 +159,24 @@ export default function CategoryPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <AnimatePresence mode="popLayout">
                         {selectedCategory.subCategories.map((sub, idx) => (
-                            <Link href={`/shop?category=${selectedCategory.id}`} key={sub.name} className="block">
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                    className="group relative aspect-[3/4] bg-zinc-900 rounded-lg overflow-hidden border border-white/5 cursor-pointer"
-                                >
-                                    <Image
-                                        src={sub.image}
-                                        alt={sub.name}
-                                        fill
-                                        className="object-cover group-hover:scale-110 transition-transform duration-500 opacity-70 group-hover:opacity-100"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-4">
-                                        <h3 className="text-white font-bold text-lg">{sub.name}</h3>
-                                        <div className="flex items-center text-brand-neon text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                                            Shop Now <ArrowRight className="w-3 h-3 ml-1" />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            </Link>
+                            <motion.div
+                                key={sub.name}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: idx * 0.05 }}
+                                className="relative aspect-[3/4] overflow-hidden rounded-lg border border-white/5 bg-zinc-900"
+                            >
+                                <Image
+                                    src={sub.image}
+                                    alt={sub.name}
+                                    fill
+                                    className="object-cover opacity-70"
+                                />
+                                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/20 to-transparent p-4">
+                                    <h3 className="text-lg font-bold text-white">{sub.name}</h3>
+                                    <p className="mt-1 text-xs text-zinc-400">{selectedCategory.name} collection</p>
+                                </div>
+                            </motion.div>
                         ))}
                     </AnimatePresence>
                 </div>

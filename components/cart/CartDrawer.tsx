@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
@@ -72,12 +73,13 @@ export function CartDrawer() {
                                 <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-60">
                                     <ShoppingBag className="w-16 h-16 text-zinc-700" />
                                     <p className="text-zinc-400 font-medium">Your bag is empty.</p>
-                                    <button
+                                    <Link
+                                        href="/shop"
                                         onClick={closeCart}
                                         className="text-brand-neon hover:text-white transition-colors text-sm font-bold"
                                     >
                                         Start Shopping
-                                    </button>
+                                    </Link>
                                 </div>
                             ) : (
                                 items.map((item) => (

@@ -121,6 +121,22 @@ describe("POST /api/admin/products", () => {
     expect(uploadMock).not.toHaveBeenCalled();
   });
 
+  it("Size Guide가 상품 사이즈와 일치하지 않으면 업로드 전에 400", async () => {
+    const sizeGuide = JSON.stringify({ version: 1, measurementType: "garment", unit: "cm", columns: [{ key: "chest", label: "가슴" }], rows: [{ size: "M", measurements: { chest: 55 } }] });
+    const req = adminPostReq({ ...VALID_FIELDS, sizes: "S, M", sizeGuide }, jpeg());
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    expect(uploadMock).not.toHaveBeenCalled();
+  });
+
+  it("유효한 Size Guide를 검증된 객체로 createProduct에 전달한다", async () => {
+    const sizeGuide = JSON.stringify({ version: 1, measurementType: "garment", unit: "cm", columns: [{ key: "chest", label: "가슴" }], rows: [{ size: "M", measurements: { chest: 55 } }] });
+    const req = adminPostReq({ ...VALID_FIELDS, sizes: "M", sizeGuide }, jpeg());
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(createProductMock).toHaveBeenCalledWith(expect.objectContaining({ sizeGuide: expect.objectContaining({ version: 1, measurementType: "garment" }) }));
+  });
+
   it("name 빈값은 400, 업로드 미호출", async () => {
     const req = adminPostReq({ ...VALID_FIELDS, name: "" }, jpeg());
     const res = await POST(req);
@@ -286,6 +302,8 @@ describe("POST /api/admin/products", () => {
     expect(res.status).toBe(500);
     const json = await res.json();
     expect(json.success).toBe(false);
+    expect(json.error).toBe("상품 등록 중 오류가 발생했습니다.");
+    expect(json.error).not.toContain("DB 연결 실패");
     // 고아 파일 방지 — 업로드된 URL로 보상 삭제 호출 확인
     expect(removeMock).toHaveBeenCalledWith(["https://x/p.png"]);
   });

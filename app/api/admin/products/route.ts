@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
-import { createProduct } from "@/lib/products";
+import { createProduct, type CreateProductWithGuideInput } from "@/lib/products";
+import { parseSizeGuide } from "@/lib/size-guide";
 import { uploadProductImage, removeProductImagesByUrl } from "@/lib/supabase-storage";
-import { extractErrorMessage } from "@/lib/auth";
 import type { CreateProductInput, AdminProductCreateData } from "@/types";
 
 const ALLOWED_TYPES: Record<string, string> = {
@@ -76,6 +76,22 @@ export async function POST(req: NextRequest) {
     const colors = colorsRaw
       ? colorsRaw.split(",").map((c) => c.trim()).filter((c) => c.length > 0)
       : undefined;
+
+    const sizeGuideRaw = String(form.get("sizeGuide") ?? "").trim();
+    let sizeGuide: CreateProductWithGuideInput["sizeGuide"];
+    if (sizeGuideRaw) {
+      if (!sizes?.length) {
+        return NextResponse.json({ success: false, error: "Size Guide에는 상품 사이즈가 먼저 필요합니다." }, { status: 400 });
+      }
+      try {
+        sizeGuide = parseSizeGuide(JSON.parse(sizeGuideRaw), sizes) ?? undefined;
+      } catch {
+        sizeGuide = undefined;
+      }
+      if (!sizeGuide) {
+        return NextResponse.json({ success: false, error: "Size Guide JSON이 계약 또는 상품 사이즈와 일치하지 않습니다." }, { status: 400 });
+      }
+    }
 
     // 태그 칩은 다중 append(form.getAll) — sizes/colors의 단일 콤마 split과 다른 경로.
     // Zero Trust 서버 가드: trim·빈값제거·각 20자 이하·중복제거·최대 10개(클라 가드 우회 방어).
@@ -196,7 +212,7 @@ export async function POST(req: NextRequest) {
 
     // 5. DB 생성 — 실패 시 업로드된 이미지 보상 삭제 후 re-throw(최상위 catch가 500 반환)
     try {
-      const productInput: CreateProductInput = {
+      const productInput: CreateProductWithGuideInput = {
         name,
         brand,
         price,
@@ -209,6 +225,7 @@ export async function POST(req: NextRequest) {
         sizes,
         colors,
         tags,
+        sizeGuide,
         isNew,
         isBest,
       };
@@ -230,7 +247,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[admin products POST] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: "상품 등록 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }

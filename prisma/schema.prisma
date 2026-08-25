@@ -32,8 +32,182 @@ model User {
   answers               Answer[]
   following             Follow[]       @relation("UserFollowing") // 내가 follower인 행 = 내가 팔로우하는 사람들
   followers             Follow[]       @relation("UserFollowers") // 내가 following(대상)인 행 = 나를 팔로우하는 사람들
+  settings              UserSettings?
+  couponCampaignsCreated CouponCampaign[]     @relation("CouponCampaignCreator")
+  couponBatchesCreated   CouponIssuanceBatch[] @relation("CouponBatchActor")
+  couponGrants           UserCouponGrant[]     @relation("CouponGrantOwner")
+  couponRevocations      UserCouponGrant[]     @relation("CouponGrantRevoker")
+  pointPoliciesCreated   PointPolicy[]          @relation("PointPolicyCreator")
+  pointEntries           PointLedgerEntry[]     @relation("PointLedgerOwner")
+  pointActions           PointLedgerEntry[]     @relation("PointLedgerActor")
+  benefitAudits          BenefitAdminAudit[]    @relation("BenefitAuditActor")
+  adminStepUpProofs      AdminStepUpProof[]     @relation("AdminStepUpActor")
 
   @@index([email])
+}
+
+enum BenefitScope {
+  ALL_PRODUCTS
+  BRANDS
+}
+
+enum CouponAudience {
+  INDIVIDUAL
+  ALL_VERIFIED_USERS
+}
+
+enum CouponBatchStatus {
+  PENDING
+  COMPLETED
+}
+
+enum PointLedgerType {
+  ADMIN_GRANT
+  ADMIN_REVERSAL
+  PURCHASE_EARN
+}
+
+model CouponCampaign {
+  id             String                @id @default(cuid())
+  name           String
+  ratePercent    Int
+  minOrderAed    Int
+  maxDiscountAed Int
+  scope          BenefitScope
+  brands         String[]              @default([])
+  active         Boolean               @default(true)
+  reason         String
+  expiresAt      DateTime?
+  creatorId      String
+  creator        User                  @relation("CouponCampaignCreator", fields: [creatorId], references: [id])
+  batches        CouponIssuanceBatch[]
+  grants         UserCouponGrant[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([active, createdAt])
+  @@index([scope])
+  @@index([expiresAt])
+}
+
+model AdminStepUpProof {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     User     @relation("AdminStepUpActor", fields: [actorId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  scope     String
+  expiresAt DateTime
+  verifiedAt DateTime?
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([actorId, expiresAt])
+}
+
+model CouponIssuanceBatch {
+  id                     String            @id @default(cuid())
+  campaignId             String
+  campaign               CouponCampaign    @relation(fields: [campaignId], references: [id])
+  audience               CouponAudience
+  recipientCountSnapshot Int
+  audienceDigest         String
+  requestHash            String
+  targetEmail            String?
+  actorId                String
+  actor                  User              @relation("CouponBatchActor", fields: [actorId], references: [id])
+  reason                 String
+  idempotencyKey         String            @unique
+  status                 CouponBatchStatus @default(PENDING)
+  grants                 UserCouponGrant[]
+  createdAt              DateTime          @default(now())
+  completedAt            DateTime?
+
+  @@index([campaignId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model UserCouponGrant {
+  id               String              @id @default(cuid())
+  campaignId       String
+  campaign         CouponCampaign      @relation(fields: [campaignId], references: [id])
+  batchId          String
+  batch            CouponIssuanceBatch @relation(fields: [batchId], references: [id])
+  userId           String
+  user             User                @relation("CouponGrantOwner", fields: [userId], references: [id], onDelete: Cascade)
+  revokedAt        DateTime?
+  revokedById      String?
+  revokedBy        User?               @relation("CouponGrantRevoker", fields: [revokedById], references: [id])
+  revocationReason String?
+  revocationKey    String?             @unique
+  createdAt        DateTime            @default(now())
+
+  @@unique([campaignId, userId])
+  @@index([userId, createdAt])
+  @@index([userId, revokedAt])
+  @@index([batchId])
+}
+
+model BenefitAdminAudit {
+  id             String   @id @default(cuid())
+  action         String
+  targetId       String
+  actorId        String
+  actor          User     @relation("BenefitAuditActor", fields: [actorId], references: [id])
+  reason         String
+  requestHash    String
+  idempotencyKey String   @unique
+  createdAt      DateTime @default(now())
+
+  @@index([targetId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model PointPolicy {
+  id              String       @id @default(cuid())
+  version         Int          @unique
+  rateBasisPoints Int
+  perOrderCap     Int
+  scope           BenefitScope
+  brands          String[]     @default([])
+  activationEvent String       @default("PURCHASE_CONFIRMED")
+  active          Boolean      @default(true)
+  reason          String
+  effectiveFrom   DateTime     @default(now())
+  effectiveUntil  DateTime?
+  creatorId       String
+  idempotencyKey  String       @unique
+  requestHash     String
+  creator         User         @relation("PointPolicyCreator", fields: [creatorId], references: [id])
+  createdAt       DateTime     @default(now())
+
+  @@index([active, effectiveFrom])
+}
+
+model PointLedgerEntry {
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation("PointLedgerOwner", fields: [userId], references: [id], onDelete: Cascade)
+  type             PointLedgerType
+  amount           Int
+  reason           String
+  actorId          String?
+  actor            User?           @relation("PointLedgerActor", fields: [actorId], references: [id])
+  trustedOrderId   String?
+  sourceKey        String          @unique
+  reversesSourceKey String?         @unique
+  createdAt        DateTime        @default(now())
+
+  @@index([userId, createdAt, id])
+  @@index([type, createdAt])
+}
+
+model UserSettings {
+  userId               String   @id
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferredSize        String?
+  aiCoordinatorEnabled Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model Follow {
@@ -113,6 +287,7 @@ model Product {
   ootdTags      OOTDPostProduct[]
   reviews       Review[]
   questions     Question[]
+  sizeGuide     Json?
 
   @@index([category])
   @@index([brand])

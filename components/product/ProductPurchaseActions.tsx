@@ -1,25 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Minus, Plus } from "lucide-react";
 import { HeartButton } from "@/components/common/HeartButton";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCartStore } from "@/store/cart-store";
-import type { Product } from "@/types";
+import type { ApiResponse, Product } from "@/types";
+import type { SizeGuide } from "@/lib/size-guide";
+import type { UserSettingsData } from "@/lib/user-settings";
+import { SizeGuideDialog } from "@/components/product/SizeGuideDialog";
+import { useSession } from "next-auth/react";
 
 interface ProductPurchaseActionsProps {
-  readonly product: Product;
+  readonly product: Product & { readonly sizeGuide?: SizeGuide };
   readonly imageUrl: string;
 }
 
 export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseActionsProps) {
-  const sizes = product.sizes?.length ? product.sizes : ["Free"];
-  const colors = product.colors?.length ? product.colors : ["Default"];
+  const sizes = useMemo(() => product.sizes?.length ? product.sizes : ["Free"], [product.sizes]);
+  const colors = useMemo(() => product.colors?.length ? product.colors : ["Default"], [product.colors]);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [quantity, setQuantity] = useState(1);
   const [copyStatus, setCopyStatus] = useState("");
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const sizeGuideTriggerRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCartStore();
+  const { status: sessionStatus } = useSession();
+
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") return;
+    let active = true;
+    async function loadPreferredSize() {
+      try {
+        const response = await fetch("/api/users/me/settings");
+        if (!response.ok) return;
+        const payload: ApiResponse<UserSettingsData> = await response.json();
+        const preferred = payload.success ? payload.data?.preferredSize : null;
+        if (active && preferred && sizes.includes(preferred)) setSelectedSize(preferred);
+      } catch {
+        // 설정 조회 실패는 구매 흐름을 막지 않는다.
+      }
+    }
+    void loadPreferredSize();
+    return () => { active = false; };
+  }, [sessionStatus, sizes]);
 
   const addToCart = () => {
     const size = selectedSize ?? sizes[0];
@@ -54,13 +79,15 @@ export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseAct
       </div>
 
       <div className="space-y-3">
-        <span className="text-sm font-medium text-zinc-300">Size</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-zinc-300">Size</span>
+          {product.sizeGuide && <button ref={sizeGuideTriggerRef} type="button" onClick={() => setSizeGuideOpen(true)} className="text-sm font-medium text-brand-neon underline underline-offset-4">Size Guide</button>}
+        </div>
         <div className="grid grid-cols-4 gap-2">
           {sizes.map((size) => (
             <button key={size} onClick={() => setSelectedSize(size)} aria-pressed={selectedSize === size} className={cn("py-3 rounded-lg border text-sm font-medium transition-all", selectedSize === size ? "border-brand-neon text-black bg-brand-neon" : "border-white/10 text-zinc-400 hover:border-white/30 hover:bg-white/5")}>{size}</button>
           ))}
         </div>
-        <p className="text-xs text-zinc-500">Size guide는 준비 중입니다.</p>
       </div>
 
       <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
@@ -78,6 +105,7 @@ export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseAct
         <button onClick={copyProductLink} aria-label="상품 링크 복사" className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/10 transition-colors hover:border-white/50"><Copy className="h-6 w-6" /></button>
       </div>
       {copyStatus && <p role="status" className="text-sm text-zinc-400">{copyStatus}</p>}
+      {product.sizeGuide && sizeGuideOpen && <SizeGuideDialog productName={product.name} guide={product.sizeGuide} triggerRef={sizeGuideTriggerRef} onClose={() => setSizeGuideOpen(false)} />}
     </div>
   );
 }

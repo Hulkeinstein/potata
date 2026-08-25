@@ -17,11 +17,10 @@ describe("MyPage navigation", () => {
     expect(screen.getByText("OOTD · Reviews · Q&A 관리")).toBeTruthy();
   });
 
-  it("지원되는 메뉴만 노출하고 Wishlist를 실제 경로로 연결한다", () => {
+  it("지원되는 메뉴를 실제 경로로 연결한다", () => {
     render(<MyPage />);
     expect(screen.getByRole("link", { name: /Wishlist/ }).getAttribute("href")).toBe("/liked");
-    expect(screen.queryByText("Coupons")).toBeNull();
-    expect(screen.queryByText("Points")).toBeNull();
-    expect(screen.queryByText("Settings")).toBeNull();
+    expect(screen.getByRole("link", { name: /Settings/ }).getAttribute("href")).toBe("/mypage/settings");
+    expect(screen.getByRole("link", { name: /Benefits/ }).getAttribute("href")).toBe("/mypage/benefits");
   });
 });

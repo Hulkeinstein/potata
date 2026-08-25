@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Footer } from "./Footer";
 import { Hero } from "./Hero";
 import { ProductGrid } from "./ProductGrid";
@@ -18,16 +18,19 @@ vi.mock("./AICoordinatorPopup", () => ({ AICoordinatorPopup: ({ name }: { readon
 vi.mock("./ProductCard", () => ({ ProductCard: ({ product }: { readonly product: { readonly id: string; readonly name: string } }) => <a href={`/product/${product.id}`}>{product.name}</a> }));
 
 describe("ghost navigation cleanup", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, data: { preferredSize: null, aiCoordinatorEnabled: true } }) }));
+  });
   it("Hero CTA를 존재하는 화면에 연결한다", () => {
     render(<Hero />);
     expect(screen.getByRole("link", { name: "Explore Collection" }).getAttribute("href")).toBe("/shop");
     expect(screen.getByRole("link", { name: /Try AI Studio/ }).getAttribute("href")).toBe("/try-on");
   });
 
-  it("로그인 홈의 기존 AI COORDINATOR 진입점을 유지한다", () => {
+  it("로그인 홈에서 설정이 켜진 AI COORDINATOR 진입점을 유지한다", async () => {
     sessionState.authenticated = true;
     render(<Hero />);
-    expect(screen.getByText("AI COORDINATOR Mira")).toBeTruthy();
+    expect(await screen.findByText("AI COORDINATOR Mira")).toBeTruthy();
     sessionState.authenticated = false;
   });
 
