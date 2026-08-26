@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
 import { isAdmin } from "@/lib/admin";
 
 // PATCH: 답변 수정 — admin only
@@ -96,7 +95,7 @@ export async function PATCH(
   } catch (error) {
     console.error("[answers PATCH] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: "답변 처리 중 오류가 발생했습니다." },
       { status: 500 },
     );
   }
@@ -160,7 +159,7 @@ export async function DELETE(
   } catch (error) {
     console.error("[answers DELETE] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: "답변 처리 중 오류가 발생했습니다." },
       { status: 500 },
     );
   }

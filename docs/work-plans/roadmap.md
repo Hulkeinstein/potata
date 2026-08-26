@@ -1,132 +1,160 @@
-# potata Master Roadmap
+# Potata Master Roadmap
 
-> 마지막 업데이트: 2026-08-24
-> 목적: P0~P3 작업 인덱스. 각 항목의 상세 plan은 링크된 문서 참조.
-> 이 파일은 인덱스만 — 상세 plan 작성 금지.
+> 마지막 업데이트: 2026-08-26
+> 기준: 현재 `main` 코드와 완료된 로컬 검증 결과. 이 문서는 제품·운영의 현재 상태, 보류 사유, 다음 결정 지점을 함께 기록한다.
 
----
+## 현재 결론
 
-## ✅ P0 — 인증 복구 (완료)
+Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태**다. 상품·재고·쿠폰·포인트·소셜 기능과 관리자 대시보드는 구현됐고, 실제 판매를 시작하는 데 필요한 결제·운영 배포·실이메일 발송은 의도적으로 보류 중이다.
 
-**완료** (origin/main #11/#12/2c47833): `verification-store.ts` dead code 삭제, signup `bcrypt.hash`+`$transaction(user.upsert)`, verify `user.upsert(emailVerified:true)`. signup→verify→login 로직 실 DB로 실측 검증됨.
-
-**관련**: [verification-store-cleanup.md](./verification-store-cleanup.md) · ADR [adr-001](../adr/adr-001-db-verification-store.md)·[adr-002](../adr/adr-002-bcrypt-password-hash.md)
-
----
-
-## ⏳ External waitlist — 운영 배포·실유저 가동
-
-> 기능 개발은 계속 진행한다. 아래 외부 항목은 owner가 대상 프로젝트·접근 권한·설정값을 제공하고 별도 적용을 승인할 때까지 대기하며, 완료로 간주하지 않는다.
-
-### 로컬 준비 완료
-
-- [x] 로컬 `.env.local` `DATABASE_URL`에 `?pgbouncer=true` (42P05 prepared-statement 오류 해소 확인)
-- [x] migration baseline 파일·신규 DB deploy 경로 준비 — production `db push` 금지 정책 유지
-- [x] 개발 전용 PostgreSQL baseline·seed 및 preview signup → verification → login 검증
-- [x] DB-backed production build와 ephemeral PostgreSQL CI migration/status/schema parity 경로 검증
-
-### 외부 설정 대기
-
-- [ ] Resend 발신 도메인 인증, `EMAIL_FROM`·API key·테스트 수신 주소 제공 후 실메일 검증
-- [ ] 운영 DB backup/restore 증거와 read-only schema drift·migration history 확인 후 baseline resolve **별도 승인** — 절차 SSoT: [ADR-009](../adr/adr-009-prisma-migration-baseline.md)
-- [ ] Vercel 환경변수: DB(`DATABASE_URL`에 `?pgbouncer=true`, `DIRECT_URL`), Auth(`NEXTAUTH_SECRET` `NEXTAUTH_URL`), 운영(`ADMIN_EMAILS` `NEXT_PUBLIC_BASE_URL`)
-- [ ] Supabase 대상 project·Storage bucket 및 server-only key 설정 확인
-- [ ] Google OAuth 운영 callback/client 설정과 Replicate access 확인
-- [ ] 운영 deployment 대상 확인 및 **별도 배포 승인** 후 smoke test
-- [ ] (선택) 풀러 URL `&connection_limit=1` — 서버리스 튜닝
-
-운영 DB 명령과 deployment는 접근 정보만 제공되어도 자동 실행하지 않으며, 각각 명시적인 별도 승인 전에는 수행하지 않는다.
+| 영역 | 상태 | 현재 의미 |
+| --- | --- | --- |
+| 고객 쇼핑 경험 | 완료 | 상품 탐색, 검색, 장바구니, PENDING 주문 생성, OOTD·리뷰·Q&A 사용 가능 |
+| 소셜·개인화 | 완료 | 팔로우, 댓글·좋아요·팔로우 알림, My Posts, 알림 배지 사용 가능 |
+| 상품·재고 운영 | 완료 | 관리자 상품 등록·수정·판매 중지, 옵션 재고·수동 품절·재고 조정 이력 사용 가능 |
+| 혜택 운영 | Pilot 완료 | 쿠폰 캠페인·발급·포인트 기록은 가능하나 checkout에는 아직 적용하지 않음 |
+| 실제 결제·매출 분석 | 보류 | 결제사·환불·정산 정책 및 실거래 시작 전까지 연결하지 않음 |
+| 운영 배포 | 외부 대기 | 운영 DB, 이메일, Vercel·Storage·OAuth 설정과 명시적 승인 필요 |
 
 ---
 
-## ✅ P1 — try-on API 보안 (완료, #15)
+## 완료된 제품 기능
 
-`auth()` 세션 게이트(미인증 401, 가장 먼저) + 입력 검증(`data:image/*`/https, ~10MB) + Replicate 토큰 서버 전용 + 회귀 테스트 4종.
+### P0 — 인증과 기본 실행 환경
 
-**Near-term 후보**: 영속 per-user rate limit(`@upstash/ratelimit`) — in-memory는 서버리스 콜드스타트에 무용, 현재 `auth()`가 실질 방어선.
+- 이메일 가입, 인증 코드 검증, Credentials 로그인과 Google OAuth를 제공한다.
+- 로컬 PostgreSQL·Prisma baseline과 개발용 환경 변수로 홈·세션·가입→인증→로그인 흐름을 검증했다.
+- 개발 환경에서는 이메일 preview 경로를 쓸 수 있고, production에서는 발신자·Resend 설정이 없으면 안전하게 실패한다.
+- `DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET` 같은 필수 설정이 없을 때의 오류 원인을 확인했고 로컬 개발 환경은 준비됐다.
+
+### P1 — 상품 카탈로그와 고객 쇼핑 경험
+
+- 상품은 DB 기반 카탈로그로 조회하며 Shop, Search, Brands, Ranking, For You, 상품 상세에서 공통 데이터를 사용한다.
+- 상품 상세에는 옵션 선택, 찜, 장바구니, 링크 복사, 리뷰, Q&A, Size Guide 계약이 있다.
+- Size Guide UI·검증·관리자 입력 경로는 준비됐지만, 권위 있는 상품별 실측 데이터가 아직 없어 치수 안내 버튼은 데이터가 있는 상품에만 보이도록 했다.
+- 장바구니와 찜, 최근 본 상품은 로그인 사용자 기준으로 저장된다.
+- checkout은 서버 가격을 다시 계산해 `PENDING` 주문을 생성한다. 실제 결제 완료로 가장하거나 매출을 계산하지 않는다.
+
+### P2 — 콘텐츠·소셜·개인 영역
+
+- OOTD 게시물 업로드, 상품 태그, 좋아요, 본인 삭제, 피드 필터를 제공한다.
+- OOTD 댓글과 댓글·좋아요 알림을 제공하며, 본인에게는 알림을 만들지 않는다.
+- 팔로우·언팔로우와 공개 프로필을 제공하고, 팔로우 알림은 중복 없이 생성·정리된다.
+- Navbar에는 읽지 않은 알림 수를 표시하고, 알림 전체 읽음 후 즉시 갱신한다.
+- `/mypage/posts`에서 본인이 작성한 OOTD·리뷰·Q&A를 탭으로 모아보고 수정·삭제할 수 있다.
+- `/mypage`는 계정·주문·혜택 진입 중심으로 유지하고, 작성물 관리는 My Posts로 분리했다.
+
+### P3 — 쿠폰·포인트 Pilot
+
+- 관리자는 할인율, 최소 주문 금액, 최대 할인 금액, 전체/브랜드 범위, 만료일, 감사 사유가 있는 쿠폰 캠페인을 만들 수 있다.
+- 캠페인은 한 사용자 또는 서버 기준 전체 대상에게 발급할 수 있으며, 중복 발급·재시도·동시 요청을 안전하게 처리한다.
+- 관리자는 캠페인 비활성화·쿠폰 회수·포인트 지급·회수를 기록으로 남긴다.
+- 사용자는 My Page에서 본인 쿠폰과 포인트 원장을 조회한다.
+- Google 전용 관리자는 새 Google 인증을 통한 step-up을 사용하고, Credentials 관리자는 비밀번호 재인증을 사용한다.
+- 아직 coupon redemption, point spending, 주문 합계 변경, 결제 연결은 없다. 최소 주문 금액도 저장·표시만 하며 checkout에는 적용하지 않는다.
+
+### P4 — 관리자 상품·재고 운영
+
+#### 상품 카탈로그 관리
+
+- `/admin/products`에서 등록 상품을 검색하고 수정하거나 판매 중지·재노출할 수 있다.
+- 상품 삭제는 만들지 않는다. 과거 주문·콘텐츠 참조를 보존하기 위해 비활성화만 사용한다.
+- 비활성 상품은 고객 목록·검색·직접 주소에서 숨긴다.
+- 새 상품 등록 시 색상·사이즈 조합마다 재고 수량을 입력할 수 있고, 비어 있으면 기본 재고를 적용한다.
+
+#### 옵션 재고와 품절 규칙
+
+| 상태 | 규칙 | 고객 화면 |
+| --- | --- | --- |
+| 판매 중 | 상품 활성 + 옵션 재고 1 이상 + 수동 품절 아님 | 선택·장바구니·주문 가능 |
+| 자동 품절 | 옵션 재고 0 | 해당 옵션 구매 차단 |
+| 수동 품절 | 재고가 남아 있어도 관리자가 직접 품절 처리 | 해당 옵션 구매 차단 |
+| 전체 품절 | 모든 옵션이 자동 또는 수동 품절 | 상품은 보이되 구매 불가 |
+| 판매 중지 | 관리자가 상품을 비활성화 | 고객 카탈로그와 직접 주소에서 숨김 |
+
+- 장바구니와 주문 생성은 서버에서 옵션 재고·수동 품절·상품 활성 상태를 다시 검증한다.
+- 동시 주문과 재고 변경에서도 재고가 음수가 되지 않도록 원자적 조건부 차감을 사용한다.
+- 로컬 기존 상품 옵션은 개발용 초기 재고가 적용되어 판매 가능 상태로 검증됐다.
+
+#### 재고 조정 이력
+
+- 재고를 절대값으로 덮어쓰지 않고, 입고·정정·폐기라는 signed delta로만 조정한다.
+- 모든 관리자 조정은 실행자, 사유, 변경 전후 수량, 요청 fingerprint를 append-only 이력에 남긴다.
+- 같은 요청의 재시도는 한 번만 적용되고, 같은 키를 다른 요청에 쓰면 거절된다.
+- `/admin/inventory`에서 상품·브랜드 검색, 전체·저재고·품절·수동 품절 필터, 페이지네이션, 옵션별 이력 보기와 더 보기를 제공한다.
+- 이력은 카드가 펼쳐질 때만 불러오며, 폐기 선택 시 음수 수량을 기본으로 제안하고 오류는 입력 가까이에 표시한다.
+
+#### 운영자 대시보드
+
+- `/admin`은 상품, 재고, 쿠폰·포인트를 하나로 연결하는 관리자 전용 홈이다.
+- 실제 DB 근거가 있는 전체·판매 중·판매 중지 상품, 판매 가능·전체 품절 상품, 저재고·재고 0·수동 품절 옵션, 활성 캠페인, 미답변 Q&A 수만 표시한다.
+- 총매출·순매출·판매량·누적 판매량·평균 주문 금액·상품/브랜드/카테고리 순위·환불·전환율은 결제 확정·환불·원가·웹 분석 데이터가 생긴 뒤 연결하는 자리만 마련했다. 가짜 숫자나 `PENDING` 주문 합계는 표시하지 않는다.
+
+#### 상품 이미지 현황
+
+- 재고 카드에는 대표 상품 사진 영역, 상품명, 브랜드, 옵션, 재고 상태가 함께 보인다.
+- 기존 일부 상품의 외부 이미지 주소는 현재 로드되지 않아 `이미지 없음` 대체 표시를 사용한다.
+- 이미지 교체는 보류한다. 실제 사진을 표시하려면 관리자 상품 편집에서 소유·업로드한 이미지 주소로 바꾸는 별도 운영 작업이 필요하다.
 
 ---
 
-## ✅ P2a — 커머스/체크아웃 MVP (완료, #17·#18·#19)
+## 품질·보안 기준선
 
-장바구니 → `/checkout` → `POST /api/orders`(서버 가격 재검증·로그인 필수·멱등성·`$transaction`) → 주문 저장(status=PENDING) → `/mypage/orders` 내역. 단위(mock)+통합(실 Postgres) 테스트, CI Postgres 서비스.
-
-**관련**: [archive/commerce-checkout-mvp.md](./archive/commerce-checkout-mvp.md) · ADR [adr-004](../adr/adr-004-order-json-snapshot.md)
-**OUT(추후)**: 결제 게이트웨이, 관계형 OrderItem, 쿠폰/포인트/재고/환불.
-
----
-
-## ✅ 상품상세 skill · OAuth · UX · 영속화 · OOTD · CI (완료, #24~#34)
-
-P3(카탈로그 DB) 이후 머지된 트랙들:
-
-- **#24 product-detail 스킬**: 자유 텍스트 → `prisma/seed.ts` PRODUCTS 추가/갱신 → `db seed` upsert. **seed.ts = 상품 SSoT, DB는 파생물**. (`.claude/skills/product-detail/SKILL.md`)
-- **#25 Google OAuth**: NextAuth v5 Google + Credentials 병행, JWT no-adapter. ADR [adr-006](../adr/adr-006-oauth-jwt-no-adapter.md).
-- **#26 AI COORDINATOR 팝업화**: 홈 패널 → 팝업(끄기 / 하루 동안 보지 않기).
-- **#27·#28·#29 좋아요·장바구니·Recents 계정 DB 영속화**: 로그아웃/재로그인/타기기에서 보존. `WishlistItem`/`CartItem`/`RecentTryOn` + `StoreSync`. (`persist-cart-wishlist.md`)
-- **#30·#31·#32 OOTD 피드 실작동**: Supabase Storage 업로드 + 피드 GET + 좋아요 + 본인 삭제 + 상품 태그. ADR [adr-007](../adr/adr-007-supabase-storage.md). (`ootd-feed.md`)
-- **#33 OOTD 상품 태그 피커**: 검색 + 최근 구매 + 썸네일 그리드.
-- **#34 CI 비용 절감**: lockfile 크로스플랫폼 재생성(npm 11.3.0+, npm bug #4828) → `npm ci` + 캐시 복원 / `push:main` 트리거 제거(중복 실행 제거) / concurrency·timeout 가드레일.
+- Prisma migration은 baseline 이후 additive 방식으로 관리한다. 운영 DB에는 별도 승인 없이 migrate/resolve/db push를 실행하지 않는다.
+- 관리자 페이지와 write API는 세션과 `ADMIN_EMAILS` 권한을 서버에서 다시 검증한다.
+- 쿠폰·포인트·재고 변경은 actor-bound idempotency, 감사 사유, transaction, 안전한 오류 반환을 사용한다.
+- 로컬 기준 TypeScript, lint, Vitest, production build와 주요 desktop/mobile 브라우저 흐름을 반복 검증했다.
+- 현재 프로젝트 전체에 기존 lint warning 3개가 남아 있으나 오류는 없다.
 
 ---
 
-## ✅ P2b — 검색·상품 참여 UX (완료, #41~#47)
+## 현재 대기·다음 결정
 
-- 상품 리뷰 작성·수정·삭제, 이미지 0~3장, 관리자 구매 게이트 우회 (#41~#43)
-- 상품 Q&A 질문·관리자 답변 UI/API (#44~#45)
-- 검색 결과 페이지와 상품 태그 부분검색 (#46~#47)
+### 1. 운영 Q&A inbox — 완료
 
-**관련**: [style-analysis.md](../style-analysis.md)
+관리자가 고객 문의를 한곳에서 처리할 수 있는 inbox를 구현했다. 새 schema나 별도 답변 API를 만들지 않고, 기존 상품 Q&A와 admin 답변 mutation을 재사용한다.
+
+**포함 범위**
+
+- `/admin/questions`에서 미답변 우선 목록, 상태 필터·검색·페이지네이션, 답변 작성·수정
+- 대시보드 미답변 Q&A 카드에서 실제 inbox로 이동
+- admin 전용 DTO, 범위 제한 query, 상품 썸네일 fallback, 비활성 상품 문맥 보존
+- 답변 처리의 예상 밖 오류는 고객 정보나 내부 오류를 반환하지 않는다.
+
+**계속 제외**: 상담 담당자 배정, SLA, 이메일 알림, 외부 CRM, AI 자동 답변.
+
+### 2. 결제 연동 — 보류 유지
+
+실제 판매·물량·결제사 선택 전에는 구현하지 않는다. 시작 전에는 다음 결정을 고정해야 한다.
+
+- 결제 provider와 대상 국가·통화
+- payment attempt/event ledger와 webhook 검증·중복 처리
+- 결제 성공·실패·만료·전액 환불 상태 전이
+- 쿠폰 사용·포인트 사용·재고 예약·주문 확정의 순서
+- 수수료·세금·정산·환불 정책
+
+### 3. 실제 서비스 준비 — External waitlist
+
+아래 항목은 계정·비밀값·운영 환경 접근·명시적 승인 전까지 수행하지 않는다.
+
+1. Resend 발신 도메인 인증과 실메일 1건 검증
+2. 운영 PostgreSQL backup/restore 증거, read-only drift 확인, baseline resolve 별도 승인
+3. Vercel 환경 변수와 deployment 대상 확정
+4. Supabase Storage bucket, Google OAuth 운영 callback, Replicate 접근 확인
+5. 배포 승인 후 signup → verify → login → 상품 탐색 → 관리자 권한 smoke test
 
 ---
 
-## ✅ P3 — 상품 카탈로그 DB화 (완료, #21·#22)
+## 완료 이력
 
-`data/dummy.ts` 정적 상품 → Prisma `Product` 모델. 8개 화면 DB 조회(서버 fetch→클라 props), 상세 ISR, orders 가격 재검증 DB화, dummy PRODUCTS 제거(TRENDS만 잔존). `lib/products.ts` 헬퍼.
-
-**관련**: ADR [adr-005](../adr/adr-005-product-model.md) · [archive/catalog-db.md](./archive/catalog-db.md)
-
----
-
-## ✅ 관리자 상품 등록 + 배지 자동화 (완료, #35~40)
-
-운영자가 보호된 admin UI에서 실상품(이미지 포함)을 등록하고, 배지가 데이터 기반 자동 부여된다.
-- **#35 권한 게이트**: env `ADMIN_EMAILS` allowlist + `isAdmin` + middleware `/admin` + `createProduct`(randomUUID). 상품 SSoT = DB(런타임/admin), seed = 부트스트랩 한정 ([ADR-008](../adr/adr-008-product-ssot.md)).
-- **#36 Storage + API**: `lib/supabase-storage` bucket 일반화(신규 `product-images`) + `POST /api/admin/products`(검증·업로드·보상 삭제·revalidate).
-- **#37 등록 폼**: `/admin/products/new`(필드+이미지, 동기 useRef 제출 잠금).
-- **#38 fix**: middleware Edge `node:crypto` 회귀 제거(`lib/normalize` 분리).
-- **#39 가격·배지**: 정가+할인율→판매가 자동 계산. NEW(등록 1주일)·BEST(별점≥4.8·리뷰≥100) 자동 파생.
-- **#40 HOT 자동화**: 조회수 추적(`Product.viewCount`, `POST /api/products/[id]/view`) → 상위 4개 HOT(별도 캐시 + 조회 시 `revalidateTag`).
-
-**관련**: [archive/admin-product-upload.md](./archive/admin-product-upload.md) · [archive/hot-auto-views.md](./archive/hot-auto-views.md) · ADR [adr-008](../adr/adr-008-product-ssot.md)
-
----
-
-## ✅ P1 소셜 그래프 (완료, #48~#49)
-
-팔로우/언팔로우, `@handle` 공개 프로필, 전체/팔로잉 OOTD 피드와 handle 온보딩을 구현했다. 상세: [social-graph.md](./social-graph.md).
-
-## ✅ My Posts (완료)
-
-`/mypage/posts`에서 로그인 사용자가 본인의 OOTD·Reviews·Q&A를 URL 기반 탭으로 모아보고 수정·삭제할 수 있다. `/mypage`에는 설명형 진입 메뉴 1개만 추가했으며, OOTD image-first grid, Review/Q&A 상품 맥락 카드, 공개 프로필 CTA를 제공한다. 기존 모델만 사용해 별도 migration은 추가하지 않았다. 상세: [my-posts.md](../../plans/my-posts.md).
-
-## ✅ Navbar unread badge · Follow notifications (완료)
-
-Navbar에서 읽지 않은 알림 수를 접근 가능한 badge로 표시하고, 알림 전체 읽음 후 즉시 숨긴다. 팔로우 생성은 같은 transaction에서 source-linked `FOLLOW` 알림을 한 건만 만들며, 언팔로우 시 cascade 삭제한다. 알림 목록은 팔로워의 공개 프로필로 연결하고 handle이 없으면 안전한 비링크 행을 표시한다. `NotificationType`과 정확한 source 조합을 검증하는 migration을 추가했으며 로컬·빈 DB migration, DB invariant, 전체 테스트와 production build를 검증했다. 상세: [follow-notifications.md](../../plans/follow-notifications.md).
-
-## ✅ 쿠폰·포인트 기록 Pilot (로컬 완료, checkout 미연동)
-
-관리자는 할인율·최대 AED·전체/브랜드 범위가 있는 캠페인을 만들고 인증 사용자 개인 또는 서버 스냅샷 전체에 발급할 수 있다. 사용자는 `/mypage/benefits`에서 본인 쿠폰과 append-only 포인트 원장을 조회한다. 구매 포인트 정책은 `PURCHASE_CONFIRMED`용 버전 규칙으로만 저장하며 현재 `PENDING` 주문에서는 적립하지 않는다. 쿠폰 적용·포인트 사용·주문 합계·결제에는 연결하지 않았다. 상세: [coupon-points-pilot.md](../../plans/coupon-points-pilot.md).
-
-### 실제 사용 활성화 전 정책 결정
-
-- 쿠폰: 최소 주문 금액, 중복/stacking, 개인·전체 사용 횟수, redemption reserve/release, 취소·환불 복구.
-- 포인트: AED 전환율, 적립·사용·만료, 환불 reversal과 음수 잔액 정책.
-- 공통: 신뢰할 수 있는 결제/구매확정 이벤트, payment state 연동, 운영 승인과 migration/deployment 승인.
-
-## ▶ 다음 후보
-
-1. **관리자 상품 카탈로그 관리**: 기존 등록 기능 다음 단계로, 등록 상품 목록·검색·수정·판매 중지/재노출을 추가한다. 실제 삭제는 주문 스냅샷과 운영 정책을 보호하기 위해 제외한다. 상세: [admin-product-catalog-management.md](../../plans/admin-product-catalog-management.md).
-2. **결제 연동(보류)**: 기존 checkout·Order(PENDING/PAID/CANCELLED)를 실제 gateway와 연결한다. provider, webhook idempotency, 환불·실패 정책과 외부 계정 승인을 먼저 확정한다. Pilot 쿠폰/포인트는 위 정책이 승인되기 전까지 기록·조회 전용이다.
-
-**External waitlist 유지**: Vercel/Supabase/Resend/Google/Replicate 설정, 운영 DB baseline, 실제 운영 배포는 owner 접근·설정값 및 항목별 별도 승인 전까지 구현 순위와 분리해 대기한다.
+| 완료 흐름 | 핵심 결과 |
+| --- | --- |
+| My Posts·소셜 알림 | 내 작성물 관리, 댓글·좋아요·팔로우 알림, Navbar unread badge |
+| Ghost UI 정리 | 깨진 링크·가짜 제어를 제거하거나 기존 실제 경로로 연결 |
+| 쿠폰·포인트 Pilot | 관리자 캠페인·발급·원장·step-up·최소 주문 금액 기록 |
+| 관리자 카탈로그 | 상품 검색·수정·판매 중지/재노출, 고객 비활성 상품 차단 |
+| 옵션 재고·수동 품절 | 옵션별 수량, 자동/수동 품절, 장바구니·주문 재검증 |
+| 재고 조정 이력 | 입고·정정·폐기 원장, idempotency, 저재고 탐색 |
+| 운영자 대시보드 | 실제 운영 수치, 상품·재고·혜택 진입, 분석 지표 연결 대기 |
+| 재고 UX 보완 | 지연 이력 조회, 더 보기, 입력 피드백, 필터 초기화, 상품 식별 영역 |
+| 관리자 Q&A inbox | 미답변 우선 탐색, 검색·페이지네이션, 기존 안전한 답변 작성·수정 흐름 |

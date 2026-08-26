@@ -182,4 +182,26 @@ describe("POST /api/products/[id]/questions/[questionId]/answers", () => {
     expect(json.error).toBe("질문을 찾을 수 없습니다.");
     expect(answerCreateMock).not.toHaveBeenCalled();
   });
+
+  it("데이터베이스 오류가 발생하면 안전한 메시지만 반환하고 서버에 기록한다", async () => {
+    // Given
+    const databaseError = new Error("database password=super-secret failed");
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    authMock.mockResolvedValue({ user: { id: "admin1", email: "a@b.com" } });
+    isAdminMock.mockReturnValue(true);
+    questionFindUniqueMock.mockRejectedValue(databaseError);
+
+    // When
+    const res = await POST(
+      makePostReq({ content: "답변 내용" }),
+      { params: makeParams() },
+    );
+    const json = await res.json();
+
+    // Then
+    expect(res.status).toBe(500);
+    expect(json).toEqual({ success: false, error: "답변 처리 중 오류가 발생했습니다." });
+    expect(JSON.stringify(json)).not.toContain(databaseError.message);
+    expect(consoleErrorSpy).toHaveBeenCalledWith("[answers POST] error:", databaseError);
+  });
 });

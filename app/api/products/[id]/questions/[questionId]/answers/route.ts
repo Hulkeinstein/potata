@@ -3,7 +3,6 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/admin";
-import { extractErrorMessage } from "@/lib/auth";
 
 const CONTENT_MAX_LENGTH = 2000;
 
@@ -87,8 +86,9 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: answer }, { status: 201 });
   } catch (error) {
+    console.error("[answers POST] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: "답변 처리 중 오류가 발생했습니다." },
       { status: 500 },
     );
   }
