@@ -15,7 +15,7 @@ export function parseAdminInventoryQuery(searchParams: URLSearchParams): AdminIn
 }
 
 export async function listAdminInventory(input: AdminInventoryQuery) {
-  const variants = await prisma.productVariant.findMany({ where: { product: { isActive: true, ...(input.query ? { OR: [{ name: { contains: input.query, mode: "insensitive" } }, { brand: { contains: input.query, mode: "insensitive" } }] } : {}) } }, include: { product: { select: { id: true, name: true, brand: true } } }, orderBy: [{ stock: "asc" }, { updatedAt: "desc" }] });
+  const variants = await prisma.productVariant.findMany({ where: { product: { isActive: true, ...(input.query ? { OR: [{ name: { contains: input.query, mode: "insensitive" } }, { brand: { contains: input.query, mode: "insensitive" } }] } : {}) } }, include: { product: { select: { id: true, name: true, brand: true, imageUrl: true } } }, orderBy: [{ stock: "asc" }, { updatedAt: "desc" }] });
   const filtered = variants.filter((variant) => input.filter === "all" || input.filter === "low-stock" && variant.stock >= 1 && variant.stock <= 3 || input.filter === "sold-out" && variant.stock === 0 && !variant.isManuallySoldOut || input.filter === "manual-sold-out" && variant.isManuallySoldOut);
   const start = (input.page - 1) * input.pageSize;
   return { items: filtered.slice(start, start + input.pageSize), total: filtered.length, page: input.page, pageSize: input.pageSize };
