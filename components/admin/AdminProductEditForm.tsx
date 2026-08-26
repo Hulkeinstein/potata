@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 
 type EditableProduct = {
   readonly id: string;
@@ -32,12 +33,12 @@ export function AdminProductEditForm({ product }: { readonly product: EditablePr
   function change(field: keyof EditableForm, value: string | boolean) {
     setForm((current) => ({ ...current, [field]: value }));
   }
-  function changeVariant(id: string, field: "stock" | "isManuallySoldOut", value: string | boolean) {
+  function changeVariant(id: string, value: boolean) {
     setForm((current) => ({
       ...current,
       variants: current.variants.map((variant) => variant.id === id ? {
         ...variant,
-        [field]: field === "stock" ? Number(value) : value,
+        isManuallySoldOut: value,
       } : variant),
     }));
   }
@@ -58,8 +59,8 @@ export function AdminProductEditForm({ product }: { readonly product: EditablePr
     <label className="block text-sm">설명<textarea className="mt-1 w-full rounded bg-zinc-900 p-2" value={form.description ?? ""} onChange={(event) => change("description", event.target.value)} /></label>
     <label className="flex gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={(event) => change("isActive", event.target.checked)} />판매 중으로 노출</label>
     <section className="space-y-3 rounded border border-zinc-800 p-4" aria-labelledby="inventory-heading">
-      <div><h2 id="inventory-heading" className="font-bold">옵션별 재고 및 품절</h2><p className="mt-1 text-xs text-zinc-400">수량이 0이면 자동 품절됩니다. 수량과 무관하게 수동 품절도 설정할 수 있습니다.</p></div>
-      {form.variants.length === 0 ? <p className="text-sm text-amber-400">옵션 재고를 먼저 설정해야 고객이 구매할 수 있습니다.</p> : form.variants.map((variant) => <div key={variant.id} className="flex flex-wrap items-center gap-3 rounded bg-zinc-900 p-3"><span className="min-w-24 text-sm">{[variant.color, variant.size].filter(Boolean).join(" / ") || "기본 옵션"}</span><label className="text-sm">재고<input aria-label={`${variant.id} 재고`} min="0" type="number" value={variant.stock} onChange={(event) => changeVariant(variant.id, "stock", event.target.value)} className="ml-2 w-20 rounded bg-black p-2" /></label><label className="flex items-center gap-2 text-sm"><input checked={variant.isManuallySoldOut} type="checkbox" onChange={(event) => changeVariant(variant.id, "isManuallySoldOut", event.target.checked)} />수동 품절</label></div>)}
+      <div><h2 id="inventory-heading" className="font-bold">옵션별 재고 및 품절</h2><p className="mt-1 text-xs text-zinc-400">재고는 별도 재고 운영 화면에서 입고·정정·폐기 사유와 함께 조정합니다. 여기서는 수동 품절만 관리합니다.</p><Link href={`/admin/inventory?q=${encodeURIComponent(product.name)}`} className="mt-2 inline-block text-sm text-brand-neon underline">이 상품 재고 운영으로 이동</Link></div>
+      {form.variants.length === 0 ? <p className="text-sm text-amber-400">옵션 재고를 먼저 설정해야 고객이 구매할 수 있습니다.</p> : form.variants.map((variant) => <div key={variant.id} className="flex flex-wrap items-center gap-3 rounded bg-zinc-900 p-3"><span className="min-w-24 text-sm">{[variant.color, variant.size].filter(Boolean).join(" / ") || "기본 옵션"}</span><span className="text-sm text-zinc-300">현재 재고 {variant.stock}</span><label className="flex items-center gap-2 text-sm"><input checked={variant.isManuallySoldOut} type="checkbox" onChange={(event) => changeVariant(variant.id, event.target.checked)} />수동 품절</label></div>)}
     </section>
     {message ? <p role="alert" className="text-sm text-red-400">{message}</p> : null}
     <div className="flex justify-end gap-2"><button type="button" onClick={() => router.back()} className="rounded border border-zinc-700 px-4 py-2">취소</button><button disabled={saving} className="rounded bg-brand-neon px-4 py-2 font-bold text-black">{saving ? "저장 중" : "저장"}</button></div>

@@ -55,7 +55,7 @@ export type AdminProductUpdate = {
   readonly originalPrice: number | null;
   readonly discountRate: number | null;
   readonly isActive: boolean;
-  readonly variants?: readonly { readonly id: string; readonly stock: number; readonly isManuallySoldOut: boolean }[];
+  readonly variants?: readonly { readonly id: string; readonly isManuallySoldOut: boolean }[];
 };
 
 export async function updateAdminProduct(id: string, input: AdminProductUpdate): Promise<AdminCatalogProduct | null> {
@@ -68,7 +68,7 @@ export async function updateAdminProduct(id: string, input: AdminProductUpdate):
       for (const variant of variants) {
         await tx.productVariant.updateMany({
           where: { id: variant.id, productId: id },
-          data: { stock: variant.stock, isManuallySoldOut: variant.isManuallySoldOut },
+          data: { isManuallySoldOut: variant.isManuallySoldOut },
         });
       }
     }

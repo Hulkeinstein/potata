@@ -17,13 +17,13 @@ function parseUpdate(value: unknown) {
   const originalPrice = body.originalPrice === null ? null : body.originalPrice;
   const discountRate = body.discountRate === null ? null : body.discountRate;
   const description = body.description === null ? null : typeof body.description === "string" ? body.description.trim() || null : null;
-  const variants: { id: string; stock: number; isManuallySoldOut: boolean }[] = [];
+  const variants: { id: string; isManuallySoldOut: boolean }[] = [];
   if (body.variants !== undefined && !Array.isArray(body.variants)) return null;
   for (const value of body.variants ?? []) {
     if (!value || typeof value !== "object") return null;
     const variant = value as Record<string, unknown>;
-    if (typeof variant.id !== "string" || typeof variant.stock !== "number" || !Number.isInteger(variant.stock) || variant.stock < 0 || typeof variant.isManuallySoldOut !== "boolean") return null;
-    variants.push({ id: variant.id, stock: variant.stock, isManuallySoldOut: variant.isManuallySoldOut });
+    if (typeof variant.id !== "string" || typeof variant.isManuallySoldOut !== "boolean") return null;
+    variants.push({ id: variant.id, isManuallySoldOut: variant.isManuallySoldOut });
   }
   if (!name || !brand || !CATEGORIES.has(category) || typeof price !== "number" || !Number.isInteger(price) || price <= 0 || typeof isActive !== "boolean") return null;
   if (originalPrice !== null && (typeof originalPrice !== "number" || !Number.isInteger(originalPrice) || originalPrice <= 0 || originalPrice < price)) return null;
