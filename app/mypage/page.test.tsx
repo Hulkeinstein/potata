@@ -3,12 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 import MyPage from "./page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }) }));
-vi.mock("next-auth/react", () => ({ useSession: () => ({ status: "authenticated", data: { user: { id: "u1", name: "Mira", email: "mira@example.com" } } }), signOut: vi.fn() }));
-vi.mock("next/image", () => ({ default: ({ alt }: { readonly alt: string }) => <span role="img" aria-label={alt} /> }));
+vi.mock("next-auth/react", () => ({ useSession: () => ({ status: "authenticated", data: { user: { id: "u1", name: "Mira", email: "mira@example.com", image: "https://storage.example/mira.png" } } }), signOut: vi.fn() }));
+vi.mock("next/image", () => ({ default: ({ alt, src }: { readonly alt: string; readonly src: string }) => <span role="img" aria-label={alt} data-src={src} /> }));
 vi.mock("next/link", () => ({ default: ({ children, href }: { readonly children: React.ReactNode; readonly href: string }) => <a href={href}>{children}</a> }));
 vi.mock("framer-motion", () => ({ motion: { div: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => <div {...props}>{children}</div>, button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button> } }));
 
 describe("MyPage navigation", () => {
+  it("저장된 프로필 사진을 임시 캐릭터보다 우선 표시한다", () => {
+    render(<MyPage />);
+    expect(screen.getByRole("img", { name: "Mira" }).getAttribute("data-src")).toBe("https://storage.example/mira.png");
+  });
+
   it("설명형 My Posts 링크를 정확히 한 번 표시한다", () => {
     render(<MyPage />);
     const link = screen.getByRole("link", { name: /My Posts/ });

@@ -48,9 +48,10 @@ export default function MyPage() {
                     <div className="relative w-24 h-24 rounded-full p-[2px] bg-linear-to-r from-brand-neon to-purple-500">
                         <div className="relative w-full h-full rounded-full overflow-hidden bg-black border-2 border-black">
                             <Image
-                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
+                                src={user.image ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
                                 alt={user.name}
                                 fill
+                                unoptimized
                                 className="object-cover"
                             />
                         </div>

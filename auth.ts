@@ -51,17 +51,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         if (account?.provider === "google" && user.email) {
           // 어댑터 미사용이라 OAuth user.id는 Google의 sub다.
           // 주문/마이페이지가 쓰는 DB user.id로 교정한다.
           const dbUser = await prisma.user.findUnique({
             where: { email: user.email },
+            select: { id: true, name: true, avatar: true },
           });
-          if (dbUser) token.id = dbUser.id;
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.name = dbUser.name;
+            token.picture = dbUser.avatar;
+          }
         } else {
           token.id = user.id; // credentials: authorize가 이미 DB id를 반환
+        }
+      }
+      if (trigger === "update" && token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { name: true, avatar: true },
+        });
+        if (dbUser) {
+          token.name = dbUser.name;
+          token.picture = dbUser.avatar;
         }
       }
       return token;
@@ -69,6 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
+        session.user.image = token.picture;
       }
       return session;
     },

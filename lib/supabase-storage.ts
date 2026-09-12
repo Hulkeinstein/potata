@@ -1,5 +1,6 @@
 import "server-only";
 import { getOwnedProfileStorageUrls } from "./profile-storage-url";
+import { getStorageAuthHeaders } from "./supabase-storage-auth";
 
 /**
  * Supabase Storage 헬퍼 — **서버 전용**.
@@ -50,7 +51,7 @@ export async function uploadImage(
   const res = await fetch(`${url}/storage/v1/object/${bucket}/${path}`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${key}`,
+      ...getStorageAuthHeaders(key),
       "Content-Type": file.contentType,
       "x-upsert": "false",
     },
@@ -85,7 +86,7 @@ export async function removeImagesByUrl(
   const { url, key } = getEnv();
   const res = await fetch(`${url}/storage/v1/object/${bucket}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    headers: { ...getStorageAuthHeaders(key), "Content-Type": "application/json" },
     body: JSON.stringify({ prefixes: paths }),
   });
   if (!res.ok) {
