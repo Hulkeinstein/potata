@@ -125,8 +125,8 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 | 순서 | 우선순위 | 작업 | 중요한 이유 | 선행 조건·완료 기준 | 현재 상태 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | **P0 / Critical** | 가입·온보딩 변경 안전하게 저장 | 이름·handle·동의·프로필 사진 변경이 커밋되지 않으면 유실·혼합 위험이 있다. | 임시 로그·스크린샷·로컬 비밀값 제외, diff·secret 검사, 현재 품질 기준 재확인 후 단일 커밋 | 완료 — 이 로드맵과 함께 저장 |
-| 2 | **P0 / Critical** | Google 신규 계정 OAuth PKCE 오류 해결 | 신규 Google 사용자가 callback에서 실패하면 가입 자체가 불가능하다. 다른 계정 선택은 원인이 아니다. | `localhost` 단일 origin에서 신규 계정 login → callback → `/onboarding/profile` 진입, 기존 사용자 회귀 확인 | 미완료 |
-| 3 | **P0 / Critical** | 신규 가입 E2E | 개별 화면이 동작해도 실제 계정 생성·동의 저장·handle 선점이 한 흐름에서 검증되지 않으면 출시할 수 없다. | Email과 Google 각각 signup → 동의 → verify/auth → profile → session, 중복 handle·재시도·기존 사용자 검증 | 미완료 |
+| 2 | **P0 / Critical** | Google 신규 계정 OAuth callback 검증 | 신규 Google 사용자가 callback에서 실패하면 가입 자체가 불가능하다. | Docker·기존 개발 DB 복구 후 `localhost`에서 다른 Google 계정 login → callback → `/onboarding/profile` 진입과 API 정상 응답 확인 | 완료 |
+| 3 | **P0 / Critical** | 신규 가입 E2E | 개별 화면이 동작해도 실제 계정 생성·동의 저장·handle 선점이 한 흐름에서 검증되지 않으면 출시할 수 없다. | Google 신규 계정 흐름과 Email preview signup → verify → profile → session, 중복 handle·재시도·기존 사용자 검증 | 로컬 완료 — Resend 실메일은 P1 대기 |
 | 4 | **P1 / High** | 프로필 이미지 Storage 연결 | UI·보안 처리는 구현됐지만 실제 bucket이 없어 업로드가 fail-closed 상태다. | 전용 Supabase public bucket과 URL/path 정책 설정, upload → replace → delete 1건씩 검증, production shared/upstream rate limit 결정 | 외부 설정 대기 |
 | 5 | **P1 / High** | 가입 법률 문서 확정 | 현재 Terms·Privacy·Marketing 본문은 명시적인 비운영 초안이라 실제 사용자 동의를 받을 수 없다. | UAE 법인·라이선스·주소, processor·retention, Arabic/English 문안 및 UAE 자격 법률 검토 승인 | 외부 결정 대기 |
 | 6 | **P1 / High** | Resend 실메일 검증 | preview 성공만으로는 실제 가입 인증 메일의 전달성을 보장할 수 없다. | API key, 인증된 발신자, 테스트 수신 주소로 인증 메일 1건 → code 인증 → login 확인 | 외부 설정 대기 |
@@ -139,10 +139,12 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 
 ### 지금 실행할 작업
 
-1. 현재 가입·온보딩·프로필 사진·법률 modal 변경에서 커밋 대상과 임시 산출물을 분리한다.
-2. 자동 검증 기록과 현재 diff를 대조하고 비밀값이 포함되지 않았는지 확인한다.
-3. **P0 작업 묶음만 먼저 커밋**한다. Google PKCE 오류는 해결 전 상태를 숨기지 않고 로드맵에 남긴다.
-4. 다음 작업으로 Google 신규 계정 OAuth PKCE 오류를 재현·수정한다.
+1. 전용 Supabase profile image bucket을 만들고 로컬 환경에 연결한다.
+2. 프로필 사진 upload → replace → delete를 실제 계정으로 검증한다.
+3. Resend 인증 발신자와 테스트 수신 주소로 실메일 1건을 검증한다.
+4. 운영 법률 문서와 운영 DB·배포 준비는 각각 필요한 외부 결정과 승인 뒤 진행한다.
+
+**OAuth 확인 기록**: 2026-09-12에 Google provider·CSRF·client ID·정확한 localhost callback·PKCE challenge·scope, DB query와 온보딩 API를 확인했다. 이전 실패의 직접 원인은 Google API key가 아니라 Docker stale socket으로 인한 개발 DB 중단이었으며, 기존 데이터 볼륨을 유지한 복구 후 다른 Google 계정 로그인이 성공했다.
 
 **보류 기준**: 실제 상품·판매·결제사·환불·정산 정책이 확정되기 전에는 결제 연동, 쿠폰 사용, 포인트 사용, 매출·판매 순위 분석을 연결하지 않는다.
 
