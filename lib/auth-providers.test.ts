@@ -78,19 +78,22 @@ describe("authorizeCredentials", () => {
 });
 
 describe("syncOAuthUser", () => {
-  it("upsert로 멱등 동기화하고 DB user id 반환", async () => {
-    userUpsert.mockResolvedValue({ id: "u9" });
-    const id = await syncOAuthUser({ email: "g@b.com", name: "G", image: "http://x/p.png" });
-    expect(id).toBe("u9");
+  it("returns onboarding state and preserves an existing completed profile", async () => {
+    userFindUnique.mockResolvedValue({ id: "u9", onboardingCompletedAt: new Date(), name: "Chosen", avatar: "chosen.png" });
+    userUpsert.mockResolvedValue({ id: "u9", onboardingCompletedAt: new Date() });
+    const result = await syncOAuthUser({ email: "g@b.com", name: "Google", image: "http://x/p.png" });
+    expect(result).toMatchObject({ userId: "u9", created: false, needsOnboarding: false });
     expect(userUpsert).toHaveBeenCalledWith({
       where: { email: "g@b.com" },
-      update: { name: "G", avatar: "http://x/p.png", emailVerified: true },
-      create: { email: "g@b.com", name: "G", avatar: "http://x/p.png", emailVerified: true },
+      update: { emailVerified: true },
+      create: { email: "g@b.com", name: "Google", avatar: "http://x/p.png", emailVerified: true },
+      select: { id: true, onboardingCompletedAt: true },
     });
   });
 
   it("기존 유저의 passwordHash를 덮어쓰지 않음 (update 절에 passwordHash 부재)", async () => {
-    userUpsert.mockResolvedValue({ id: "u1" });
+    userFindUnique.mockResolvedValue(null);
+    userUpsert.mockResolvedValue({ id: "u1", onboardingCompletedAt: null });
     await syncOAuthUser({ email: "a@b.com", name: "A", image: null });
     const arg = userUpsert.mock.calls[0][0];
     expect(arg.update).not.toHaveProperty("passwordHash");
@@ -98,7 +101,8 @@ describe("syncOAuthUser", () => {
   });
 
   it("이름 미제공 시 이메일을 이름으로 사용(create)", async () => {
-    userUpsert.mockResolvedValue({ id: "u2" });
+    userFindUnique.mockResolvedValue(null);
+    userUpsert.mockResolvedValue({ id: "u2", onboardingCompletedAt: null });
     await syncOAuthUser({ email: "n@b.com" });
     const arg = userUpsert.mock.calls[0][0];
     expect(arg.create.name).toBe("n@b.com");

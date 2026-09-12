@@ -67,7 +67,7 @@ npm run build
 
 - Vercel env scope와 deployment target, 운영 origin이 위 URL과 일치하는지 확인
 - Supabase project ref/region/DB identity, timestamped backup, 격리 restore rehearsal 증거
-- public Storage bucket `ootd-images`, `product-images`, `review-images` 존재 및 공개 범위 확인
+- public Storage bucket `ootd-images`, `product-images`, `review-images` 및 `SUPABASE_PROFILE_BUCKET`으로 지정한 프로필 버킷 존재·공개 범위 확인
 - `next.config.ts`의 Supabase image hostname이 대상 project ref와 일치하는지 확인
 - Resend sender domain이 Verified이고 `EMAIL_FROM` 주소가 그 도메인에 속하는지 확인
 - Google OAuth 운영 callback, Replicate access, admin allowlist의 소유자 승인 확인
@@ -77,6 +77,12 @@ npm run build
 기존 운영 DB baseline 절차의 SSoT는 [ADR-009](docs/adr/adr-009-prisma-migration-baseline.md)입니다. 과거 문서의 `db push` 지시는 운영 적용 근거로 사용하지 않습니다. 운영 DB에는 baseline SQL을 실행하지 않으며 backup/restore, read-only history/drift 증거를 검토한 뒤 별도 승인된 `migrate resolve --applied`만 수행합니다.
 
 실제 운영 비밀값과 외부 서비스 설정은 Vercel/Supabase/Resend/Google/Replicate 대시보드에서 관리합니다. 이 로컬 점검은 외부 설정이 완료되었다는 증거가 아닙니다.
+
+### Profile image storage
+
+프로필 사진 업로드는 서버 전용 `SUPABASE_SERVICE_ROLE_KEY`와 `SUPABASE_PROFILE_BUCKET`을 사용합니다. Supabase에서 별도 public bucket을 만든 뒤(권장 이름 `profile-images`) 정확한 bucket 이름을 환경 변수에 넣고, 공개 URL이 Next Image 허용 hostname과 일치하는지 확인합니다. 업로드 경로는 로그인 사용자 ID 아래로 제한되며 교체·삭제 시에도 같은 origin, bucket, 사용자 prefix가 확인된 파일만 정리합니다. 설정이 없거나 일치하지 않으면 임의 bucket으로 fallback하지 않고 업로드가 실패합니다. 실제 외부 bucket 생성과 운영 검증은 별도 승인 후 진행합니다.
+
+서버는 업로드를 실제 decode하고 단일-frame 이미지와 해상도를 검증한 뒤 JPEG/PNG/WebP로 다시 인코딩합니다. 현재 사용자별 메모리 기반 rate limit은 local/pre-launch 보호선이므로, 다중 인스턴스 production 공개 전에는 Redis·gateway 같은 shared/upstream rate limit을 별도 release gate로 적용해야 합니다.
 
 ## Project docs
 

@@ -43,26 +43,33 @@ export interface OAuthProfile {
   image?: string | null;
 }
 
+export type OAuthSyncResult = {
+  readonly userId: string;
+  readonly created: boolean;
+  readonly needsOnboarding: boolean;
+};
+
 /**
  * OAuth(Google) 유저를 DB에 멱등 upsert 하고 DB user id 반환.
  * - 동일 이메일의 기존(이메일가입) 유저가 있으면 그 레코드를 그대로 사용 = 자연스러운 계정 연결.
  * - 기존 유저의 passwordHash는 보존(update 절에 포함하지 않음) — 비밀번호 로그인 유지.
  * - Google이 이메일 소유를 검증하므로 emailVerified=true.
  */
-export async function syncOAuthUser(profile: OAuthProfile): Promise<string> {
+export async function syncOAuthUser(profile: OAuthProfile): Promise<OAuthSyncResult> {
+  const existing = await prisma.user.findUnique({
+    where: { email: profile.email },
+    select: { id: true, onboardingCompletedAt: true, name: true, avatar: true },
+  });
   const user = await prisma.user.upsert({
     where: { email: profile.email },
-    update: {
-      name: profile.name ?? undefined,
-      avatar: profile.image ?? undefined,
-      emailVerified: true,
-    },
+    update: { emailVerified: true },
     create: {
       email: profile.email,
       name: profile.name ?? profile.email,
       avatar: profile.image ?? null,
       emailVerified: true,
     },
+    select: { id: true, onboardingCompletedAt: true },
   });
-  return user.id;
+  return { userId: user.id, created: existing === null, needsOnboarding: user.onboardingCompletedAt === null };
 }

@@ -40,7 +40,7 @@ describe("MyPostsClient", () => {
 
     expect(replace).toHaveBeenCalledWith("/mypage/posts?tab=reviews", { scroll: false });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/users/me/posts?type=reviews"));
-    expect(screen.getByRole("link", { name: "핸들 설정하기" }).getAttribute("href")).toBe("/onboarding/handle?returnTo=/mypage/posts");
+    expect(screen.getByRole("link", { name: "핸들 설정하기" }).getAttribute("href")).toBe("/onboarding/profile?returnTo=/mypage/posts");
   });
 
   it("현재 탭을 다시 눌러도 표시 중인 목록을 유지한다", async () => {

@@ -9,7 +9,7 @@ export async function GET() {
     if (!session?.user?.id) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     const settings = await prisma.userSettings.findUnique({
       where: { userId: session.user.id },
-      select: { preferredSize: true, aiCoordinatorEnabled: true },
+      select: { preferredSize: true, aiCoordinatorEnabled: true, heightCm: true, weightKg: true },
     });
     return NextResponse.json({ success: true, data: toUserSettingsData(settings) });
   } catch (error) {
@@ -35,7 +35,7 @@ export async function PATCH(request: Request) {
       where: { userId: session.user.id },
       create: { userId: session.user.id, ...parsed.value },
       update: parsed.value,
-      select: { preferredSize: true, aiCoordinatorEnabled: true },
+      select: { preferredSize: true, aiCoordinatorEnabled: true, heightCm: true, weightKg: true },
     });
     return NextResponse.json({ success: true, data: settings });
   } catch (error) {

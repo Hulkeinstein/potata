@@ -79,7 +79,7 @@ export function MyPostsClient({ handle }: { readonly handle: string | null }) {
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div><h1 className="font-outfit text-2xl font-bold">My Posts</h1><p className="mt-1 text-sm text-zinc-400">내 OOTD, 리뷰와 Q&A를 관리하세요.</p></div>
-        <Link href={handle ? `/profile/${handle}` : "/onboarding/handle?returnTo=/mypage/posts"} className="min-h-11 rounded-full border border-brand-neon/40 px-4 py-2.5 text-sm font-semibold text-brand-neon hover:bg-brand-neon/10">
+        <Link href={handle ? `/profile/${handle}` : "/onboarding/profile?returnTo=/mypage/posts"} className="min-h-11 rounded-full border border-brand-neon/40 px-4 py-2.5 text-sm font-semibold text-brand-neon hover:bg-brand-neon/10">
           {handle ? "공개 프로필 보기" : "핸들 설정하기"}
         </Link>
       </div>

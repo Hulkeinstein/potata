@@ -94,8 +94,6 @@ export interface AuthState {
 export interface SignupRequest {
   email: string;
   password: string;
-  name: string;
-  handle: string;
 }
 
 export interface VerifyEmailRequest {

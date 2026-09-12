@@ -1,4 +1,5 @@
 import "server-only";
+import { getOwnedProfileStorageUrls } from "./profile-storage-url";
 
 /**
  * Supabase Storage 헬퍼 — **서버 전용**.
@@ -148,4 +149,34 @@ export function uploadReviewImage(
 /** 리뷰 public URL 배열에 해당하는 Storage 파일 삭제(수정 시 차집합·삭제 시 전량) */
 export function removeReviewImagesByUrl(publicUrls: string[]): Promise<void> {
   return removeImagesByUrl(REVIEW_BUCKET, publicUrls);
+}
+
+function getProfileBucket(): string {
+  const bucket = process.env.SUPABASE_PROFILE_BUCKET;
+  if (!bucket) {
+    throw new Error("프로필 이미지 Storage가 설정되지 않았습니다.");
+  }
+  return bucket;
+}
+
+/** 로그인 사용자의 프로필 이미지를 전용 버킷에 업로드한다. */
+export function uploadProfileImage(
+  userId: string,
+  file: ImageFile
+): Promise<{ path: string; publicUrl: string }> {
+  return uploadImage(getProfileBucket(), userId, file);
+}
+
+/** 전용 프로필 버킷에서만 이전 이미지를 제거한다. Google 사진 URL은 no-op이다. */
+export function removeProfileImagesByUrl(userId: string, publicUrls: string[]): Promise<void> {
+  const storageUrls = publicUrls.filter((publicUrl) => {
+    try { return new URL(publicUrl).pathname.includes("/storage/v1/object/public/"); }
+    catch { return false; }
+  });
+  if (storageUrls.length === 0) return Promise.resolve();
+  const bucket = getProfileBucket();
+  const { url } = getEnv();
+  const storageOrigin = new URL(url).origin;
+  const ownedUrls = getOwnedProfileStorageUrls(storageOrigin, bucket, userId, storageUrls);
+  return removeImagesByUrl(bucket, ownedUrls);
 }

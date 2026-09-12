@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { authorizeCredentials, syncOAuthUser } from "@/lib/auth-providers";
 import { prisma } from "@/lib/prisma";
+import { isLegalSignupReady } from "@/lib/onboarding";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -35,6 +36,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         if (!user.email) return false;
+        if (!isLegalSignupReady()) {
+          const existing = await prisma.user.findUnique({
+            where: { email: user.email },
+            select: { onboardingCompletedAt: true },
+          });
+          if (!existing?.onboardingCompletedAt) return false;
+        }
         await syncOAuthUser({
           email: user.email,
           name: user.name,

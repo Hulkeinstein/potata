@@ -1,6 +1,6 @@
 # Potata Master Roadmap
 
-> 마지막 업데이트: 2026-08-26
+> 마지막 업데이트: 2026-09-12
 > 기준: 현재 `main` 코드와 완료된 로컬 검증 결과. 이 문서는 제품·운영의 현재 상태, 보류 사유, 다음 결정 지점을 함께 기록한다.
 
 ## 현재 결론
@@ -43,6 +43,8 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 - Navbar에는 읽지 않은 알림 수를 표시하고, 알림 전체 읽음 후 즉시 갱신한다.
 - `/mypage/posts`에서 본인이 작성한 OOTD·리뷰·Q&A를 탭으로 모아보고 수정·삭제할 수 있다.
 - `/mypage`는 계정·주문·혜택 진입 중심으로 유지하고, 작성물 관리는 My Posts로 분리했다.
+- 신규 온보딩과 Settings에서 프로필 사진을 업로드·교체·삭제할 수 있다. 실제 사용은 전용 Supabase public bucket 설정 전까지 안전하게 실패하도록 유지한다.
+- 약관·개인정보·마케팅 전문은 온보딩 화면을 벗어나지 않는 modal과 공유 문서 페이지를 함께 제공하며, 법률 검토 전 `DRAFT / NOT FOR PRODUCTION` 및 Arabic·법인 정보 확정 대기 상태를 동일하게 표시한다.
 
 ### P3 — 쿠폰·포인트 Pilot
 
@@ -102,6 +104,7 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 
 - Prisma migration은 baseline 이후 additive 방식으로 관리한다. 운영 DB에는 별도 승인 없이 migrate/resolve/db push를 실행하지 않는다.
 - 관리자 페이지와 write API는 세션과 `ADMIN_EMAILS` 권한을 서버에서 다시 검증한다.
+- 프로필 이미지 업로드는 실제 decode·단일-frame·해상도 검증과 canonical 재인코딩을 수행한다. 현재 in-memory 사용자별 제한은 local/pre-launch 경계이며, production 공개 전 shared/upstream rate limit 적용을 release gate로 둔다.
 - 쿠폰·포인트·재고 변경은 actor-bound idempotency, 감사 사유, transaction, 안전한 오류 반환을 사용한다.
 - 로컬 기준 TypeScript, lint, Vitest, production build와 주요 desktop/mobile 브라우저 흐름을 반복 검증했다.
 - 현재 프로젝트 전체에 기존 lint warning 3개가 남아 있으나 오류는 없다.
@@ -109,6 +112,39 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 ---
 
 ## 현재 대기·다음 결정
+
+### 우선순위 기준
+
+- **P0 — 차단 해소**: 핵심 가입·로그인·데이터 안전을 막는 문제. 다음 기능보다 먼저 해결한다.
+- **P1 — 출시 필수**: 실제 사용자를 받거나 배포하기 전에 반드시 검증해야 한다.
+- **P2 — 콘텐츠·운영 준비**: 공개 품질과 운영 효율을 높이지만 P0/P1을 막지는 않는다.
+- **P3 — 판매 준비 후**: 실물 상품·정책·외부 provider가 확정된 뒤에만 시작한다.
+
+### 실행 백로그
+
+| 순서 | 우선순위 | 작업 | 중요한 이유 | 선행 조건·완료 기준 | 현재 상태 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | **P0 / Critical** | 가입·온보딩 변경 안전하게 저장 | 이름·handle·동의·프로필 사진 변경이 커밋되지 않으면 유실·혼합 위험이 있다. | 임시 로그·스크린샷·로컬 비밀값 제외, diff·secret 검사, 현재 품질 기준 재확인 후 단일 커밋 | 완료 — 이 로드맵과 함께 저장 |
+| 2 | **P0 / Critical** | Google 신규 계정 OAuth PKCE 오류 해결 | 신규 Google 사용자가 callback에서 실패하면 가입 자체가 불가능하다. 다른 계정 선택은 원인이 아니다. | `localhost` 단일 origin에서 신규 계정 login → callback → `/onboarding/profile` 진입, 기존 사용자 회귀 확인 | 미완료 |
+| 3 | **P0 / Critical** | 신규 가입 E2E | 개별 화면이 동작해도 실제 계정 생성·동의 저장·handle 선점이 한 흐름에서 검증되지 않으면 출시할 수 없다. | Email과 Google 각각 signup → 동의 → verify/auth → profile → session, 중복 handle·재시도·기존 사용자 검증 | 미완료 |
+| 4 | **P1 / High** | 프로필 이미지 Storage 연결 | UI·보안 처리는 구현됐지만 실제 bucket이 없어 업로드가 fail-closed 상태다. | 전용 Supabase public bucket과 URL/path 정책 설정, upload → replace → delete 1건씩 검증, production shared/upstream rate limit 결정 | 외부 설정 대기 |
+| 5 | **P1 / High** | 가입 법률 문서 확정 | 현재 Terms·Privacy·Marketing 본문은 명시적인 비운영 초안이라 실제 사용자 동의를 받을 수 없다. | UAE 법인·라이선스·주소, processor·retention, Arabic/English 문안 및 UAE 자격 법률 검토 승인 | 외부 결정 대기 |
+| 6 | **P1 / High** | Resend 실메일 검증 | preview 성공만으로는 실제 가입 인증 메일의 전달성을 보장할 수 없다. | API key, 인증된 발신자, 테스트 수신 주소로 인증 메일 1건 → code 인증 → login 확인 | 외부 설정 대기 |
+| 7 | **P1 / High** | 운영 DB 안전 검증 | schema 이력을 잘못 등록하면 운영 데이터 손상이나 drift 은폐가 발생할 수 있다. | 대상 DB 식별, timestamped backup, restore rehearsal, read-only drift empty 확인 후 별도 baseline resolve 승인 | 외부 승인 대기 |
+| 8 | **P1 / High** | 배포 환경 연결 | 로컬 성공만으로 OAuth·Storage·메일·AI가 운영 환경에서 동작한다고 볼 수 없다. | Vercel env, Supabase host/bucket, Google 운영 callback, Resend, Replicate 대상과 권한 확인 | 외부 설정 대기 |
+| 9 | **P1 / High** | 배포 smoke test | 공개 환경의 callback·cookie·DB·권한 경계를 최종 확인해야 한다. | 승인된 배포에서 signup → verify → login → 상품 탐색 → 관리자 권한 흐름 PASS | 배포 후 |
+| 10 | **P2 / Medium** | 상품 실데이터 입력 | 현재 외부 이미지와 치수 누락은 고객 신뢰와 Size Guide 노출을 제한한다. | 사용 권한이 있는 대표 이미지와 권위 있는 상품별 cm 치수 입력; 없는 경우 CTA 숨김 유지 | 데이터 대기 |
+| 11 | **P2 / Medium** | 운영 관찰성·정책 보완 | 운영 어시스턴트는 감지·안내만 하므로 실서비스 장애 대응 기준이 별도로 필요하다. | 오류·메일·재고·문의 모니터링, 감사 로그 보존, 담당자와 대응 기준 문서화 | 출시 전 계획 |
+| 12 | **P3 / Deferred** | 결제·혜택 사용·매출 분석 | 실거래 정책 없이 연결하면 주문·재고·환불·정산 불일치 위험이 크다. | 상품·물량, provider, 통화·세금, webhook, 환불·정산 정책 확정 후 별도 계획 승인 | 보류 |
+
+### 지금 실행할 작업
+
+1. 현재 가입·온보딩·프로필 사진·법률 modal 변경에서 커밋 대상과 임시 산출물을 분리한다.
+2. 자동 검증 기록과 현재 diff를 대조하고 비밀값이 포함되지 않았는지 확인한다.
+3. **P0 작업 묶음만 먼저 커밋**한다. Google PKCE 오류는 해결 전 상태를 숨기지 않고 로드맵에 남긴다.
+4. 다음 작업으로 Google 신규 계정 OAuth PKCE 오류를 재현·수정한다.
+
+**보류 기준**: 실제 상품·판매·결제사·환불·정산 정책이 확정되기 전에는 결제 연동, 쿠폰 사용, 포인트 사용, 매출·판매 순위 분석을 연결하지 않는다.
 
 ### 1. 운영 어시스턴트 — 완료
 
@@ -191,3 +227,10 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 | 운영자 대시보드 | 실제 운영 수치, 상품·재고·혜택 진입, 분석 지표 연결 대기 |
 | 재고 UX 보완 | 지연 이력 조회, 더 보기, 입력 피드백, 필터 초기화, 상품 식별 영역 |
 | 관리자 Q&A inbox | 미답변 우선 탐색, 검색·페이지네이션, 기존 안전한 답변 작성·수정 흐름 |
+### 통합 가입·온보딩 — 로컬 구현 완료, 운영 법률 검토 대기
+
+- Email and Google now converge on `/onboarding/profile`; name and unique handle are required after authentication.
+- Preferred size, AI Coordinator and marketing email consent are optional and independently controlled.
+- Terms, Privacy and Marketing consent evidence is versioned; current legal text is an explicit non-production draft.
+- Production signup is fail-closed until UAE entity/licence/address, processor/retention facts, Arabic/English wording and UAE-qualified counsel approval are supplied.
+- Phone/Toss verification and unnecessary birthday/gender/phone collection remain excluded.

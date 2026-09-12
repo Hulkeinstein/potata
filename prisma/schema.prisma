@@ -18,6 +18,7 @@ model User {
   handle                String?        @unique // 공개 프로필 식별자(nullable — 기존 유저 backfill 회피)
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
+  onboardingCompletedAt DateTime?
   orders                Order[]
   wishlistItems         WishlistItem[]
   cartItems             CartItem[]
@@ -43,8 +44,54 @@ model User {
   benefitAudits          BenefitAdminAudit[]    @relation("BenefitAuditActor")
   adminStepUpProofs      AdminStepUpProof[]     @relation("AdminStepUpActor")
   inventoryAdjustments   InventoryAdjustment[]  @relation("InventoryAdjustmentActor")
+  consents               UserConsent[]
 
   @@index([email])
+}
+
+enum LegalDocumentType {
+  TERMS
+  PRIVACY
+  MARKETING
+}
+
+enum LegalDocumentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum ConsentAction {
+  GRANT
+  WITHDRAW
+}
+
+model LegalDocumentVersion {
+  id          String              @id @default(cuid())
+  type        LegalDocumentType
+  version     String
+  locale      String
+  contentHash String
+  status      LegalDocumentStatus @default(DRAFT)
+  publishedAt DateTime?
+  consents    UserConsent[]
+  createdAt   DateTime            @default(now())
+
+  @@unique([type, version, locale])
+  @@index([type, status])
+}
+
+model UserConsent {
+  id                String               @id @default(cuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentVersionId String
+  documentVersion   LegalDocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Restrict)
+  action            ConsentAction
+  source            String
+  occurredAt        DateTime             @default(now())
+
+  @@index([userId, occurredAt])
+  @@index([documentVersionId, occurredAt])
 }
 
 enum BenefitScope {
@@ -213,6 +260,8 @@ model UserSettings {
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   preferredSize        String?
   aiCoordinatorEnabled Boolean  @default(true)
+  heightCm             Float?
+  weightKg             Float?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }

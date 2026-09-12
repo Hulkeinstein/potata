@@ -4,17 +4,16 @@ import { validateHandle, RESERVED_HANDLES } from "@/lib/handle";
 // 순수함수라 mock 불필요
 
 describe("validateHandle", () => {
-  describe("Happy path — 정규화 포함 유효 입력", () => {
+  describe("Happy path — 유효 입력", () => {
     it("소문자 유효 handle → ok:true, value 그대로", () => {
       const r = validateHandle("style_kim");
       expect(r.ok).toBe(true);
       if (r.ok) expect(r.value).toBe("style_kim");
     });
 
-    it("대문자 포함 → 소문자 정규화 후 ok:true", () => {
+    it("대문자 포함 → 명확히 거부", () => {
       const r = validateHandle("Style_Kim");
-      expect(r.ok).toBe(true);
-      if (r.ok) expect(r.value).toBe("style_kim");
+      expect(r.ok).toBe(false);
     });
 
     it("앞뒤 공백 trim 후 유효 → ok:true", () => {
@@ -94,7 +93,7 @@ describe("validateHandle", () => {
       if (!r.ok) expect(r.error).toMatch(/사용할 수 없는/);
     });
 
-    it('"Profile" 대문자 → toLowerCase 정규화 후 예약어 매치 → ok:false', () => {
+    it('"Profile" 대문자 → 문자 규칙에서 거부', () => {
       const r = validateHandle("Profile");
       expect(r.ok).toBe(false);
     });

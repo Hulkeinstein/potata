@@ -1,6 +1,8 @@
 export type UserSettingsData = {
   readonly preferredSize: string | null;
   readonly aiCoordinatorEnabled: boolean;
+  readonly heightCm: number | null;
+  readonly weightKg: number | null;
 };
 
 const MAX_SIZE_LENGTH = 20;
@@ -13,6 +15,8 @@ function isPreferredSize(value: string): value is (typeof PREFERRED_SIZES)[numbe
 export type UserSettingsPatch = {
   readonly preferredSize?: string | null;
   readonly aiCoordinatorEnabled?: boolean;
+  readonly heightCm?: number | null;
+  readonly weightKg?: number | null;
 };
 
 export type UserSettingsParseResult =
@@ -25,11 +29,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function parseUserSettingsPatch(value: unknown): UserSettingsParseResult {
   if (!isRecord(value)) return { ok: false, error: "설정 형식이 올바르지 않습니다." };
-  const allowedKeys = new Set(["preferredSize", "aiCoordinatorEnabled"]);
+  const allowedKeys = new Set(["preferredSize", "aiCoordinatorEnabled", "heightCm", "weightKg"]);
   if (Object.keys(value).some((key) => !allowedKeys.has(key))) {
     return { ok: false, error: "지원하지 않는 설정 항목입니다." };
   }
-  const patch: { preferredSize?: string | null; aiCoordinatorEnabled?: boolean } = {};
+  const patch: { preferredSize?: string | null; aiCoordinatorEnabled?: boolean; heightCm?: number | null; weightKg?: number | null } = {};
   if ("preferredSize" in value) {
     if (value.preferredSize === null || value.preferredSize === "") {
       patch.preferredSize = null;
@@ -47,10 +51,17 @@ export function parseUserSettingsPatch(value: unknown): UserSettingsParseResult 
     if (typeof value.aiCoordinatorEnabled !== "boolean") return { ok: false, error: "AI 코디 설정 형식이 올바르지 않습니다." };
     patch.aiCoordinatorEnabled = value.aiCoordinatorEnabled;
   }
+  for (const [key, min, max, label] of [["heightCm", 100, 250, "키"], ["weightKg", 25, 300, "몸무게"]] as const) {
+    if (!(key in value)) continue;
+    const measurement = value[key];
+    if (measurement === null || measurement === "") patch[key] = null;
+    else if (typeof measurement === "number" && Number.isFinite(measurement) && measurement >= min && measurement <= max) patch[key] = measurement;
+    else return { ok: false, error: `${label}는 ${min}~${max} 범위의 숫자로 입력해주세요.` };
+  }
   if (Object.keys(patch).length === 0) return { ok: false, error: "변경할 설정이 없습니다." };
   return { ok: true, value: patch };
 }
 
-export function toUserSettingsData(value: { readonly preferredSize: string | null; readonly aiCoordinatorEnabled: boolean } | null): UserSettingsData {
-  return value ?? { preferredSize: null, aiCoordinatorEnabled: true };
+export function toUserSettingsData(value: UserSettingsData | null): UserSettingsData {
+  return value ?? { preferredSize: null, aiCoordinatorEnabled: true, heightCm: null, weightKg: null };
 }

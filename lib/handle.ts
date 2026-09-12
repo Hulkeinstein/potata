@@ -47,7 +47,7 @@ export const RESERVED_HANDLES = new Set<string>([
  * handle 검증 순수함수.
  *
  * 규칙:
- *   1. 소문자 정규화 (trim + toLowerCase) → Admin → admin
+ *   1. 입력을 trim하되 대문자는 조용히 변환하지 않고 거부
  *   2. 허용 문자: [a-z0-9_] (영소문자·숫자·밑줄)
  *   3. 길이: 3~20자
  *   4. 예약어(RESERVED_HANDLES) 차단
@@ -59,8 +59,7 @@ export const RESERVED_HANDLES = new Set<string>([
 export function validateHandle(
   raw: string
 ): { ok: true; value: string } | { ok: false; error: string } {
-  // 소문자 정규화 — Admin/ADMIN 도 예약어 매치
-  const value = String(raw ?? "").trim().toLowerCase();
+  const value = String(raw ?? "").trim();
 
   if (value.length < 3 || value.length > 20) {
     return { ok: false, error: "핸들은 3~20자여야 합니다." };
@@ -68,7 +67,7 @@ export function validateHandle(
 
   // ReDoS 안전한 단순 char-class 정규식
   if (!/^[a-z0-9_]+$/.test(value)) {
-    return { ok: false, error: "영소문자·숫자·밑줄(_)만 사용할 수 있습니다." };
+    return { ok: false, error: "영소문자(a-z)·숫자·밑줄(_)만 사용할 수 있습니다. 대문자와 공백은 사용할 수 없습니다." };
   }
 
   if (RESERVED_HANDLES.has(value)) {

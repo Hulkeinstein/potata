@@ -3,24 +3,28 @@
 import { useEffect, useState } from "react";
 import type { ApiResponse } from "@/types";
 import { PREFERRED_SIZES, type UserSettingsData } from "@/lib/user-settings";
+import { ProfilePhotoField } from "@/components/onboarding/ProfilePhotoField";
 
 export function UserSettingsForm() {
   const [settings, setSettings] = useState<UserSettingsData | null>(null);
   const [status, setStatus] = useState("설정을 불러오는 중입니다.");
   const [saving, setSaving] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
-        const response = await fetch("/api/users/me/settings");
+        const [response, profileResponse] = await Promise.all([fetch("/api/users/me/settings"), fetch("/api/users/me/onboarding")]);
         const payload: ApiResponse<UserSettingsData> = await response.json();
+        const profilePayload = (await profileResponse.json()) as ApiResponse<{ readonly avatar: string | null }>;
         if (!active) return;
         if (!response.ok || !payload.success || !payload.data) {
           setStatus(payload.error ?? "설정을 불러오지 못했습니다.");
           return;
         }
         setSettings(payload.data);
+        if (profileResponse.ok && profilePayload.success && profilePayload.data) setAvatar(profilePayload.data.avatar);
         setStatus("");
       } catch (error) {
         if (!active) return;
@@ -59,6 +63,7 @@ export function UserSettingsForm() {
 
   return (
     <div className="space-y-6">
+      <section className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5"><ProfilePhotoField avatar={avatar} onAvatarChange={setAvatar} /></section>
       <section className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5">
         <h2 className="text-lg font-bold">쇼핑 사이즈</h2>
         <p className="mt-1 text-sm text-zinc-400">상품에 같은 사이즈가 있으면 선택을 도와드립니다.</p>
@@ -67,6 +72,14 @@ export function UserSettingsForm() {
           <option value="">선택 안 함</option>
           {PREFERRED_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
         </select>
+      </section>
+      <section className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5">
+        <h2 className="text-lg font-bold">AI 스타일·핏 추천 정보</h2>
+        <p className="mt-1 text-sm text-zinc-400">선택 정보이며 언제든 비워서 삭제할 수 있습니다.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <label className="text-sm font-medium">키 (cm)<input aria-label="키 (cm)" type="number" min="100" max="250" step="0.1" value={settings.heightCm ?? ""} onChange={(event) => setSettings({ ...settings, heightCm: event.target.value === "" ? null : Number(event.target.value) })} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black px-3" /></label>
+          <label className="text-sm font-medium">몸무게 (kg)<input aria-label="몸무게 (kg)" type="number" min="25" max="300" step="0.1" value={settings.weightKg ?? ""} onChange={(event) => setSettings({ ...settings, weightKg: event.target.value === "" ? null : Number(event.target.value) })} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black px-3" /></label>
+        </div>
       </section>
       <section className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5">
         <div className="flex items-start justify-between gap-4">

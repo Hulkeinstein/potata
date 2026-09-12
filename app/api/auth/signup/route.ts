@@ -8,9 +8,8 @@ import {
   VERIFICATION_EXPIRY_MS,
   MIN_PASSWORD_LENGTH,
   normalizeEmail,
-  normalizeName,
 } from "@/lib/auth";
-import { validateHandle } from "@/lib/handle";
+import { isLegalSignupReady } from "@/lib/onboarding";
 import { prisma } from "@/lib/prisma";
 import type { SignupRequest } from "@/types";
 
@@ -19,34 +18,15 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as Partial<SignupRequest>;
     const email = normalizeEmail(body.email ?? "");
     const password = body.password?.trim() ?? "";
-    const name = normalizeName(body.name ?? "");
+    const name = email.split("@", 1)[0] ?? "New member";
 
-    if (!email || !password || !name) {
-      return NextResponse.json(
-        { success: false, error: "이름, 이메일, 비밀번호를 모두 입력해주세요." },
-        { status: 400 }
-      );
+    if (!isLegalSignupReady()) {
+      return NextResponse.json({ success: false, error: "회원가입 준비가 완료되지 않았습니다." }, { status: 503 });
     }
-
-    // handle 서버 재검증 — 폼 클라이언트 입력 신뢰 금지(Zero Trust)
-    const handleValidation = validateHandle(body.handle ?? "");
-    if (!handleValidation.ok) {
+    if (!email || !password) {
       return NextResponse.json(
-        { success: false, error: `핸들: ${handleValidation.error}` },
+        { success: false, error: "이메일과 비밀번호를 모두 입력해주세요." },
         { status: 400 }
-      );
-    }
-    const handle = handleValidation.value;
-
-    // handle unique 선행 체크 — Prisma P2002 경쟁 방어는 아래 catch에서
-    const existingHandle = await prisma.user.findUnique({
-      where: { handle },
-      select: { id: true },
-    });
-    if (existingHandle) {
-      return NextResponse.json(
-        { success: false, error: "이미 사용 중인 핸들입니다." },
-        { status: 409 }
       );
     }
 
@@ -93,7 +73,6 @@ export async function POST(req: NextRequest) {
           name,
           passwordHash,
           emailVerified: false,
-          handle, // 신규 가입 시에만 handle 주입
         },
       }),
       prisma.verificationCode.deleteMany({
@@ -132,7 +111,7 @@ export async function POST(req: NextRequest) {
       (error as { code: string }).code === "P2002"
     ) {
       return NextResponse.json(
-        { success: false, error: "이미 사용 중인 핸들 또는 이메일입니다." },
+        { success: false, error: "이미 사용 중인 이메일입니다." },
         { status: 409 }
       );
     }

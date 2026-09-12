@@ -23,7 +23,7 @@ describe("/api/users/me/settings", () => {
     findUniqueMock.mockResolvedValue(null);
     const response = await GET();
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ success: true, data: { preferredSize: null, aiCoordinatorEnabled: true } });
+    expect(await response.json()).toEqual({ success: true, data: { preferredSize: null, aiCoordinatorEnabled: true, heightCm: null, weightKg: null } });
   });
 
   it("알 수 없는 필드를 거부한다", async () => {

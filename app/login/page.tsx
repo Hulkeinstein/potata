@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (status === "authenticated") {
-            router.replace("/");
+            router.replace("/onboarding/profile");
         }
     }, [router, status]);
 
@@ -41,7 +41,7 @@ export default function LoginPage() {
             return;
         }
 
-        router.push("/");
+        router.push("/onboarding/profile");
         router.refresh();
     };
 
@@ -102,7 +102,11 @@ export default function LoginPage() {
 
                                 {/* Google */}
                                 <button
-                                    onClick={() => signIn("google", { callbackUrl: "/" })}
+                                    onClick={() => signIn(
+                                        "google",
+                                        { callbackUrl: "/onboarding/profile" },
+                                        { prompt: "select_account" },
+                                    )}
                                     className="w-full h-12 bg-white text-black font-bold rounded-lg flex items-center justify-center gap-2 border border-zinc-200 transition-transform hover:scale-[1.02]"
                                 >
                                     <span className="text-lg">G</span> Google로 계속하기
@@ -170,14 +174,16 @@ export default function LoginPage() {
                                     </button>
                                 </form>
 
-                                <div className="text-center mt-4">
-                                    <Link href="/signup" className="text-xs text-zinc-400 hover:text-white underline decoration-zinc-700">
-                                        계정이 없으신가요? 회원가입
-                                    </Link>
-                                </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    <div className="text-center mt-4">
+                        <span className="text-xs text-zinc-400">계정이 없으신가요? </span>
+                        <Link href="/signup" className="text-xs text-zinc-400 hover:text-white underline decoration-zinc-700">
+                            회원가입
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Guest Link */}
