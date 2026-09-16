@@ -43,7 +43,7 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 - Navbar에는 읽지 않은 알림 수를 표시하고, 알림 전체 읽음 후 즉시 갱신한다.
 - `/mypage/posts`에서 본인이 작성한 OOTD·리뷰·Q&A를 탭으로 모아보고 수정·삭제할 수 있다.
 - `/mypage`는 계정·주문·혜택 진입 중심으로 유지하고, 작성물 관리는 My Posts로 분리했다.
-- 신규 온보딩과 Settings에서 프로필 사진을 업로드·교체·삭제할 수 있다. 실제 사용은 전용 Supabase public bucket 설정 전까지 안전하게 실패하도록 유지한다.
+- 신규 온보딩과 Settings에서 프로필 사진을 업로드·교체·삭제할 수 있다. 전용 Supabase public bucket 연결, 실제 업로드·교체, DB 단일 URL 유지, 이전 파일 정리와 세션 즉시 반영까지 검증했다.
 - 약관·개인정보·마케팅 전문은 온보딩 화면을 벗어나지 않는 modal과 공유 문서 페이지를 함께 제공하며, 법률 검토 전 `DRAFT / NOT FOR PRODUCTION` 및 Arabic·법인 정보 확정 대기 상태를 동일하게 표시한다.
 
 ### P3 — 쿠폰·포인트 Pilot
@@ -127,9 +127,9 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 | 1 | **P0 / Critical** | 가입·온보딩 변경 안전하게 저장 | 이름·handle·동의·프로필 사진 변경이 커밋되지 않으면 유실·혼합 위험이 있다. | 임시 로그·스크린샷·로컬 비밀값 제외, diff·secret 검사, 현재 품질 기준 재확인 후 단일 커밋 | 완료 — 이 로드맵과 함께 저장 |
 | 2 | **P0 / Critical** | Google 신규 계정 OAuth callback 검증 | 신규 Google 사용자가 callback에서 실패하면 가입 자체가 불가능하다. | Docker·기존 개발 DB 복구 후 `localhost`에서 다른 Google 계정 login → callback → `/onboarding/profile` 진입과 API 정상 응답 확인 | 완료 |
 | 3 | **P0 / Critical** | 신규 가입 E2E | 개별 화면이 동작해도 실제 계정 생성·동의 저장·handle 선점이 한 흐름에서 검증되지 않으면 출시할 수 없다. | Google 신규 계정 흐름과 Email preview signup → verify → profile → session, 중복 handle·재시도·기존 사용자 검증 | 로컬 완료 — Resend 실메일은 P1 대기 |
-| 4 | **P1 / High** | 프로필 이미지 Storage 연결 | UI·보안 처리는 구현됐지만 실제 bucket이 없어 업로드가 fail-closed 상태다. | 전용 Supabase public bucket과 URL/path 정책 설정, upload → replace → delete 1건씩 검증, production shared/upstream rate limit 결정 | 외부 설정 대기 |
-| 5 | **P1 / High** | 가입 법률 문서 확정 | 현재 Terms·Privacy·Marketing 본문은 명시적인 비운영 초안이라 실제 사용자 동의를 받을 수 없다. | UAE 법인·라이선스·주소, processor·retention, Arabic/English 문안 및 UAE 자격 법률 검토 승인 | 외부 결정 대기 |
-| 6 | **P1 / High** | Resend 실메일 검증 | preview 성공만으로는 실제 가입 인증 메일의 전달성을 보장할 수 없다. | API key, 인증된 발신자, 테스트 수신 주소로 인증 메일 1건 → code 인증 → login 확인 | 외부 설정 대기 |
+| 4 | **P1 / High** | 프로필 이미지 Storage 연결 | 사용자 사진이 Google 기본 이미지에 고정되지 않고 모든 화면에서 동일하게 보여야 한다. | 전용 public bucket, 새·기존 secret key 지원, upload → replace, DB 단일 URL, 이전 파일 정리, session refresh와 My Page 반영 확인 | 완료 |
+| 5 | **P1 / High** | Resend 실메일 검증 | preview 성공만으로는 실제 가입 인증 메일의 전달성을 보장할 수 없다. | API key, 인증된 발신자, 테스트 수신 주소로 인증 메일 1건 → code 인증 → login 확인 | 외부 설정 대기 |
+| 6 | **P1 / High** | 가입 법률 문서 확정 | 현재 Terms·Privacy·Marketing 본문은 명시적인 비운영 초안이라 실제 사용자 동의를 받을 수 없다. | UAE 법인·라이선스·주소, processor·retention, Arabic/English 문안 및 UAE 자격 법률 검토 승인 | 외부 결정 대기 |
 | 7 | **P1 / High** | 운영 DB 안전 검증 | schema 이력을 잘못 등록하면 운영 데이터 손상이나 drift 은폐가 발생할 수 있다. | 대상 DB 식별, timestamped backup, restore rehearsal, read-only drift empty 확인 후 별도 baseline resolve 승인 | 외부 승인 대기 |
 | 8 | **P1 / High** | 배포 환경 연결 | 로컬 성공만으로 OAuth·Storage·메일·AI가 운영 환경에서 동작한다고 볼 수 없다. | Vercel env, Supabase host/bucket, Google 운영 callback, Resend, Replicate 대상과 권한 확인 | 외부 설정 대기 |
 | 9 | **P1 / High** | 배포 smoke test | 공개 환경의 callback·cookie·DB·권한 경계를 최종 확인해야 한다. | 승인된 배포에서 signup → verify → login → 상품 탐색 → 관리자 권한 흐름 PASS | 배포 후 |
@@ -139,10 +139,11 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 
 ### 지금 실행할 작업
 
-1. 전용 Supabase profile image bucket을 만들고 로컬 환경에 연결한다.
-2. 프로필 사진 upload → replace → delete를 실제 계정으로 검증한다.
-3. Resend 인증 발신자와 테스트 수신 주소로 실메일 1건을 검증한다.
-4. 운영 법률 문서와 운영 DB·배포 준비는 각각 필요한 외부 결정과 승인 뒤 진행한다.
+1. Resend 인증 발신자와 테스트 수신 주소로 실메일 1건을 검증한다.
+2. UAE 법인·라이선스·주소와 Arabic/English 약관 문안을 확정하고 자격 있는 법률 검토를 받는다.
+3. 운영 DB의 대상 식별·백업·복원 rehearsal·read-only drift 검증을 완료한다.
+4. Vercel·Supabase·Google OAuth·Resend 운영 환경을 연결하고 배포 smoke test를 수행한다.
+5. 실제 상품·판매 정책이 확정되기 전까지 결제·혜택 사용·매출 분석은 보류한다.
 
 **OAuth 확인 기록**: 2026-09-12에 Google provider·CSRF·client ID·정확한 localhost callback·PKCE challenge·scope, DB query와 온보딩 API를 확인했다. 이전 실패의 직접 원인은 Google API key가 아니라 Docker stale socket으로 인한 개발 DB 중단이었으며, 기존 데이터 볼륨을 유지한 복구 후 다른 Google 계정 로그인이 성공했다.
 
