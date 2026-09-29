@@ -48,6 +48,10 @@ jobs:
         run: npm ci
       - name: Prisma generate
         run: npx prisma generate
+      # Next 16은 route handler의 RouteContext 등 타입을 .next/types에 생성한다.
+      # 새로 받은 트리에는 그 파일이 없어, 이 단계 없이 tsc를 돌리면 TS2304로 실패한다.
+      - name: Generate route types
+        run: npx next typegen
       - name: Type check
         run: npx tsc --noEmit
       - name: Lint
