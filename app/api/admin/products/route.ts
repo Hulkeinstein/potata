@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   try {
     // 1. 인증 게이트 — 세션만 신뢰(요청 body의 user 정보 신뢰 금지)
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
     if (!isAdmin(session.user.email)) {
