@@ -51,6 +51,14 @@ beforeAll(async () => {
     update: {},
   });
 
+  // 장바구니는 구매 가능한 variant(옵션별 재고)가 있는 라인만 저장·반환한다 —
+  // 이 테스트가 쓰는 옵션(size "M", color 미지정 → "")의 재고가 필요하다.
+  await prisma.productVariant.upsert({
+    where: { productId_size_color: { productId: TEST_PRODUCT.id, size: "M", color: "" } },
+    create: { productId: TEST_PRODUCT.id, size: "M", color: "", stock: 10 },
+    update: { stock: 10, isManuallySoldOut: false },
+  });
+
   const user = await prisma.user.create({
     data: { email: TEST_EMAIL, name: "CartITest", passwordHash: "x", emailVerified: true },
   });
