@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import { authorizeCredentials, syncOAuthUser } from "@/lib/auth-providers";
 import { prisma } from "@/lib/prisma";
 import { isLegalSignupReady } from "@/lib/onboarding";
+import { readGoogleAuthTime } from "@/lib/benefits/google-reauth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -52,6 +53,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
     async jwt({ token, user, account, trigger }) {
+      if (account?.provider === "google") {
+        // 관리자 step-up이 "방금 Google에서 본인 확인을 했는가"를 판정할 근거.
+        // auth_time은 재로그인을 강제할 때(max_age=0) Google이 넣어준다. 없으면 이번 로그인 시각을 쓴다
+        // — 어느 쪽이든 Google 계정을 실제로 통과해야만 갱신되므로, 세션 쿠키만으로는 만들 수 없다.
+        token.googleAuthTime =
+          readGoogleAuthTime(account.id_token) ?? Math.floor(Date.now() / 1000);
+      }
       if (user) {
         if (account?.provider === "google" && user.email) {
           // 어댑터 미사용이라 OAuth user.id는 Google의 sub다.
@@ -86,6 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.image = token.picture;
       }
+      session.googleAuthTime = typeof token.googleAuthTime === "number" ? token.googleAuthTime : undefined;
       return session;
     },
   },
