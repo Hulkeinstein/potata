@@ -60,7 +60,9 @@ async function decodeAndNormalizeImage(contentType: keyof typeof IMAGE_EXTENSION
     if (!width || !height || width > MAX_AVATAR_DIMENSION || height > MAX_AVATAR_DIMENSION || width * height > MAX_AVATAR_PIXELS) return null;
     const oriented = input.rotate();
     const output = contentType === "image/jpeg" ? await oriented.jpeg().toBuffer() : contentType === "image/png" ? await oriented.png().toBuffer() : await oriented.webp().toBuffer();
-    return output.buffer.slice(output.byteOffset, output.byteOffset + output.byteLength) as ArrayBuffer;
+    // sharp가 native 바이너리를 못 읽고 WASM fallback으로 동작하면 출력이 SharedArrayBuffer 기반인데,
+    // slice()로도 공유 상태가 유지돼 fetch body(BodyInit)가 거부한다. 복사해 공유되지 않는 buffer로 만든다.
+    return new Uint8Array(output).buffer;
   } catch {
     return null;
   }
