@@ -5,6 +5,7 @@ import { createCampaign, createPointPolicy, deactivateCampaign, grantPoints, iss
 import { parseAdminCommand } from "@/lib/benefits/admin-command";
 import { AdminReauthRateLimitError, verifyAdminReauth } from "@/lib/benefits/admin-reauth";
 import { consumeGoogleStepUp } from "@/lib/benefits/admin-step-up";
+import { STEP_UP_COOKIE } from "@/lib/benefits/google-reauth";
 import { prisma } from "@/lib/prisma";
 
 async function adminSession() {
@@ -28,9 +29,16 @@ export async function POST(request: Request) {
     const command = parseAdminCommand(await request.json());
     if (!command) return NextResponse.json({ success: false, error: "Invalid request" }, { status: 400 });
     if (command.action !== "PREVIEW") {
+      // Google proof는 본문이 아니라 httpOnly 쿠키에서만 읽는다 — 값이 script·주소창에 노출되지 않는다.
+      const googleProof = request.headers
+        .get("cookie")
+        ?.split(";")
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(`${STEP_UP_COOKIE}=`))
+        ?.slice(STEP_UP_COOKIE.length + 1);
       const authorized = command.reauthPassword
         ? await verifyAdminReauth(gate.userId, command.reauthPassword)
-        : command.reauthProof ? await consumeGoogleStepUp(gate.userId, command.reauthProof) : false;
+        : googleProof ? await consumeGoogleStepUp(gate.userId, decodeURIComponent(googleProof)) : false;
       if (!authorized) return NextResponse.json({ success: false, error: "관리자 재인증에 실패했습니다." }, { status: 403 });
     }
     switch (command.action) {

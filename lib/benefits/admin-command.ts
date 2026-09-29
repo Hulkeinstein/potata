@@ -1,6 +1,7 @@
 import type { CampaignInput, ManualPointInput, PointPolicyInput } from "./contracts";
 
-type WriteAuth = { readonly idempotencyKey: string; readonly reauthPassword?: string; readonly reauthProof?: string };
+// Google step-up proof는 본문으로 받지 않는다(httpOnly 쿠키 전용) — 여기엔 비밀번호 재인증만 남는다.
+type WriteAuth = { readonly idempotencyKey: string; readonly reauthPassword?: string };
 type AdminCommand =
   | ({ readonly action: "CREATE_CAMPAIGN"; readonly input: CampaignInput } & WriteAuth)
   | ({ readonly action: "UPDATE_CAMPAIGN"; readonly campaignId: string; readonly input: CampaignInput } & WriteAuth)
@@ -20,9 +21,9 @@ const scope = (value: unknown): "ALL_PRODUCTS" | "BRANDS" | null => value === "A
 const audience = (value: unknown): "INDIVIDUAL" | "ALL_VERIFIED_USERS" | null => value === "INDIVIDUAL" || value === "ALL_VERIFIED_USERS" ? value : null;
 
 function writeAuth(value: Record<string, unknown>): WriteAuth | null {
-  const idempotencyKey = text(value.idempotencyKey); const reauthPassword = text(value.reauthPassword); const reauthProof = text(value.reauthProof);
-  if (!idempotencyKey || (!reauthPassword && !reauthProof)) return null;
-  return { idempotencyKey, ...(reauthPassword ? { reauthPassword } : {}), ...(reauthProof ? { reauthProof } : {}) };
+  const idempotencyKey = text(value.idempotencyKey); const reauthPassword = text(value.reauthPassword);
+  if (!idempotencyKey) return null;
+  return { idempotencyKey, ...(reauthPassword ? { reauthPassword } : {}) };
 }
 
 function campaign(value: Record<string, unknown>): CampaignInput | null {

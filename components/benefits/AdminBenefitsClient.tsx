@@ -35,9 +35,10 @@ export function AdminBenefitsClient({ initialData }: { readonly initialData: Adm
   const [googleProof, setGoogleProof] = useState<string | null>(null);
 
   useEffect(() => {
-    const proof = new URLSearchParams(window.location.search).get("stepUp");
-    if (proof && proof !== "failed") setGoogleProof(proof);
-    if (proof === "failed") setMessage("Google 재인증에 실패했습니다. 다시 시도하세요.");
+    const stepUp = new URLSearchParams(window.location.search).get("stepUp");
+    // proof 값 자체는 httpOnly 쿠키에 있고 여기엔 성공 여부만 온다 — 화면은 "재인증 됨" 표시만 한다.
+    if (stepUp === "done") setGoogleProof("ready");
+    if (stepUp === "failed") setMessage("Google 재인증에 실패했습니다. 다시 시도하세요.");
   }, []);
 
   async function request(body: Readonly<Record<string, unknown>>) {
@@ -52,23 +53,23 @@ export function AdminBenefitsClient({ initialData }: { readonly initialData: Adm
   }
   async function submit(event: FormEvent<HTMLFormElement>, keyName: keyof typeof keys, build: (form: FormData) => Readonly<Record<string, unknown>>) {
     event.preventDefault(); if (submitting) return; setSubmitting(true); setMessage("");
-    try { const payload = build(new FormData(event.currentTarget)); if (data.reauthMethod === "GOOGLE" && !googleProof) throw new Error("먼저 Google 재인증을 완료하세요."); await request({ ...payload, ...(data.reauthMethod === "GOOGLE" ? { reauthProof: googleProof } : {}) }); setGoogleProof(null); setKeys((current) => ({ ...current, [keyName]: newKey(keyName) })); setMessage("저장했습니다."); event.currentTarget.reset(); await load(); }
+    try { const payload = build(new FormData(event.currentTarget)); if (data.reauthMethod === "GOOGLE" && !googleProof) throw new Error("먼저 Google 재인증을 완료하세요."); await request({ ...payload }); setGoogleProof(null); setKeys((current) => ({ ...current, [keyName]: newKey(keyName) })); setMessage("저장했습니다."); event.currentTarget.reset(); await load(); }
     catch (error) { if (error instanceof Error) setMessage(error.message); }
     finally { setSubmitting(false); }
   }
   async function confirmMutation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!confirmAction || submitting) return; setSubmitting(true);
     const form = new FormData(event.currentTarget); const targetField = confirmAction.kind === "DEACTIVATE_CAMPAIGN" ? "campaignId" : "grantId";
-    try { if (data.reauthMethod === "GOOGLE" && !googleProof) throw new Error("먼저 Google 재인증을 완료하세요."); await request({ action: confirmAction.kind, [targetField]: confirmAction.targetId, reason: formText(form, "reason"), reauthPassword: formText(form, "reauthPassword"), ...(data.reauthMethod === "GOOGLE" ? { reauthProof: googleProof } : {}), idempotencyKey: confirmAction.key }); setGoogleProof(null); setConfirmAction(null); setMessage("처리했습니다."); await load(); }
+    try { if (data.reauthMethod === "GOOGLE" && !googleProof) throw new Error("먼저 Google 재인증을 완료하세요."); await request({ action: confirmAction.kind, [targetField]: confirmAction.targetId, reason: formText(form, "reason"), reauthPassword: formText(form, "reauthPassword"),  idempotencyKey: confirmAction.key }); setGoogleProof(null); setConfirmAction(null); setMessage("처리했습니다."); await load(); }
     catch (error) { if (error instanceof Error) setMessage(error.message); }
     finally { setSubmitting(false); }
   }
   const resetPreview = () => setPreview(null);
   async function beginGoogleStepUp() {
     const response = await fetch("/api/admin/benefits/reauth/google/start", { method: "POST" });
-    const payload: unknown = await response.json();
-    if (!response.ok || typeof payload !== "object" || payload === null || !("data" in payload) || typeof payload.data !== "object" || payload.data === null || !("token" in payload.data) || typeof payload.data.token !== "string") { setMessage("Google 재인증을 시작할 수 없습니다."); return; }
-    await signIn("google", { redirectTo: `${window.location.origin}/api/admin/benefits/reauth/google/complete?token=${encodeURIComponent(payload.data.token)}` }, { prompt: "login", max_age: "0" });
+    if (!response.ok) { setMessage("Google 재인증을 시작할 수 없습니다."); return; }
+    // 서버가 proof를 httpOnly 쿠키로 심었다 — 복귀 주소에 토큰을 싣지 않는다.
+    await signIn("google", { redirectTo: `${window.location.origin}/api/admin/benefits/reauth/google/complete` }, { prompt: "login", max_age: "0" });
   }
 
   return <div className="space-y-10">
