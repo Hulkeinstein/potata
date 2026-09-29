@@ -37,7 +37,7 @@ describe("GET /api/admin/questions", () => {
 
   it("rejects a non-admin caller before data access", async () => {
     // Given
-    authMock.mockResolvedValue({ user: { email: "customer@example.com" } });
+    authMock.mockResolvedValue({ user: { id: "u-customer", email: "customer@example.com" } });
     isAdminMock.mockReturnValue(false);
     const request = new Request("http://localhost/api/admin/questions");
 
@@ -51,7 +51,7 @@ describe("GET /api/admin/questions", () => {
 
   it("returns the sanitized page for an admin", async () => {
     // Given
-    authMock.mockResolvedValue({ user: { email: "admin@example.com" } });
+    authMock.mockResolvedValue({ user: { id: "u-admin", email: "admin@example.com" } });
     isAdminMock.mockReturnValue(true);
     const query = { status: "unanswered", query: "Jacket", page: 1, pageSize: 20 };
     const page = { items: [], total: 0, page: 1, pageSize: 20, hasMore: false };

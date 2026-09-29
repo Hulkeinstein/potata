@@ -99,6 +99,20 @@ describe("/api/cart", () => {
     expect(txMock).not.toHaveBeenCalled();
   });
 
+  it("id 없는 세션은 401 — userId 없이 전체 삭제가 실행되면 안 된다", async () => {
+    // Prisma는 where 값이 undefined면 그 조건을 빼고 실행한다 → deleteMany가 전체 CartItem을 지운다.
+    authMock.mockResolvedValue({ user: { email: "a@b.com" } });
+
+    const getRes = await GET();
+    const putRes = await PUT(makeReq("PUT", { items: [] }));
+
+    expect(getRes.status).toBe(401);
+    expect(putRes.status).toBe(401);
+    expect(ciFindMany).not.toHaveBeenCalled();
+    expect(ciDeleteMany).not.toHaveBeenCalled();
+    expect(txMock).not.toHaveBeenCalled();
+  });
+
   it("PUT quantity가 1 미만이면 400", async () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
     const res = await PUT(makeReq("PUT", { items: [{ productId: "1", size: "", color: "", quantity: 0 }] }));

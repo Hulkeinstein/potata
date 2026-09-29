@@ -5,7 +5,7 @@ import { listAdminProducts, parseAdminCatalogQuery } from "@/lib/admin-product-c
 
 export async function GET(request: NextRequest) {
   const session = await auth();
-  if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   if (!isAdmin(session.user.email)) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   return NextResponse.json({ success: true, data: await listAdminProducts(parseAdminCatalogQuery(request.nextUrl.searchParams)) });
 }

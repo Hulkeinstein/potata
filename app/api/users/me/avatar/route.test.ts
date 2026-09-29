@@ -36,7 +36,8 @@ function pngFile(name = "avatar.png") { return new File([pngBytes], name, { type
 describe("profile avatar route", () => {
   beforeAll(async () => {
     const buffer = await sharp({ create: { width: 2, height: 2, channels: 4, background: "white" } }).png().toBuffer();
-    pngBytes = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+    // WASM fallback의 출력은 SharedArrayBuffer 기반이라 File/Blob이 거부한다 — 복사해 브라우저 업로드와 같은 형태로 만든다.
+    pngBytes = new Uint8Array(buffer).buffer;
   });
   beforeEach(() => {
     vi.clearAllMocks();
@@ -114,7 +115,7 @@ describe("profile avatar route", () => {
   });
 
   it("rejects trailing polyglot data instead of forwarding original bytes", async () => {
-    const valid = await sharp({ create: { width: 2, height: 2, channels: 4, background: "white" } }).png().toBuffer();
+    const valid = new Uint8Array(await sharp({ create: { width: 2, height: 2, channels: 4, background: "white" } }).png().toBuffer());
     const response = await POST(imageRequest(new File([valid, "<script>alert(1)</script>"], "polyglot.png", { type: "image/png" })));
     expect(response.status).toBe(400);
     expect(mocks.upload).not.toHaveBeenCalled();
@@ -123,14 +124,14 @@ describe("profile avatar route", () => {
   it("rejects animated multi-page WebP uploads", async () => {
     const red = await sharp({ create: { width: 2, height: 2, channels: 4, background: "red" } }).png().toBuffer();
     const blue = await sharp({ create: { width: 2, height: 2, channels: 4, background: "blue" } }).png().toBuffer();
-    const animated = await sharp([red, blue], { join: { animated: true } }).webp({ loop: 0, delay: [100, 100] }).toBuffer();
+    const animated = new Uint8Array(await sharp([red, blue], { join: { animated: true } }).webp({ loop: 0, delay: [100, 100] }).toBuffer());
     const response = await POST(imageRequest(new File([animated], "animated.webp", { type: "image/webp" })));
     expect(response.status).toBe(400);
     expect(mocks.upload).not.toHaveBeenCalled();
   });
 
   it("decodes and forwards a canonicalized real image", async () => {
-    const valid = await sharp({ create: { width: 2, height: 2, channels: 4, background: "white" } }).png().toBuffer();
+    const valid = new Uint8Array(await sharp({ create: { width: 2, height: 2, channels: 4, background: "white" } }).png().toBuffer());
     const response = await POST(imageRequest(new File([valid], "real.png", { type: "image/png" })));
     expect(response.status).toBe(200);
     const uploadedFile = mocks.upload.mock.calls[0]?.[1] as { data: ArrayBuffer; contentType: string; ext: string };
@@ -140,7 +141,7 @@ describe("profile avatar route", () => {
   });
 
   it("rejects an image with an excessive decoded pixel count", async () => {
-    const hugePng = await sharp({ create: { width: 5_001, height: 5_001, channels: 3, background: "white" } }).png().toBuffer();
+    const hugePng = new Uint8Array(await sharp({ create: { width: 5_001, height: 5_001, channels: 3, background: "white" } }).png().toBuffer());
     const response = await POST(imageRequest(new File([hugePng], "huge.png", { type: "image/png" })));
     expect(response.status).toBe(400);
     expect((await response.json()).error).toContain("해상도");

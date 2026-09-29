@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     // 1. 인증 게이트 — 다른 어떤 체크보다 먼저
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -138,7 +138,7 @@ export async function GET() {
   try {
     // 1. 인증 게이트
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
