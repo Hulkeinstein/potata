@@ -58,6 +58,14 @@ beforeAll(async () => {
     update: {},
   });
 
+  // 주문은 구매 가능한 variant(옵션별 재고)를 요구한다 — 없으면 품절로 409.
+  // 이 테스트는 옵션을 지정하지 않으므로 기본 옵션(size "", color "")의 재고가 필요하다.
+  await prisma.productVariant.upsert({
+    where: { productId_size_color: { productId: TEST_PRODUCT.id, size: "", color: "" } },
+    create: { productId: TEST_PRODUCT.id, size: "", color: "", stock: 10 },
+    update: { stock: 10, isManuallySoldOut: false },
+  });
+
   // 테스트 유저 생성
   const user = await prisma.user.create({
     data: {
