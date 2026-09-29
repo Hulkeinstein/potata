@@ -16,6 +16,7 @@ vi.mock("replicate", () => ({
 }));
 
 import { POST } from "./route";
+import { resetRateLimitsForTests } from "@/lib/rate-limit";
 
 function makeReq(body: unknown): Request {
     return new Request("http://localhost/api/try-on", {
@@ -33,6 +34,7 @@ const VALID = {
 describe("POST /api/try-on", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        resetRateLimitsForTests();
         process.env.REPLICATE_API_TOKEN = "test-token";
     });
 
@@ -43,6 +45,20 @@ describe("POST /api/try-on", () => {
 
         expect(res.status).toBe(401);
         expect(runMock).not.toHaveBeenCalled();
+    });
+
+
+    it("한 사용자가 반복 호출하면 429로 막는다 (유료 호출 남용 방지)", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1" } });
+        runMock.mockResolvedValue(["https://example.com/out.png"]);
+
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+            expect((await POST(makeReq(VALID))).status).toBe(200);
+        }
+        const blocked = await POST(makeReq(VALID));
+
+        expect(blocked.status).toBe(429);
+        expect(runMock).toHaveBeenCalledTimes(20);
     });
 
     it("인증됐으나 이미지 누락 시 400", async () => {

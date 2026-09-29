@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Replicate from "replicate";
 import { auth } from "@/auth";
+import { consumeRateLimit } from "@/lib/rate-limit";
 
 const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
@@ -17,13 +18,24 @@ function isAllowedImage(value: unknown): value is string {
     );
 }
 
+const TRY_ON_WINDOW_MS = 60 * 60 * 1000;
+const TRY_ON_LIMIT_PER_USER = 20;
+
 export async function POST(req: Request) {
     try {
         // 인증 게이트: 미인증자는 유료 Replicate 호출에 도달하지 못한다.
         // 다른 어떤 체크(서버 설정 등)보다 먼저 둬서 미인증자에게 내부 상태를 노출하지 않는다.
         const session = await auth();
-        if (!session?.user) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // 호출 1건이 곧 비용이다 — 가입만 하면 무한히 돌릴 수 있으면 안 된다.
+        if (!consumeRateLimit(`try-on:${session.user.id}`, TRY_ON_LIMIT_PER_USER, TRY_ON_WINDOW_MS)) {
+            return NextResponse.json(
+                { error: "AI 피팅 요청이 너무 잦습니다. 잠시 후 다시 시도해주세요." },
+                { status: 429 }
+            );
         }
 
         if (!process.env.REPLICATE_API_TOKEN) {
@@ -55,8 +67,6 @@ export async function POST(req: Request) {
         }
 
         console.log("Starting Replicate Generation...");
-        console.log("- User Image Length:", userImage.length);
-        console.log("- Product URL:", productImage);
 
         // OOTDiffusion Deployment on Replicate
         // Model: viktorfa/oot_diffusion

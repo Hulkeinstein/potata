@@ -23,6 +23,7 @@ vi.mock("next/cache", () => ({
 // extractErrorMessage는 순수 함수라 실제 구현 사용(mock 불필요)
 
 import { POST } from "./route";
+import { resetRateLimitsForTests } from "@/lib/rate-limit";
 
 /** params를 Promise로 감싸 Next.js 15 async params 인터페이스 맞춤 */
 function makeParams(id: string) {
@@ -37,9 +38,23 @@ function makeReq(): Request {
 describe("POST /api/products/[id]/view", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetRateLimitsForTests();
   });
 
   // ─── Happy Path ─────────────────────────────────────────────────────────────
+
+  it("같은 발신지가 같은 상품을 반복 호출하면 조회수를 더 올리지 않는다(HOT 배지 조작 방지)", async () => {
+    productUpdate.mockResolvedValue({ id: "p1", viewCount: 1 });
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await POST(makeReq(), makeParams("p1"));
+    }
+    const blocked = await POST(makeReq(), makeParams("p1"));
+
+    expect(productUpdate).toHaveBeenCalledTimes(5);
+    expect(blocked.status).toBe(200);
+    expect(await blocked.json()).toEqual({ success: false });
+  });
 
   it("유효한 id → prisma.product.update(increment:1) 1회 호출, revalidateTag('hot-products') 1회 호출, 200 {success:true}", async () => {
     productUpdate.mockResolvedValue({ id: "p1", viewCount: 1 });

@@ -102,7 +102,8 @@ export async function POST(req: NextRequest) {
       return verifiedUser;
     });
 
-    console.log(`[AUTH] User verified: ${email}`);
+    // 로그에 이메일 원문을 남기지 않는다 — 로그 열람자에게 가입자 명단이 그대로 노출된다.
+    console.log(`[AUTH] User verified: ${user.id}`);
 
     return NextResponse.json({
       success: true,
