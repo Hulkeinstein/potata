@@ -7,7 +7,12 @@ import {
   VERIFICATION_EXPIRY_MS,
 } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
 import type { ResendVerificationRequest } from "@/types";
+
+const RESEND_WINDOW_MS = 10 * 60 * 1000;
+const RESEND_LIMIT_PER_EMAIL = 3;
+const RESEND_LIMIT_PER_IP = 20;
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,6 +23,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: "이메일을 입력해주세요." },
         { status: 400 }
+      );
+    }
+
+    // 재발송은 곧바로 메일 발송으로 이어진다 — 주소당·발신지당 횟수를 제한한다.
+    if (
+      !consumeRateLimit(`resend:email:${email}`, RESEND_LIMIT_PER_EMAIL, RESEND_WINDOW_MS) ||
+      !consumeRateLimit(`resend:ip:${clientIp(req)}`, RESEND_LIMIT_PER_IP, RESEND_WINDOW_MS)
+    ) {
+      return NextResponse.json(
+        { success: false, error: "요청이 너무 잦습니다. 잠시 후 다시 시도해주세요." },
+        { status: 429 }
       );
     }
 
