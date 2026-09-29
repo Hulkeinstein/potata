@@ -20,6 +20,7 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/email", () => ({ sendVerificationEmail: sendEmail }));
 
 import { POST } from "./route";
+import { resetRateLimitsForTests } from "@/lib/rate-limit";
 
 function resendRequest(email = "pending@example.com") {
   return new Request("http://localhost/api/auth/resend", {
@@ -30,6 +31,7 @@ function resendRequest(email = "pending@example.com") {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRateLimitsForTests();
   transaction.mockResolvedValue([]);
   sendEmail.mockResolvedValue({ success: true });
 });
@@ -43,6 +45,20 @@ describe("resend route", () => {
 
     expect(response.status).toBe(200);
     expect(codeCreate.mock.calls[0][0].data.passwordHash).toBe("$2a$10$fromEntry");
+  });
+
+  it("같은 주소로 반복 재발송하면 429로 막는다", async () => {
+    userFindUnique.mockResolvedValue({ name: "pending", emailVerified: false, passwordHash: null });
+    codeFindFirst.mockResolvedValue({ name: "pending", passwordHash: "$2a$10$fromEntry" });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      expect((await POST(resendRequest())).status).toBe(200);
+    }
+
+    const blocked = await POST(resendRequest());
+
+    expect(blocked.status).toBe(429);
+    expect(sendEmail).toHaveBeenCalledTimes(3);
   });
 
   it("인증 대기 기록이 없으면 404", async () => {

@@ -7,6 +7,10 @@
  */
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { consumeRateLimit } from "@/lib/rate-limit";
+
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const LOGIN_LIMIT_PER_EMAIL = 10;
 
 export interface AuthorizedUser {
   id: string;
@@ -25,6 +29,9 @@ export async function authorizeCredentials(
   password: string | undefined
 ): Promise<AuthorizedUser | null> {
   if (!email || !password) return null;
+
+  // 무제한 비밀번호 대입을 막는다. 한도를 넘으면 비밀번호가 맞아도 실패로 돌려보낸다(성공/실패 구분 없음).
+  if (!consumeRateLimit(`login:${email}`, LOGIN_LIMIT_PER_EMAIL, LOGIN_WINDOW_MS)) return null;
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return null;

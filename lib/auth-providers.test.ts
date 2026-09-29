@@ -21,6 +21,7 @@ vi.mock("bcryptjs", () => ({
 }));
 
 import { authorizeCredentials, syncOAuthUser } from "./auth-providers";
+import { resetRateLimitsForTests } from "./rate-limit";
 
 const verifiedUser = {
   id: "u1",
@@ -33,6 +34,7 @@ const verifiedUser = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRateLimitsForTests();
 });
 
 describe("authorizeCredentials", () => {
@@ -74,6 +76,21 @@ describe("authorizeCredentials", () => {
       name: "A",
       image: null,
     });
+  });
+});
+
+describe("authorizeCredentials 횟수 제한", () => {
+  it("같은 주소로 반복 시도하면 비밀번호 확인 없이 막는다", async () => {
+    userFindUnique.mockResolvedValue(verifiedUser);
+    bcryptCompare.mockResolvedValue(false);
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      expect(await authorizeCredentials("a@b.com", "wrong")).toBeNull();
+    }
+    bcryptCompare.mockResolvedValue(true);
+
+    expect(await authorizeCredentials("a@b.com", "correct")).toBeNull();
+    expect(bcryptCompare).toHaveBeenCalledTimes(10); // 11번째는 비교 자체를 하지 않는다
   });
 });
 
