@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         // 인증 게이트: 미인증자는 유료 Replicate 호출에 도달하지 못한다.
         // 다른 어떤 체크(서버 설정 등)보다 먼저 둬서 미인증자에게 내부 상태를 노출하지 않는다.
         const session = await auth();
-        if (!session?.user) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

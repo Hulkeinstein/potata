@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ auth: vi.fn(), isAdmin: vi.fn(), reauth: vi.fn(), list: vi.fn(), createCampaign: vi.fn(), updateCampaign: vi.fn(), deactivateCampaign: vi.fn(), preview: vi.fn(), issue: vi.fn(), revoke: vi.fn(), policy: vi.fn(), grant: vi.fn(), reverse: vi.fn() }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), isAdmin: vi.fn(), reauth: vi.fn(), list: vi.fn(), createCampaign: vi.fn(), updateCampaign: vi.fn(), deactivateCampaign: vi.fn(), preview: vi.fn(), issue: vi.fn(), revoke: vi.fn(), policy: vi.fn(), grant: vi.fn(), reverse: vi.fn(), consumeStepUp: vi.fn() }));
 vi.mock("@/auth", () => ({ auth: mocks.auth }));
 vi.mock("@/lib/admin", () => ({ isAdmin: mocks.isAdmin }));
 vi.mock("@/lib/benefits/admin-reauth", () => ({ AdminReauthRateLimitError: class AdminReauthRateLimitError extends Error {}, verifyAdminReauth: mocks.reauth }));
+vi.mock("@/lib/benefits/admin-step-up", () => ({ consumeGoogleStepUp: mocks.consumeStepUp }));
 vi.mock("@/lib/benefits/admin-service", () => ({
   BenefitInputError: class BenefitInputError extends Error {},
   listAdminBenefits: mocks.list,
@@ -19,8 +20,9 @@ vi.mock("@/lib/benefits/admin-service", () => ({
 }));
 
 import { GET, POST } from "./route";
+import { STEP_UP_COOKIE } from "@/lib/benefits/google-reauth";
 
-const post = (body: unknown) => POST(new Request("http://localhost/api/admin/benefits", { method: "POST", body: JSON.stringify(body) }));
+const post = (body: unknown, cookie?: string) => POST(new Request("http://localhost/api/admin/benefits", { method: "POST", body: JSON.stringify(body), ...(cookie ? { headers: { cookie } } : {}) }));
 
 describe("admin benefits route", () => {
   beforeEach(() => {
@@ -28,6 +30,7 @@ describe("admin benefits route", () => {
     mocks.auth.mockResolvedValue({ user: { id: "admin-1", email: "admin@example.com" } });
     mocks.isAdmin.mockReturnValue(true);
     mocks.reauth.mockResolvedValue(true);
+    mocks.consumeStepUp.mockResolvedValue(true);
   });
 
   it("401을 반환한다 when 세션이 없다", async () => {
@@ -63,6 +66,30 @@ describe("admin benefits route", () => {
     const response = await post({ action: "ISSUE", campaignId: "c1", audience: "ALL_VERIFIED_USERS", confirmedCount: 7, confirmedToken: "preview-token", reason: "pilot", idempotencyKey: "issue-1", reauthPassword: "qa-password" });
     expect(response.status).toBe(200);
     expect(mocks.issue).toHaveBeenCalledWith("admin-1", expect.objectContaining({ confirmedCount: 7, idempotencyKey: "issue-1" }));
+  });
+
+
+  it("Google proof는 본문이 아니라 쿠키에서 읽는다", async () => {
+    mocks.deactivateCampaign.mockResolvedValue({ id: "c1" });
+    const response = await post(
+      { action: "DEACTIVATE_CAMPAIGN", campaignId: "c1", reason: "close", idempotencyKey: "close-2" },
+      `${STEP_UP_COOKIE}=proof-token`,
+    );
+    expect(response.status).toBe(200);
+    expect(mocks.consumeStepUp).toHaveBeenCalledWith("admin-1", "proof-token");
+  });
+
+  it("403을 반환한다 when 비밀번호도 proof 쿠키도 없다", async () => {
+    const response = await post({ action: "DEACTIVATE_CAMPAIGN", campaignId: "c1", reason: "close", idempotencyKey: "close-3" });
+    expect(response.status).toBe(403);
+    expect(mocks.deactivateCampaign).not.toHaveBeenCalled();
+    expect(mocks.consumeStepUp).not.toHaveBeenCalled();
+  });
+
+  it("본문에 proof를 넣어도 통하지 않는다", async () => {
+    const response = await post({ action: "DEACTIVATE_CAMPAIGN", campaignId: "c1", reason: "close", idempotencyKey: "close-4", reauthProof: "stolen-token" });
+    expect(response.status).toBe(403);
+    expect(mocks.consumeStepUp).not.toHaveBeenCalled();
   });
 
   it("403을 반환한다 when 관리자 비밀번호 재인증이 실패한다", async () => {
