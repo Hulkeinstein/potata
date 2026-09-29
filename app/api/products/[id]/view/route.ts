@@ -2,13 +2,24 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { extractErrorMessage } from "@/lib/auth";
+import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
+
+const VIEW_WINDOW_MS = 10 * 60 * 1000;
+const VIEW_LIMIT_PER_IP = 5;
 
 // POST: 상품 조회수 +1 (public, atomic). HOT 랭킹용.
 // 조회수 increment 성공 시 revalidateTag("hot-products")로 HOT 랭킹 캐시만 무효화.
 // 카탈로그 rows 캐시("products" 태그)는 건드리지 않음 — 상품 rows 재쿼리 없음.
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+
+    // 조회수는 HOT 배지 순위를 정한다 — 한 발신지가 특정 상품을 반복 호출해 순위를 만들지 못하게 막는다.
+    // 막힌 호출도 클라이언트는 fire-and-forget이므로 200으로 조용히 넘긴다.
+    if (!consumeRateLimit(`view:${id}:${clientIp(req)}`, VIEW_LIMIT_PER_IP, VIEW_WINDOW_MS)) {
+      return NextResponse.json({ success: false }, { status: 200 });
+    }
+
     await prisma.product.update({
       where: { id },
       data: { viewCount: { increment: 1 } },

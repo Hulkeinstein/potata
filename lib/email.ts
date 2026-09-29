@@ -1,3 +1,4 @@
+import "server-only"; // RESEND_API_KEY를 든 모듈 — 클라이언트 번들로 끌려가면 빌드가 실패해야 한다
 import { Resend } from "resend";
 import { VerificationEmail } from "@/emails/VerificationEmail";
 import { render } from "@react-email/render";

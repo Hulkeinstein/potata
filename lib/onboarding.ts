@@ -23,7 +23,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function parseSafeReturnTo(value: string | null | undefined): string {
-  if (!value?.startsWith("/") || value.startsWith("//")) return "/";
+  // 브라우저는 URL에서 백슬래시를 슬래시로 취급한다 — "/\evil.com"은 "//evil.com"(외부 사이트)로 읽힌다.
+  if (!value?.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return "/";
   const pathname = value.split(/[?#]/, 1)[0] ?? "/";
   if (pathname.startsWith("/login") || pathname.startsWith("/signup") || pathname.startsWith("/onboarding")) return "/";
   return value;

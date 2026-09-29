@@ -6,7 +6,7 @@ describe("parseSafeReturnTo", () => {
     expect(parseSafeReturnTo("/mypage/posts?tab=ootd")).toBe("/mypage/posts?tab=ootd");
   });
 
-  it.each(["https://evil.example", "//evil.example", "/login", "/onboarding/profile"])(
+  it.each(["https://evil.example", "//evil.example", "/\\evil.example", "/login", "/onboarding/profile"])(
     "rejects unsafe or looping destination %s",
     (value) => expect(parseSafeReturnTo(value)).toBe("/")
   );
