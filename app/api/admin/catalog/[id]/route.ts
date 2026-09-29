@@ -33,7 +33,7 @@ function parseUpdate(value: unknown) {
 
 async function requireAdmin() {
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user?.id) return null;
   return isAdmin(session.user.email) ? session : null;
 }
 

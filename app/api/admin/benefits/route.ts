@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 
 async function adminSession() {
   const session = await auth();
-  if (!session?.user) return { error: NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 }) };
+  if (!session?.user?.id) return { error: NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 }) };
   if (!isAdmin(session.user.email)) return { error: NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }) };
   return { userId: session.user.id };
 }
