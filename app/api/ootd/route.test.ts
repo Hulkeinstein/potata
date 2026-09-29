@@ -25,7 +25,10 @@ import { POST, GET } from "./route";
 import type { NextRequest } from "next/server";
 
 function jpeg(name = "a.jpg", size = 1000): File {
-  return new File([new Uint8Array(size)], name, { type: "image/jpeg" });
+  // 라우트가 magic-byte로 실제 형식을 판별하므로 JPEG 시그니처(FF D8 FF)로 시작해야 한다.
+  const bytes = new Uint8Array(size);
+  bytes.set([0xff, 0xd8, 0xff]);
+  return new File([bytes], name, { type: "image/jpeg" });
 }
 // 라우트는 req.formData()만 호출하므로, 멀티파트 round-trip 대신 formData()를 가진 fake req로 주입
 // (jsdom 환경에서 Request(body: FormData) → formData() 파싱이 불안정하므로 안정적인 방식)
@@ -80,6 +83,27 @@ describe("POST /api/ootd", () => {
     const res = await POST(postReq([gif]));
     expect(res.status).toBe(400);
     expect(uploadMock).not.toHaveBeenCalled();
+  });
+
+  it("png라고 선언했지만 내용이 이미지가 아니면 400, 업로드 미호출", async () => {
+    // 공개 버킷에 HTML 등을 이미지 확장자로 올려 배포하는 것을 막는다.
+    authMock.mockResolvedValue({ user: { id: "u1" } });
+    const fake = new File(["<html>alert(1)</html>"], "a.png", { type: "image/png" });
+    const res = await POST(postReq([fake]));
+    expect(res.status).toBe(400);
+    expect(uploadMock).not.toHaveBeenCalled();
+  });
+
+  it("업로드에는 선언된 형식이 아니라 실제로 판별한 형식을 쓴다", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1" } });
+    uploadMock.mockResolvedValue({ path: "u1/a.jpg", publicUrl: "https://x/p/a.jpg" });
+    postCreate.mockResolvedValue({ id: "post1" });
+    const mislabeled = new File([jpeg()], "a.png", { type: "image/png" }); // 내용은 JPEG
+
+    const res = await POST(postReq([mislabeled]));
+
+    expect(res.status).toBe(200);
+    expect(uploadMock.mock.calls[0][1]).toMatchObject({ contentType: "image/jpeg", ext: "jpg" });
   });
 
   it("5MB 초과는 400", async () => {

@@ -4,12 +4,19 @@ import { prisma } from "@/lib/prisma";
 import { getProductById } from "@/lib/products";
 import { extractErrorMessage } from "@/lib/auth";
 import { uploadOOTDImage, removeOOTDImagesByUrl } from "@/lib/supabase-storage";
+import { sniffImage } from "@/lib/image-validation";
 import type { OOTDFeedData, OOTDFeedItem } from "@/types";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+};
+// 실제 바이트로 판별한 형식만 신뢰한다 — 클라이언트가 선언한 Content-Type은 위조 가능하다.
+const CONTENT_TYPE_BY_EXT: Record<string, string> = {
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
 };
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES = 5;
@@ -39,6 +46,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    const validated: { data: ArrayBuffer; contentType: string; ext: string }[] = [];
     for (const f of files) {
       if (!(f.type in ALLOWED_TYPES)) {
         return NextResponse.json(
@@ -52,6 +60,16 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+      // 공개 버킷에 저장되므로 선언된 형식이 아니라 실제 바이트로 판별한다(리뷰·상품 업로드와 동일).
+      const data = await f.arrayBuffer();
+      const ext = sniffImage(data);
+      if (!ext) {
+        return NextResponse.json(
+          { success: false, error: "유효한 이미지가 아닙니다." },
+          { status: 400 }
+        );
+      }
+      validated.push({ data, contentType: CONTENT_TYPE_BY_EXT[ext], ext });
     }
 
     // 2. 태그 상품 FK 선검증 (업로드 전 — 실패 시 업로드 낭비/보상 불필요)
@@ -67,10 +85,8 @@ export async function POST(req: NextRequest) {
 
     // 3. Storage 업로드 (여러 장)
     const imageUrls: string[] = [];
-    for (const f of files) {
-      const ext = ALLOWED_TYPES[f.type];
-      const data = await f.arrayBuffer();
-      const { publicUrl } = await uploadOOTDImage(userId, { data, contentType: f.type, ext });
+    for (const image of validated) {
+      const { publicUrl } = await uploadOOTDImage(userId, image);
       imageUrls.push(publicUrl);
     }
 
