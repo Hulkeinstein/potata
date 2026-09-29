@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    // passwordHash 없는 유저(OAuth 전용)는 이메일 인증 재발송 대상이 아님
-    if (!user || user.emailVerified || !user.passwordHash || !entry) {
+    // 비밀번호는 인증 대기 기록(VerificationCode)에만 있다 — 대기 기록이 없으면 재발송 대상이 아님(OAuth 전용 유저 포함)
+    if (!user || user.emailVerified || !entry) {
       return NextResponse.json(
         { success: false, error: "인증 요청을 찾을 수 없습니다. 다시 회원가입을 시도해주세요." },
         { status: 404 }
@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
       prisma.verificationCode.create({
         data: {
           email,
-          name: user.name,
-          passwordHash: user.passwordHash,
+          name: entry.name,
+          passwordHash: entry.passwordHash,
           code: newCode,
           expiresAt,
         },

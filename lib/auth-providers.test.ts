@@ -79,7 +79,7 @@ describe("authorizeCredentials", () => {
 
 describe("syncOAuthUser", () => {
   it("returns onboarding state and preserves an existing completed profile", async () => {
-    userFindUnique.mockResolvedValue({ id: "u9", onboardingCompletedAt: new Date(), name: "Chosen", avatar: "chosen.png" });
+    userFindUnique.mockResolvedValue({ id: "u9", onboardingCompletedAt: new Date(), name: "Chosen", avatar: "chosen.png", emailVerified: true });
     userUpsert.mockResolvedValue({ id: "u9", onboardingCompletedAt: new Date() });
     const result = await syncOAuthUser({ email: "g@b.com", name: "Google", image: "http://x/p.png" });
     expect(result).toMatchObject({ userId: "u9", created: false, needsOnboarding: false });
@@ -91,13 +91,28 @@ describe("syncOAuthUser", () => {
     });
   });
 
-  it("기존 유저의 passwordHash를 덮어쓰지 않음 (update 절에 passwordHash 부재)", async () => {
+  it("신규 유저 생성 시 passwordHash를 쓰지 않음", async () => {
     userFindUnique.mockResolvedValue(null);
     userUpsert.mockResolvedValue({ id: "u1", onboardingCompletedAt: null });
     await syncOAuthUser({ email: "a@b.com", name: "A", image: null });
     const arg = userUpsert.mock.calls[0][0];
     expect(arg.update).not.toHaveProperty("passwordHash");
     expect(arg.create).not.toHaveProperty("passwordHash");
+  });
+
+  it("인증 전 계정이 Google 로그인으로 승격되면 남아 있던 passwordHash를 폐기한다", async () => {
+    // 누구든 남의 이메일로 가입 요청만 하면 비밀번호가 남을 수 있다 — 인증받지 못한 비밀번호는 신뢰하지 않는다.
+    userFindUnique.mockResolvedValue({ id: "u3", onboardingCompletedAt: null, name: "victim", avatar: null, emailVerified: false });
+    userUpsert.mockResolvedValue({ id: "u3", onboardingCompletedAt: null });
+    await syncOAuthUser({ email: "victim@b.com", name: "Victim", image: null });
+    expect(userUpsert.mock.calls[0][0].update).toEqual({ emailVerified: true, passwordHash: null });
+  });
+
+  it("이미 인증된 계정의 passwordHash는 보존한다", async () => {
+    userFindUnique.mockResolvedValue({ id: "u4", onboardingCompletedAt: null, name: "Real", avatar: null, emailVerified: true });
+    userUpsert.mockResolvedValue({ id: "u4", onboardingCompletedAt: null });
+    await syncOAuthUser({ email: "real@b.com", name: "Real", image: null });
+    expect(userUpsert.mock.calls[0][0].update).toEqual({ emailVerified: true });
   });
 
   it("이름 미제공 시 이메일을 이름으로 사용(create)", async () => {

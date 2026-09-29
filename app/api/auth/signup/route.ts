@@ -62,16 +62,17 @@ export async function POST(req: NextRequest) {
     await prisma.$transaction([
       prisma.user.upsert({
         where: { email },
+        // passwordHash는 User가 아니라 VerificationCode에만 둔다. 인증 전 계정에 비밀번호를
+        // 심어두면, 그 이메일 주인이 나중에 Google로 로그인해 emailVerified가 true가 되는 순간
+        // 남의 비밀번호로 로그인할 수 있게 된다(계정 탈취). 인증 성공 시 verify가 심는다.
         update: {
           // 재가입 시 handle은 변경하지 않음 — 기존 핸들 보존
           name,
-          passwordHash,
           emailVerified: false,
         },
         create: {
           email,
           name,
-          passwordHash,
           emailVerified: false,
         },
       }),
