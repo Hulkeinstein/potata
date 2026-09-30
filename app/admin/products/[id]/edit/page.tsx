@@ -1,3 +1,6 @@
+// 관리자 화면은 항상 현재 DB 상태를 보여야 한다 — 정적 생성되면 수치가 빌드 시점에 굳어 재배포 전까지 갱신되지 않는다.
+export const dynamic = "force-dynamic";
+
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
