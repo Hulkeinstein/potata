@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/admin";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const CONTENT_MAX_LENGTH = 2000;
 
@@ -34,15 +35,15 @@ export async function POST(
     const { id: productId, questionId } = await params;
 
     // 4. JSON body 파싱
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
+    const parsedBody = await readJsonBody<unknown>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
       return NextResponse.json(
         { success: false, error: "Invalid request body" },
         { status: 400 },
       );
     }
+    const body = parsedBody.value;
 
     // 5. content 검증
     const { content } = body as Record<string, unknown>;

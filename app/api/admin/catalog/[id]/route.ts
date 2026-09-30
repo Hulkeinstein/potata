@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
 import { getAdminProduct, updateAdminProduct } from "@/lib/admin-product-catalog";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const CATEGORIES = new Set(["Outer", "Top", "Bottom", "Dress", "Acc", "Shoes"]);
 
@@ -46,7 +47,9 @@ export async function GET(_: NextRequest, context: RouteContext<"/api/admin/cata
 
 export async function PATCH(request: NextRequest, context: RouteContext<"/api/admin/catalog/[id]">) {
   if (!(await requireAdmin())) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-  const input = parseUpdate(await request.json());
+  const parsedBody = await readJsonBody<unknown>(request);
+  if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+  const input = parseUpdate(parsedBody.value);
   if (!input) return NextResponse.json({ success: false, error: "Invalid product update" }, { status: 400 });
   const { id } = await context.params;
   const product = await updateAdminProduct(id, input);

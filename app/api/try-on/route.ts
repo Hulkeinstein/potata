@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Replicate from "replicate";
 import { auth } from "@/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
@@ -9,6 +10,9 @@ const replicate = new Replicate({
 
 // 허용 입력: data:image/* 또는 https URL만. base64 폭주 방지 상한(~10MB).
 const MAX_IMAGE_LENGTH = 10 * 1024 * 1024;
+// 본문에는 userImage·productImage 두 장이 base64 data URL 그대로 실린다.
+// 기본 JSON 상한(100KB)을 쓰면 실제 사진은 전부 막히므로, 장당 상한에서 직접 파생한다.
+const MAX_TRY_ON_BODY_BYTES = 2 * MAX_IMAGE_LENGTH + 64 * 1024;
 function isAllowedImage(value: unknown): value is string {
     return (
         typeof value === "string" &&
@@ -46,10 +50,12 @@ export async function POST(req: Request) {
             );
         }
 
-        const body = (await req.json()) as {
+        const parsedBody = await readJsonBody<{
             userImage?: string;
             productImage?: string;
-        };
+        }>(req, MAX_TRY_ON_BODY_BYTES);
+        if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+        const body = parsedBody.value;
         const { userImage, productImage } = body;
 
         if (!userImage || !productImage) {

@@ -5,6 +5,7 @@ import { extractErrorMessage } from "@/lib/auth";
 import type { CreateOrderRequest, OrderItemSnapshot } from "@/types";
 import type { Prisma } from "@prisma/client";
 import { findPurchasableVariant, getVariantLabel } from "@/lib/product-variants";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 // 무료 배송 임계값(AED) — 서버 단일 진실 원천, 클라이언트 입력 불신
 const FREE_SHIPPING_THRESHOLD = 50000;
@@ -29,7 +30,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. body 파싱 및 기본 구조 검증
-    const body = (await req.json()) as Partial<CreateOrderRequest>;
+    const parsedBody = await readJsonBody<Partial<CreateOrderRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const { items, idempotencyKey } = body;
 
     if (!Array.isArray(items) || items.length === 0) {

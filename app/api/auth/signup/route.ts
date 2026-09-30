@@ -13,6 +13,7 @@ import { isLegalSignupReady } from "@/lib/onboarding";
 import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import type { SignupRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const SIGNUP_WINDOW_MS = 10 * 60 * 1000;
 const SIGNUP_LIMIT_PER_EMAIL = 5;
@@ -20,7 +21,9 @@ const SIGNUP_LIMIT_PER_IP = 20;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<SignupRequest>;
+    const parsedBody = await readJsonBody<Partial<SignupRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const email = normalizeEmail(body.email ?? "");
     const password = body.password?.trim() ?? "";
     const name = email.split("@", 1)[0] ?? "New member";

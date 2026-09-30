@@ -7,10 +7,13 @@ import {
 } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { VerifyEmailRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<VerifyEmailRequest>;
+    const parsedBody = await readJsonBody<Partial<VerifyEmailRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const email = normalizeEmail(body.email ?? "");
     const code = body.code?.trim() ?? "";
 

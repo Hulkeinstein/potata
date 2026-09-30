@@ -65,6 +65,7 @@ function adminPostReq(
   }
   return {
     url: "http://localhost/api/admin/products",
+    headers: new Headers(),
     formData: async () => fd,
   } as unknown as NextRequest;
 }
