@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { OOTDCommentItem } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const PAGE_SIZE = 20;
 const publicAuthor = { id: true, name: true, handle: true, avatar: true } as const;
@@ -82,12 +83,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
     const { id: postId } = await params;
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
+    const parsedBody = await readJsonBody<unknown>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
       return NextResponse.json({ success: false, error: "Invalid request body" }, { status: 400 });
     }
+    const body = parsedBody.value;
     if (typeof body !== "object" || body === null || !("content" in body) || typeof body.content !== "string") {
       return NextResponse.json({ success: false, error: "댓글 내용을 입력해 주세요." }, { status: 400 });
     }

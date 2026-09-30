@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/admin";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 // PATCH: 답변 수정 — admin only
 // 보안 게이트: auth(401) → isAdmin(403) → 답변 존재(404) → content 검증(400) → update → revalidate → 200
@@ -32,15 +33,15 @@ export async function PATCH(
     const { id: productId, questionId, answerId } = await params;
 
     // 4. body JSON 파싱 — 실패 시 400
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
+    const parsedBody = await readJsonBody<unknown>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
       return NextResponse.json(
         { success: false, error: "Invalid request body" },
         { status: 400 },
       );
     }
+    const body = parsedBody.value;
 
     // 5. content 검증 — string·trim·≤2000
     const content =

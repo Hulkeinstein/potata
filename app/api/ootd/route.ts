@@ -6,6 +6,7 @@ import { extractErrorMessage } from "@/lib/auth";
 import { uploadOOTDImage, removeOOTDImagesByUrl } from "@/lib/supabase-storage";
 import { sniffImage } from "@/lib/image-validation";
 import type { OOTDFeedData, OOTDFeedItem } from "@/types";
+import { isDeclaredBodyTooLarge, multipartBodyLimit, requestBodyErrorResponse } from "@/lib/request-body";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -30,6 +31,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
     const userId = session.user.id;
+
+    // multipart 본문은 파싱이 곧 버퍼링이므로, 선언 크기를 파싱 전에 먼저 본다.
+    if (isDeclaredBodyTooLarge(req, multipartBodyLimit(MAX_SIZE, MAX_IMAGES))) {
+      return requestBodyErrorResponse("too_large");
+    }
 
     const form = await req.formData();
     const files = form.getAll("images").filter((f): f is File => f instanceof File);

@@ -114,6 +114,7 @@ function postReq(
   keepImageUrls.forEach((u) => fd.append("keepImageUrls", u));
   return {
     url: "http://localhost/api/products/p1/reviews",
+    headers: new Headers(),
     formData: async () => fd,
   } as unknown as NextRequest;
 }
