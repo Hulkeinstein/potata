@@ -35,5 +35,6 @@ export default auth((req) => {
 });
 
 export const config = {
+  runtime: "nodejs",
   matcher: ["/mypage/:path*", "/liked/:path*", "/notifications/:path*", "/admin", "/admin/:path*"],
 };
