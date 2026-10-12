@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { LEGAL_LOCALE, LEGAL_VERSION, isLegalSignupReady, parseOnboardingInput } from "@/lib/onboarding";
 import { prisma } from "@/lib/prisma";
+import { isPrelaunchOnboardingUser } from "@/lib/prelaunch-access";
 import { toUserSettingsData } from "@/lib/user-settings";
 
 export async function GET() {
@@ -31,9 +32,10 @@ export async function PATCH(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const current = await tx.user.findUnique({ where: { id: session.user.id }, select: { handle: true, onboardingCompletedAt: true } });
+      const current = await tx.user.findUnique({ where: { id: session.user.id }, select: { handle: true, onboardingCompletedAt: true, email: true, emailVerified: true } });
       if (!current) throw new Error("ACCOUNT_NOT_FOUND");
       if (current.onboardingCompletedAt) return { handle: current.handle, completed: true };
+      if (!isLegalSignupReady() && !isPrelaunchOnboardingUser(current)) throw new Error("SIGNUP_NOT_READY");
       if (current.handle && current.handle !== parsed.value.handle) throw new Error("HANDLE_LOCKED");
 
       const definitions = [
@@ -58,6 +60,7 @@ export async function PATCH(request: Request) {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
+    if (error instanceof Error && error.message === "SIGNUP_NOT_READY") return NextResponse.json({ success: false, error: "공개 가입 준비 중입니다." }, { status: 403 });
     if (error instanceof Error && error.message === "ACCOUNT_NOT_FOUND") return NextResponse.json({ success: false, error: "계정을 찾을 수 없습니다." }, { status: 404 });
     if (error instanceof Error && error.message === "HANDLE_LOCKED") return NextResponse.json({ success: false, error: "이미 설정한 핸들은 변경할 수 없습니다." }, { status: 409 });
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return NextResponse.json({ success: false, error: "이미 사용 중인 핸들입니다." }, { status: 409 });

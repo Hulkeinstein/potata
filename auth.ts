@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import { authorizeCredentials, syncOAuthUser } from "@/lib/auth-providers";
 import { prisma } from "@/lib/prisma";
 import { isLegalSignupReady } from "@/lib/onboarding";
+import { isPrelaunchOnboardingUser } from "@/lib/prelaunch-access";
 import { readGoogleAuthTime } from "@/lib/benefits/google-reauth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -34,15 +35,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     // Google 로그인: DB에 유저를 멱등 동기화(없으면 생성, 있으면 갱신).
     // 동일 이메일의 기존 이메일가입 유저가 있으면 그 레코드로 자연 연결됨.
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         if (!user.email) return false;
         if (!isLegalSignupReady()) {
           const existing = await prisma.user.findUnique({
             where: { email: user.email },
-            select: { onboardingCompletedAt: true },
+            select: { onboardingCompletedAt: true, email: true, emailVerified: true },
           });
-          if (!existing?.onboardingCompletedAt) return false;
+          if (!existing?.onboardingCompletedAt &&
+              !(profile?.email_verified === true && isPrelaunchOnboardingUser(existing))) return false;
         }
         await syncOAuthUser({
           email: user.email,
