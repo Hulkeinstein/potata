@@ -79,10 +79,12 @@ export async function POST(req: NextRequest) {
 
     const emailResult = await sendVerificationEmail(email, user.name, newCode);
     if (!emailResult.success) {
+      // 발송 실패 원문(설정 힌트·Resend 오류, sandbox 에선 소유자 이메일)은 서버 로그에만 남긴다
+      console.error("[resend] Failed to send email:", emailResult.error);
       return NextResponse.json(
         {
           success: false,
-          error: emailResult.error ?? "이메일 재발송에 실패했습니다. 다시 시도해주세요.",
+          error: "이메일 재발송에 실패했습니다. 다시 시도해주세요.",
         },
         { status: 500 }
       );

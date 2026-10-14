@@ -92,6 +92,20 @@ describe("POST /api/try-on", () => {
         expect(runMock).not.toHaveBeenCalled();
     });
 
+    it("Replicate 오류 원문(요청 URL·응답 본문)은 500 응답에 싣지 않는다", async () => {
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+        authMock.mockResolvedValue({ user: { id: "u1" } });
+        runMock.mockRejectedValue(new Error("Request to https://api.replicate.com/v1/predictions failed with status 402: {\"detail\":\"billing\"}"));
+
+        const res = await POST(makeReq(VALID));
+        const text = await res.text();
+
+        expect(res.status).toBe(500);
+        expect(JSON.parse(text)).toEqual({ error: "서버 오류가 발생했습니다." });
+        expect(text).not.toContain("replicate.com");
+        consoleError.mockRestore();
+    });
+
     it("인증 + 유효 입력이면 Replicate 호출 후 output 반환", async () => {
         authMock.mockResolvedValue({ user: { id: "u1" } });
         runMock.mockResolvedValue("https://result/image.png");

@@ -165,7 +165,7 @@ describe("/api/cart", () => {
     authMock.mockResolvedValue({ user: { id: "u1" } });
     ciFindMany.mockRejectedValue(new Error('relation "CartItem" does not exist at db.internal:5432'));
 
-    const res = await GET(makeReq("GET"));
+    const res = await GET();
     const text = await res.text();
 
     expect(res.status).toBe(500);

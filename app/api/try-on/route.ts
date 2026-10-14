@@ -3,6 +3,7 @@ import Replicate from "replicate";
 import { auth } from "@/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 
 const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
@@ -91,15 +92,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ output });
     } catch (error: unknown) {
+        // Replicate 오류 원문(요청 URL·모델 버전·응답 본문)은 서버 로그에만 남긴다
         console.error("Try-On Error:", error);
-        return NextResponse.json(
-            {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to generate try-on image",
-            },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: INTERNAL_ERROR_MESSAGE }, { status: 500 });
     }
 }

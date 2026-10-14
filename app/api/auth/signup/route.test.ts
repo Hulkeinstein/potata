@@ -73,6 +73,21 @@ describe("signup route", () => {
     expect(sendEmail).toHaveBeenCalledTimes(20);
   });
 
+  it("메일 발송 실패 원문(설정 힌트·운영자 이메일)은 응답에 싣지 않는다", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    sendEmail.mockResolvedValue({ success: false, error: "RESEND_API_KEY 가 설정되지 않았습니다. 서버 설정을 확인해주세요. owner@potata.example" });
+
+    const response = await POST(signupRequest());
+    const text = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(JSON.parse(text)).toEqual({ success: false, error: "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요." });
+    expect(text).not.toContain("RESEND_API_KEY");
+    expect(text).not.toContain("owner@potata.example");
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
   it("내부 오류는 익명 요청자에게 500 공통 문구로만 응답한다", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
     userFindUnique.mockRejectedValue(new Error("Can't reach database server at `db.internal:5432`"));
