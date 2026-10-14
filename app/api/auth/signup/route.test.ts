@@ -73,6 +73,19 @@ describe("signup route", () => {
     expect(sendEmail).toHaveBeenCalledTimes(20);
   });
 
+  it("내부 오류는 익명 요청자에게 500 공통 문구로만 응답한다", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    userFindUnique.mockRejectedValue(new Error("Can't reach database server at `db.internal:5432`"));
+
+    const response = await POST(signupRequest());
+    const text = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(JSON.parse(text)).toEqual({ success: false, error: "서버 오류가 발생했습니다." });
+    expect(text).not.toContain("db.internal");
+    consoleError.mockRestore();
+  });
+
   it("이미 인증된 이메일이면 409로 막고 아무것도 쓰지 않는다", async () => {
     userFindUnique.mockResolvedValue({ id: "u1", emailVerified: true });
 

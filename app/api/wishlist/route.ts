@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import type { WishlistToggleRequest } from "@/types";
 import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
@@ -28,7 +28,7 @@ export async function GET() {
   } catch (error) {
     console.error("[wishlist GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[wishlist POST] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

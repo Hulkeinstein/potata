@@ -11,18 +11,3 @@ export const MAX_VERIFICATION_ATTEMPTS = 5;
 export function generateVerificationCode(): string {
   return randomInt(100000, 1000000).toString();
 }
-
-export function extractErrorMessage(
-  error: unknown,
-  fallback = "서버 오류가 발생했습니다."
-): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
-
-  if (typeof error === "string" && error.trim()) {
-    return error;
-  }
-
-  return fallback;
-}

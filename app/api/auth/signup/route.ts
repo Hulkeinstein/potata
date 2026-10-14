@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { sendVerificationEmail } from "@/lib/email";
 import {
-  extractErrorMessage,
   generateVerificationCode,
   isValidEmail,
   VERIFICATION_EXPIRY_MS,
   MIN_PASSWORD_LENGTH,
   normalizeEmail,
 } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { isLegalSignupReady } from "@/lib/onboarding";
 import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
     }
     console.error("[signup] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

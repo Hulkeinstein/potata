@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
 
 const VIEW_WINDOW_MS = 10 * 60 * 1000;
@@ -34,6 +34,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return NextResponse.json({ success: false }, { status: 200 });
     }
     console.error("[products view POST] error:", error);
-    return NextResponse.json({ success: false, error: extractErrorMessage(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: INTERNAL_ERROR_MESSAGE }, { status: 500 });
   }
 }

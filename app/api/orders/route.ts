@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import type { CreateOrderRequest, OrderItemSnapshot } from "@/types";
 import type { Prisma } from "@prisma/client";
 import { findPurchasableVariant, getVariantLabel } from "@/lib/product-variants";
@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof InventoryUnavailableError) return NextResponse.json({ success: false, error: error.message }, { status: error.status });
     console.error("[orders POST] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }
@@ -158,7 +158,7 @@ export async function GET() {
   } catch (error) {
     console.error("[orders GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

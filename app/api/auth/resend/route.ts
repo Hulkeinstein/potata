@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendVerificationEmail } from "@/lib/email";
 import {
-  extractErrorMessage,
   generateVerificationCode,
   normalizeEmail,
   VERIFICATION_EXPIRY_MS,
 } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
 import type { ResendVerificationRequest } from "@/types";
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[resend] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

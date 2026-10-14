@@ -20,8 +20,6 @@ vi.mock("next/cache", () => ({
   revalidateTag: mockRevalidateTag,
 }));
 
-// extractErrorMessage는 순수 함수라 실제 구현 사용(mock 불필요)
-
 import { POST } from "./route";
 import { resetRateLimitsForTests } from "@/lib/rate-limit";
 

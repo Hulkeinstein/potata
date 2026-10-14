@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateHandle } from "@/lib/handle";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 /**
@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest) {
     }
     console.error("[me/handle PATCH] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }
@@ -105,7 +105,7 @@ export async function GET(_req: NextRequest) {
   } catch (error) {
     console.error("[me/handle GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }
