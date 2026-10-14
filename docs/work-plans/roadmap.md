@@ -132,9 +132,9 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 | 6 | **P1 / High** | 가입 법률 문서 확정 | 현재 Terms·Privacy·Marketing 본문은 명시적인 비운영 초안이라 실제 사용자 동의를 받을 수 없다. | UAE 법인·라이선스·주소, processor·retention, Arabic/English 문안 및 UAE 자격 법률 검토 승인 | 외부 결정 대기 |
 | 7 | **P1 / High** | 운영 DB 안전 검증 | schema 이력을 잘못 등록하면 운영 데이터 손상이나 drift 은폐가 발생할 수 있다. | 대상 DB 식별, timestamped backup, restore rehearsal, read-only drift empty 확인 후 별도 baseline resolve 승인 | 외부 승인 대기 |
 | 8 | **P1 / High** | 배포 환경 연결 | 로컬 성공만으로 OAuth·Storage·메일·AI가 운영 환경에서 동작한다고 볼 수 없다. | Vercel env, Supabase host/bucket, Google 운영 callback, Resend, Replicate 대상과 권한 확인 | 외부 설정 대기 |
-| 9 | **P1 / High** | 배포 smoke test | 공개 환경의 callback·cookie·DB·권한 경계를 최종 확인해야 한다. | 승인된 배포에서 signup → verify → login → 상품 탐색 → 관리자 권한 흐름 PASS | 배포 후 |
+| 9 | **P1 / High** | 배포 smoke test | 공개 환경의 callback·cookie·DB·권한 경계를 최종 확인해야 한다. | 승인된 배포에서 signup → verify → login → 상품 탐색 → 관리자 권한 흐름 PASS | 배포 후 — 비로그인 자동 점검 `npm run smoke -- <주소>`(7항목, `docs/work-plans/health-smoke.md`) 준비 완료, 로그인 흐름은 수동 |
 | 10 | **P2 / Medium** | 상품 실데이터 입력 | 현재 외부 이미지와 치수 누락은 고객 신뢰와 Size Guide 노출을 제한한다. | 사용 권한이 있는 대표 이미지와 권위 있는 상품별 cm 치수 입력; 없는 경우 CTA 숨김 유지 | 데이터 대기 |
-| 11 | **P2 / Medium** | 운영 관찰성·정책 보완 | 운영 어시스턴트는 감지·안내만 하므로 실서비스 장애 대응 기준이 별도로 필요하다. | 오류·메일·재고·문의 모니터링, 감사 로그 보존, 담당자와 대응 기준 문서화 | 출시 전 계획 |
+| 11 | **P2 / Medium** | 운영 관찰성·정책 보완 | 운영 어시스턴트는 감지·안내만 하므로 실서비스 장애 대응 기준이 별도로 필요하다. | 오류·메일·재고·문의 모니터링, 감사 로그 보존, 담당자와 대응 기준 문서화 | 출시 전 계획 — DB 포함 상태 확인 `GET /api/health`(200/503) 추가, uptime 모니터 연결·오류 모니터링(Sentry 등)은 미정 |
 | 12 | **P3 / Deferred** | 결제·혜택 사용·매출 분석 | 실거래 정책 없이 연결하면 주문·재고·환불·정산 불일치 위험이 크다. | 상품·물량, provider, 통화·세금, webhook, 환불·정산 정책 확정 후 별도 계획 승인 | 보류 |
 
 ### 지금 실행할 작업
