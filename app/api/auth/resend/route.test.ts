@@ -47,6 +47,20 @@ describe("resend route", () => {
     expect(codeCreate.mock.calls[0][0].data.passwordHash).toBe("$2a$10$fromEntry");
   });
 
+  it("같은 발신지(IP)에서 주소를 바꿔 가며 재발송해도 20회를 넘으면 429로 막는다", async () => {
+    userFindUnique.mockResolvedValue({ name: "pending", emailVerified: false, passwordHash: null });
+    codeFindFirst.mockResolvedValue({ name: "pending", passwordHash: "$2a$10$fromEntry" });
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      expect((await POST(resendRequest(`pending${attempt}@example.com`))).status).toBe(200);
+    }
+
+    const blocked = await POST(resendRequest("pending20@example.com"));
+
+    expect(blocked.status).toBe(429);
+    expect(sendEmail).toHaveBeenCalledTimes(20);
+  });
+
   it("같은 주소로 반복 재발송하면 429로 막는다", async () => {
     userFindUnique.mockResolvedValue({ name: "pending", emailVerified: false, passwordHash: null });
     codeFindFirst.mockResolvedValue({ name: "pending", passwordHash: "$2a$10$fromEntry" });

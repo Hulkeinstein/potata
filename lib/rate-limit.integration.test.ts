@@ -10,7 +10,7 @@ const usedKeys: string[] = [];
 
 afterEach(async () => {
   if (!runIntegration || usedKeys.length === 0) return;
-  const stored = await Promise.all(usedKeys.splice(0).map(rateLimitStorageKey));
+  const stored = await Promise.all(usedKeys.splice(0).map((key) => rateLimitStorageKey(key)));
   await prisma.rateLimitBucket.deleteMany({ where: { key: { in: stored } } });
 });
 

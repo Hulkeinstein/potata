@@ -16,9 +16,9 @@
 
 ## 설계
 
-1. **테이블** `RateLimitBucket { key, windowStart, count, expiresAt }`, PK `(key, windowStart)`, index `expiresAt`. migration 에 RLS enable 포함. `key` 는 원래 키(이메일·IP 포함)의 SHA-256 hex 만 저장한다(구현 중 추가 — 메모리 저장소와 달리 DB 에 남으므로 개인정보 보관 방지).
+1. **테이블** `RateLimitBucket { key, windowStart, count, expiresAt }`, PK `(key, windowStart)`, index `expiresAt`. migration 에 RLS enable 포함. `key` 는 원래 키(이메일·IP 포함)의 서버 비밀값(AUTH_SECRET/NEXTAUTH_SECRET) HMAC-SHA256 hex 만 저장한다(구현 중 추가 — 메모리 저장소와 달리 DB 에 남으므로 개인정보 보관 방지, 비밀값 없는 해시는 사전 대입으로 되돌릴 수 있어 적대 검증 지적으로 HMAC 로 바꿈).
 2. **고정 시간창 카운터**: `INSERT … ON CONFLICT (key, windowStart) DO UPDATE SET count = count + 1 RETURNING count` 한 문장으로 원자적으로 센다. `count ≤ limit` 이면 허용. 시간창이 끝나면 자동으로 풀린다. 기존 sliding window 대비 경계에서 최대 2배 burst 가 가능하다(1차 방어선 용도라 허용).
-3. **만료 정리**: 인스턴스마다 최대 10분에 한 번 `expiresAt < now` 행 삭제(await). 프로젝트 규칙상 중첩 try-catch 를 두지 않으므로 정리 실패도 DB 오류와 같이 throw 한다(DB 장애면 upsert 가 먼저 실패한다).
+3. **만료 정리**: 인스턴스마다 최대 10분에 한 번 `expiresAt < now` 행을 최대 1000행씩 삭제(await). 프로젝트 규칙상 중첩 try-catch 를 두지 않으므로 정리 실패도 DB 오류와 같이 throw 한다(DB 장애면 upsert 가 먼저 실패한다).
 4. **저장소 선택은 명시적 env** `RATE_LIMIT_STORE=db|memory`.
    - `db`: 공유 DB 카운터. DB 오류는 그대로 throw(fail-closed → 해당 요청 500).
    - `memory` 또는 미설정: 현재 동작 유지. production 에서 미설정이면 최초 1회 `console.warn` 으로 "인스턴스당 한도" 임을 남긴다.
@@ -49,3 +49,9 @@
 
 - Prisma schema 변경(🟡 Ask First): `RateLimitBucket` 테이블 추가
 - 미설정 기본값을 `memory`(권장, 위 이유) 로 둘지
+
+## 적대 검증 기록 (2026-10-14, 1회차 · 렌즈 security·data·logic · 변이 2)
+
+- 확정 결함 0 · 경미 4. 반영 3: 키를 비밀값 HMAC 로(비밀값 없는 SHA-256 은 IP·이메일 사전 대입 가능) · 가입·재발송에서 IP 버킷을 먼저 검사(IP 초과 발신지가 이메일별 행을 계속 만드는 것 차단) · 만료 정리 1000행 상한.
+- 미반영 1: DB 오류 메시지가 익명 500 응답 본문에 실린다 — 기존 route 공통 오류 처리(최상위 catch 의 메시지 반환) 문제라 이 작업 범위 밖. 별도 과제.
+- 변이에서 이빨 없던 가드: 가입·재발송 IP 한도(await 삭제·한도 20→2000 이 테스트를 통과) → IP 한도 429 테스트 2건 추가. 버킷 prefix 충돌은 테스트가 잡지 못하지만 현재 prefix 간 충돌 없음(렌즈 확인).

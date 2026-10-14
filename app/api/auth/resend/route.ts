@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
 
     // 재발송은 곧바로 메일 발송으로 이어진다 — 주소당·발신지당 횟수를 제한한다.
     if (
-      !(await consumeRateLimit(`resend:email:${email}`, RESEND_LIMIT_PER_EMAIL, RESEND_WINDOW_MS)) ||
-      !(await consumeRateLimit(`resend:ip:${clientIp(req)}`, RESEND_LIMIT_PER_IP, RESEND_WINDOW_MS))
+      // IP 를 먼저 본다 — IP 한도를 넘은 발신지가 새 이메일마다 email 버킷(DB 행)을 만들지 못하게 한다.
+      !(await consumeRateLimit(`resend:ip:${clientIp(req)}`, RESEND_LIMIT_PER_IP, RESEND_WINDOW_MS)) ||
+      !(await consumeRateLimit(`resend:email:${email}`, RESEND_LIMIT_PER_EMAIL, RESEND_WINDOW_MS))
     ) {
       return NextResponse.json(
         { success: false, error: "요청이 너무 잦습니다. 잠시 후 다시 시도해주세요." },

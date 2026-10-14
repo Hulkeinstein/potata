@@ -44,16 +44,26 @@ export function createMemoryRateLimitStore(now: () => number = () => Date.now())
 }
 
 const CLEANUP_INTERVAL_MS = 10 * 60 * 1000;
+const CLEANUP_BATCH = 1000; // 정리 1회의 상한 — 요청 경로에서 도는 DELETE 가 길어지지 않게 한다
 
-type RateLimitDb = Pick<PrismaClient, "$queryRaw" | "rateLimitBucket">;
+type RateLimitDb = Pick<PrismaClient, "$queryRaw" | "$executeRaw">;
+
+function rateLimitSecret(): string {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret) throw new Error("RATE_LIMIT_STORE=db 는 AUTH_SECRET(또는 NEXTAUTH_SECRET)이 필요합니다");
+  return secret;
+}
 
 /**
- * DB 에 저장하는 키. 원래 키에는 이메일·IP 가 들어 있으므로 SHA-256 hex 로만 남긴다(개인정보를 DB 에 두지 않는다).
+ * DB 에 저장하는 키. 원래 키에는 이메일·IP 가 들어 있으므로 서버 비밀값 HMAC-SHA256 hex 로만 남긴다.
+ * 비밀값 없는 해시는 IPv4·흔한 이메일을 사전 대입으로 되돌릴 수 있어 개인정보 보호가 되지 않는다(적대 검증 지적).
  * Web Crypto 를 쓴다 — middleware 가 Edge 로 돌아가도 깨지지 않게 node:crypto 를 피한다.
  */
-export async function rateLimitStorageKey(key: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
-  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+export async function rateLimitStorageKey(key: string, secret: string = rateLimitSecret()): Promise<string> {
+  const encoder = new TextEncoder();
+  const hmacKey = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", hmacKey, encoder.encode(key));
+  return Array.from(new Uint8Array(signature), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -76,10 +86,13 @@ export function createDbRateLimitStore(db: RateLimitDb = prisma, now: () => numb
       const count = rows[0]?.count;
       if (typeof count !== "number") throw new Error("RateLimitBucket upsert가 count를 돌려주지 않았습니다");
 
-      // 만료 행 정리 — 인스턴스마다 최대 10분에 한 번. 실패하면 위 DB 오류와 같이 throw 한다.
+      // 만료 행 정리 — 인스턴스마다 최대 10분에 한 번, 한 번에 최대 CLEANUP_BATCH 행. 실패하면 위 DB 오류와 같이 throw 한다.
       if (at - lastCleanupAt >= CLEANUP_INTERVAL_MS) {
         lastCleanupAt = at;
-        await db.rateLimitBucket.deleteMany({ where: { expiresAt: { lt: new Date(at) } } });
+        await db.$executeRaw`
+          DELETE FROM "RateLimitBucket" WHERE ctid IN (
+            SELECT ctid FROM "RateLimitBucket" WHERE "expiresAt" < ${new Date(at)} LIMIT ${CLEANUP_BATCH}
+          )`;
       }
       return count <= limit;
     },
