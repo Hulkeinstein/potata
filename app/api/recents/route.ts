@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractErrorMessage } from "@/lib/auth";
 import type { RecentAddRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const MAX_RECENTS = 20;
 
@@ -49,7 +50,9 @@ export async function POST(req: NextRequest) {
     }
     const userId = session.user.id;
 
-    const body = (await req.json()) as Partial<RecentAddRequest>;
+    const parsedBody = await readJsonBody<Partial<RecentAddRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const productId = typeof body.productId === "string" ? body.productId.trim() : "";
     if (!productId) {
       return NextResponse.json(

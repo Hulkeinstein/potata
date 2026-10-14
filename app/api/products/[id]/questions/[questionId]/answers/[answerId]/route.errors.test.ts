@@ -21,10 +21,11 @@ import { DELETE, PATCH } from "./route";
 import type { NextRequest } from "next/server";
 
 function makePatchReq(): NextRequest {
-  return {
-    url: "http://localhost/api/products/1/questions/q1/answers/a1",
-    json: async () => ({ content: "수정 내용" }),
-  } as unknown as NextRequest;
+  return new Request("http://localhost/api/products/1/questions/q1/answers/a1", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ content: "수정 내용" }),
+  }) as unknown as NextRequest;
 }
 
 function makeDeleteReq(): NextRequest {

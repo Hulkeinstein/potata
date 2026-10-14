@@ -38,6 +38,17 @@ describe("POST /api/try-on", () => {
         process.env.REPLICATE_API_TOKEN = "test-token";
     });
 
+    // 클라이언트는 사진을 base64 data URL로 통째로 실어 보낸다(TryOnContent의 canvas.toDataURL).
+    // 본문 크기 상한을 JSON 기본값(100KB)으로 두면 실제 사진이 전부 413으로 막힌다 — 그 회귀를 막는다.
+    it("실제 사진 크기(약 1.2MB)의 본문도 413으로 막히지 않는다", async () => {
+        authMock.mockResolvedValue({ user: { id: "u1" } });
+        const realisticPhoto = `data:image/jpeg;base64,${"A".repeat(1_200_000)}`;
+
+        const res = await POST(makeReq({ ...VALID, userImage: realisticPhoto }));
+
+        expect(res.status).not.toBe(413);
+    });
+
     it("미인증 요청은 401이며 Replicate를 호출하지 않는다 (크레딧 보호)", async () => {
         authMock.mockResolvedValue(null);
 

@@ -8,6 +8,7 @@ import { parseSizeGuide } from "@/lib/size-guide";
 import { uploadProductImage, removeProductImagesByUrl } from "@/lib/supabase-storage";
 import type { CreateProductInput, AdminProductCreateData } from "@/types";
 import type { ProductVariantStockInput } from "@/types";
+import { isDeclaredBodyTooLarge, multipartBodyLimit, requestBodyErrorResponse } from "@/lib/request-body";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -68,6 +69,11 @@ export async function POST(req: NextRequest) {
         { success: false, error: "관리자 권한이 필요합니다." },
         { status: 403 }
       );
+    }
+
+    // multipart 본문은 파싱이 곧 버퍼링이므로, 선언 크기를 파싱 전에 먼저 본다.
+    if (isDeclaredBodyTooLarge(req, multipartBodyLimit(MAX_SIZE, 1))) {
+      return requestBodyErrorResponse("too_large");
     }
 
     // 2. 폼 데이터 파싱

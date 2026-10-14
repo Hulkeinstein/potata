@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { parseUserSettingsPatch, toUserSettingsData } from "@/lib/user-settings";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 export async function GET() {
   try {
@@ -22,13 +23,12 @@ export async function PATCH(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) throw error;
+    const parsedBody = await readJsonBody<unknown>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
       return NextResponse.json({ success: false, error: "JSON 형식이 올바르지 않습니다." }, { status: 400 });
     }
+    const body = parsedBody.value;
     const parsed = parseUserSettingsPatch(body);
     if (!parsed.ok) return NextResponse.json({ success: false, error: parsed.error }, { status: 400 });
     const settings = await prisma.userSettings.upsert({

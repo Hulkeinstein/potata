@@ -9,6 +9,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
 import type { ResendVerificationRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const RESEND_WINDOW_MS = 10 * 60 * 1000;
 const RESEND_LIMIT_PER_EMAIL = 3;
@@ -16,7 +17,9 @@ const RESEND_LIMIT_PER_IP = 20;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<ResendVerificationRequest>;
+    const parsedBody = await readJsonBody<Partial<ResendVerificationRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const email = normalizeEmail(body.email ?? "");
 
     if (!email) {

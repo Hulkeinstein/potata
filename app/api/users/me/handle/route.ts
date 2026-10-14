@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateHandle } from "@/lib/handle";
 import { extractErrorMessage } from "@/lib/auth";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 /**
  * PATCH /api/users/me/handle
@@ -21,7 +22,9 @@ export async function PATCH(req: NextRequest) {
     // actor는 반드시 session에서만 — body의 userId를 절대 읽지 않음(IDOR 방어)
     const actorId = session.user.id;
 
-    const body = (await req.json()) as { handle?: unknown };
+    const parsedBody = await readJsonBody<{ handle?: unknown }>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
 
     // 서버 재검증 — 클라이언트 입력 신뢰 금지(Zero Trust)
     const validation = validateHandle(String(body.handle ?? ""));

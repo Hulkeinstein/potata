@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { removeProfileImagesByUrl, uploadProfileImage } from "@/lib/supabase-storage";
+import { isDeclaredBodyTooLarge, multipartBodyLimit, requestBodyErrorResponse } from "@/lib/request-body";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const MAX_AVATAR_PIXELS = 25_000_000;
@@ -91,6 +92,11 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return errorResponse("Unauthorized", 401);
   if (!consumeUploadAttempt(session.user.id)) return errorResponse("사진 업로드 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", 429);
+
+  // multipart 본문은 파싱이 곧 버퍼링이므로, 선언 크기를 파싱 전에 먼저 본다.
+  if (isDeclaredBodyTooLarge(request, multipartBodyLimit(MAX_AVATAR_BYTES, 1))) {
+    return requestBodyErrorResponse("too_large");
+  }
 
   let body: FormData;
   try {

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { extractErrorMessage } from "@/lib/auth";
 import { removeOOTDImagesByUrl } from "@/lib/supabase-storage";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 // PATCH: 본인 게시물 caption만 수정. 이미지·상품 태그·작성자는 변경하지 않는다.
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -12,15 +13,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
+    const parsedBody = await readJsonBody<unknown>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
       return NextResponse.json(
         { success: false, error: "Invalid request body" },
         { status: 400 }
       );
     }
+    const body = parsedBody.value;
 
     const caption =
       typeof body === "object" && body !== null && "caption" in body

@@ -45,10 +45,11 @@ import type { NextRequest } from "next/server";
 
 // JSON body fake req 헬퍼
 function makePostReq(body: unknown): NextRequest {
-  return {
-    url: "http://localhost/api/products/1/questions/q1/answers",
-    json: async () => body,
-  } as unknown as NextRequest;
+  return new Request("http://localhost/api/products/1/questions/q1/answers", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }) as unknown as NextRequest;
 }
 
 // 공통 params 헬퍼

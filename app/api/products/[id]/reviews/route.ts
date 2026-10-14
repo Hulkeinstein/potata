@@ -13,6 +13,7 @@ import {
   MAX_REVIEW_IMAGES,
   sniffImage,
 } from "@/lib/image-validation";
+import { isDeclaredBodyTooLarge, multipartBodyLimit, requestBodyErrorResponse } from "@/lib/request-body";
 
 // sniffed ext → MIME 매핑 (공격자 제어 file.type 대신 바이트 기반 ext에서 파생)
 const EXT_TO_MIME: Record<"jpg" | "png" | "webp", string> = {
@@ -102,6 +103,11 @@ export async function POST(
 
     // 2. URL [id] param — body productId 불신
     const { id: productId } = await params;
+
+    // multipart 본문은 파싱이 곧 버퍼링이므로, 선언 크기를 파싱 전에 먼저 본다.
+    if (isDeclaredBodyTooLarge(request, multipartBodyLimit(MAX_IMAGE_SIZE, MAX_REVIEW_IMAGES))) {
+      return requestBodyErrorResponse("too_large");
+    }
 
     // 3. multipart 파싱 — 파싱 실패 시 400
     let form: FormData;
