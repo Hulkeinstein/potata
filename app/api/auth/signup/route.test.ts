@@ -62,6 +62,17 @@ describe("signup route", () => {
     expect(sendEmail).toHaveBeenCalledTimes(5);
   });
 
+  it("같은 발신지(IP)에서 주소를 바꿔 가며 보내도 20회를 넘으면 429로 막는다", async () => {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      expect((await POST(signupRequest(`user${attempt}@example.com`))).status).toBe(200);
+    }
+
+    const blocked = await POST(signupRequest("user20@example.com"));
+
+    expect(blocked.status).toBe(429);
+    expect(sendEmail).toHaveBeenCalledTimes(20);
+  });
+
   it("이미 인증된 이메일이면 409로 막고 아무것도 쓰지 않는다", async () => {
     userFindUnique.mockResolvedValue({ id: "u1", emailVerified: true });
 

@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         }
 
         // 호출 1건이 곧 비용이다 — 가입만 하면 무한히 돌릴 수 있으면 안 된다.
-        if (!consumeRateLimit(`try-on:${session.user.id}`, TRY_ON_LIMIT_PER_USER, TRY_ON_WINDOW_MS)) {
+        if (!(await consumeRateLimit(`try-on:${session.user.id}`, TRY_ON_LIMIT_PER_USER, TRY_ON_WINDOW_MS))) {
             return NextResponse.json(
                 { error: "AI 피팅 요청이 너무 잦습니다. 잠시 후 다시 시도해주세요." },
                 { status: 429 }
