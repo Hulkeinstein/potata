@@ -1,6 +1,6 @@
 # 공유 rate limit — 인스턴스 간 공통 요청 제한
 
-> 상태: 승인(2026-10-14, 기본값 memory) · 진행 중 · 작성 2026-10-14 · 브랜치 `feat/shared-rate-limit` · 로드맵 "품질·보안 기준선 — production 공개 전 shared rate limit 적용(release gate)"
+> 상태: 완료(2026-10-14) · 승인(기본값 memory) · 작성 2026-10-14 · 브랜치 `feat/shared-rate-limit` · 로드맵 "품질·보안 기준선 — production 공개 전 shared rate limit 적용(release gate)"
 
 ## Objective
 
@@ -66,4 +66,11 @@
 
 - 결함 0. 변이 생존 1: 정리 표시(`lastCleanupAt = at`)를 DELETE 뒤로 옮기면 동시 호출이 DELETE 를 겹쳐 띄우는데 테스트가 못 잡음 → 동시 호출 테스트 추가(변이 시 실패 확인). 런타임 코드 변경 0줄.
 - 종료 판정: 3회차 런타임 0줄 + 이후 바뀐 파일이 테스트·문서뿐이라 4회차 대상 0건 → 연속 2회차 0줄로 종료(`~/.claude/rules/coding-workflow.md` ①·⑦).
-- 남은 미검증: 실제 Postgres 에서의 동작(ON CONFLICT 카운트·동시성, ctid DELETE … LIMIT 반환 행 수). `lib/rate-limit.integration.test.ts` 는 DB 가 없어 아직 실행하지 못함.
+- 실제 Postgres 검증(2026-10-14, 사용자 승인으로 임시 postgres:16 컨테이너): 새 DB 에 migration 18개 적용 · schema drift 0 · RLS 켜짐 확인 · `RUN_INTEGRATION=1` 통합 테스트 3건 통과(인스턴스 간 한도 공유 · 동시 20건 중 정확히 5건 허용 · 만료 1500행이 1000→500 으로 이어서 정리). 컨테이너는 삭제했다.
+
+## 후속 과제 (이 PR 범위 밖)
+
+- 운영 적용: 운영 DB 에 migration 적용 → Vercel env `RATE_LIMIT_STORE=db` → 재배포 → 가입·로그인 smoke (사용자 승인 필요).
+- view·login 키 앞에 IP 버킷 추가(공격자가 임의 키로 행을 만드는 속도 제한).
+- route 최상위 catch 가 DB 오류 메시지를 익명 500 응답 본문에 싣는 공통 패턴 정리.
+- CI 에서 `lib/rate-limit.integration.test.ts` 실행(`RUN_INTEGRATION=1`, CI 변경 승인 필요).
