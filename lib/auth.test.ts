@@ -3,7 +3,6 @@ import {
   normalizeEmail,
   normalizeName,
   isValidEmail,
-  extractErrorMessage,
   MIN_PASSWORD_LENGTH,
   VERIFICATION_CODE_LENGTH,
 } from "@/lib/auth";
@@ -42,24 +41,6 @@ describe("isValidEmail", () => {
 
   it("공백 포함 대문자 이메일도 정규화 후 검증한다", () => {
     expect(isValidEmail("  TEST@EXAMPLE.COM  ")).toBe(true);
-  });
-});
-
-describe("extractErrorMessage", () => {
-  it("Error 인스턴스에서 메시지를 추출한다", () => {
-    expect(extractErrorMessage(new Error("오류 발생"))).toBe("오류 발생");
-  });
-
-  it("문자열 에러를 그대로 반환한다", () => {
-    expect(extractErrorMessage("문자열 오류")).toBe("문자열 오류");
-  });
-
-  it("알 수 없는 에러는 fallback 메시지를 반환한다", () => {
-    expect(extractErrorMessage(null)).toBe("서버 오류가 발생했습니다.");
-  });
-
-  it("커스텀 fallback 메시지를 사용한다", () => {
-    expect(extractErrorMessage(undefined, "커스텀 오류")).toBe("커스텀 오류");
   });
 });
 

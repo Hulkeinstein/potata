@@ -3,7 +3,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { recomputeProductRating, hasPurchasedProduct } from "@/lib/reviews";
 import type { Review, ReviewListResponse } from "@/types";
 import { isAdmin } from "@/lib/admin";
@@ -76,7 +76,7 @@ export async function GET(
   } catch (error) {
     console.error("[reviews GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }
@@ -294,7 +294,7 @@ export async function POST(
       );
     }
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }
@@ -364,7 +364,7 @@ export async function DELETE(
       );
     }
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { removeOOTDImagesByUrl } from "@/lib/supabase-storage";
 import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
@@ -109,6 +109,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ success: true, data: { id } }, { status: 200 });
   } catch (error) {
     console.error("[ootd DELETE] error:", error);
-    return NextResponse.json({ success: false, error: extractErrorMessage(error) }, { status: 500 });
+    return NextResponse.json({ success: false, error: INTERNAL_ERROR_MESSAGE }, { status: 500 });
   }
 }

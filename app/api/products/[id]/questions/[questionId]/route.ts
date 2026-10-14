@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/admin";
 import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
@@ -90,7 +90,7 @@ export async function PATCH(
   } catch (error) {
     console.error("[questions PATCH] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }
@@ -150,7 +150,7 @@ export async function DELETE(
   } catch (error) {
     console.error("[questions DELETE] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }

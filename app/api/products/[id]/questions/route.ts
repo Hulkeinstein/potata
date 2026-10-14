@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/admin";
 import type { Question, Answer, QuestionListResponse, CreateQuestionRequest } from "@/types";
 import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
@@ -67,7 +67,7 @@ export async function GET(
   } catch (error) {
     console.error("[questions GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }
@@ -147,7 +147,7 @@ export async function POST(
   } catch (error) {
     console.error("[questions POST] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }
