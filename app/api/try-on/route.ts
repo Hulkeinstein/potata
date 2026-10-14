@@ -92,8 +92,11 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ output });
     } catch (error: unknown) {
-        // Replicate 오류 원문(요청 URL·모델 버전·응답 본문)은 서버 로그에만 남긴다
-        console.error("Try-On Error:", error);
+        // 응답에는 공통 문구만 싣는다. 로그에도 오류 객체를 통째로 남기지 않는다 — Replicate ApiError 는
+        // 요청(Request, Authorization: Bearer 토큰 포함)을 들고 있어 그대로 찍으면 토큰이 로그에 남을 수 있다.
+        console.error("Try-On Error:", error instanceof Error
+            ? { name: error.name, message: error.message, status: (error as { response?: { status?: number } }).response?.status }
+            : String(error));
         return NextResponse.json({ error: INTERNAL_ERROR_MESSAGE }, { status: 500 });
     }
 }

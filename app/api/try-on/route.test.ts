@@ -106,6 +106,25 @@ describe("POST /api/try-on", () => {
         consoleError.mockRestore();
     });
 
+    it("Replicate 오류의 요청 정보(Bearer 토큰)를 서버 로그에 통째로 남기지 않는다", async () => {
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+        authMock.mockResolvedValue({ user: { id: "u1" } });
+        const apiError = Object.assign(new Error("Request failed with status 500"), {
+            request: new Request("https://api.replicate.com/v1/predictions", { headers: { Authorization: "Bearer r8_secret_token" } }),
+            response: new Response("{}", { status: 500 }),
+        });
+        runMock.mockRejectedValue(apiError);
+
+        const res = await POST(makeReq(VALID));
+
+        expect(res.status).toBe(500);
+        const logged = consoleError.mock.calls.map((args) => JSON.stringify(args)).join(" ");
+        expect(logged).not.toContain("r8_secret_token");
+        expect(logged).toContain("Request failed with status 500");
+        expect(consoleError).toHaveBeenCalledWith("Try-On Error:", { name: "Error", message: "Request failed with status 500", status: 500 });
+        consoleError.mockRestore();
+    });
+
     it("인증 + 유효 입력이면 Replicate 호출 후 output 반환", async () => {
         authMock.mockResolvedValue({ user: { id: "u1" } });
         runMock.mockResolvedValue("https://result/image.png");
