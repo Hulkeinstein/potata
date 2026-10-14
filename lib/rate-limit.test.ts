@@ -104,6 +104,20 @@ describe("createDbRateLimitStore", () => {
     expect(cleanup).toHaveBeenCalledTimes(3);
   });
 
+  it("정리 DELETE 가 진행 중이면 같은 인스턴스의 동시 호출은 정리를 겹쳐 띄우지 않는다", async () => {
+    const { db, cleanup } = fakeDb();
+    let release!: (rows: number) => void;
+    cleanup.mockImplementationOnce(() => new Promise<number>((resolve) => { release = resolve; }));
+    const store = createDbRateLimitStore(db, () => 1_000_000);
+
+    const pending = Array.from({ length: 5 }, () => store.consume("k", 10, 1000));
+    await vi.waitFor(() => expect(cleanup).toHaveBeenCalledTimes(1));
+    release(0);
+    await Promise.all(pending);
+
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
   it("비밀값이 없으면 키를 만들지 않고 throw 한다", async () => {
     vi.stubEnv("NEXTAUTH_SECRET", "");
     vi.stubEnv("AUTH_SECRET", "");
