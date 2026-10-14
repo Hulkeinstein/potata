@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
 
     // 인증메일은 실제로 발송되므로(비용·수신자 피해) 주소당·발신지당 횟수를 제한한다.
     if (
-      !consumeRateLimit(`signup:email:${email}`, SIGNUP_LIMIT_PER_EMAIL, SIGNUP_WINDOW_MS) ||
-      !consumeRateLimit(`signup:ip:${clientIp(req)}`, SIGNUP_LIMIT_PER_IP, SIGNUP_WINDOW_MS)
+      !(await consumeRateLimit(`signup:email:${email}`, SIGNUP_LIMIT_PER_EMAIL, SIGNUP_WINDOW_MS)) ||
+      !(await consumeRateLimit(`signup:ip:${clientIp(req)}`, SIGNUP_LIMIT_PER_IP, SIGNUP_WINDOW_MS))
     ) {
       return NextResponse.json(
         { success: false, error: "요청이 너무 잦습니다. 잠시 후 다시 시도해주세요." },

@@ -16,7 +16,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // 조회수는 HOT 배지 순위를 정한다 — 한 발신지가 특정 상품을 반복 호출해 순위를 만들지 못하게 막는다.
     // 막힌 호출도 클라이언트는 fire-and-forget이므로 200으로 조용히 넘긴다.
-    if (!consumeRateLimit(`view:${id}:${clientIp(req)}`, VIEW_LIMIT_PER_IP, VIEW_WINDOW_MS)) {
+    if (!(await consumeRateLimit(`view:${id}:${clientIp(req)}`, VIEW_LIMIT_PER_IP, VIEW_WINDOW_MS))) {
       return NextResponse.json({ success: false }, { status: 200 });
     }
 

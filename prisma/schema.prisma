@@ -554,3 +554,15 @@ model Answer {
 
   @@index([questionId])
 }
+
+// 공유 rate limit 카운터(고정 시간창). 키·시간창마다 한 행 — INSERT … ON CONFLICT 로 원자적으로 센다.
+// RATE_LIMIT_STORE=db 일 때만 쓰인다. 만료 행은 lib/rate-limit.ts 가 주기적으로 지운다.
+model RateLimitBucket {
+  key         String
+  windowStart DateTime
+  count       Int
+  expiresAt   DateTime
+
+  @@id([key, windowStart])
+  @@index([expiresAt]) // 만료 정리
+}

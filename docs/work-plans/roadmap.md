@@ -104,7 +104,7 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 
 - Prisma migration은 baseline 이후 additive 방식으로 관리한다. 운영 DB에는 별도 승인 없이 migrate/resolve/db push를 실행하지 않는다.
 - 관리자 페이지와 write API는 세션과 `ADMIN_EMAILS` 권한을 서버에서 다시 검증한다.
-- 프로필 이미지 업로드는 실제 decode·단일-frame·해상도 검증과 canonical 재인코딩을 수행한다. 현재 in-memory 사용자별 제한은 local/pre-launch 경계이며, production 공개 전 shared/upstream rate limit 적용을 release gate로 둔다.
+- 프로필 이미지 업로드는 실제 decode·단일-frame·해상도 검증과 canonical 재인코딩을 수행한다. 요청 제한(가입·재발송·로그인·조회수·AI 착용·프로필 사진)은 `RATE_LIMIT_STORE=db` 일 때 인스턴스 공유 DB 카운터로 동작한다(`docs/work-plans/shared-rate-limit.md`). 미설정 기본값은 인스턴스당 메모리 한도이므로, production 공개 전 운영 DB migration 적용 → env `db` 전환을 release gate로 둔다.
 - 쿠폰·포인트·재고 변경은 actor-bound idempotency, 감사 사유, transaction, 안전한 오류 반환을 사용한다.
 - 로컬 기준 TypeScript, lint, Vitest, production build와 주요 desktop/mobile 브라우저 흐름을 반복 검증했다.
 - 현재 프로젝트 전체에 기존 lint warning 3개가 남아 있으나 오류는 없다.
