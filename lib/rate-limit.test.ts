@@ -89,6 +89,21 @@ describe("createDbRateLimitStore", () => {
     expect(cleanup).toHaveBeenCalledTimes(2);
   });
 
+  it("정리가 상한(1000행)을 꽉 채우면 다음 호출에서 바로 이어서 지운다", async () => {
+    const now = 1_000_000;
+    const { db, cleanup } = fakeDb();
+    cleanup.mockResolvedValueOnce(1000).mockResolvedValueOnce(1000).mockResolvedValueOnce(3);
+    const store = createDbRateLimitStore(db, () => now);
+
+    await store.consume("k", 5, 1000);
+    await store.consume("k", 5, 1000);
+    await store.consume("k", 5, 1000);
+    expect(cleanup).toHaveBeenCalledTimes(3);
+
+    await store.consume("k", 5, 1000); // 마지막 정리가 3행이라 밀린 행이 없다 → 10분 동안 쉰다
+    expect(cleanup).toHaveBeenCalledTimes(3);
+  });
+
   it("비밀값이 없으면 키를 만들지 않고 throw 한다", async () => {
     vi.stubEnv("NEXTAUTH_SECRET", "");
     vi.stubEnv("AUTH_SECRET", "");

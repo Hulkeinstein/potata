@@ -87,12 +87,15 @@ export function createDbRateLimitStore(db: RateLimitDb = prisma, now: () => numb
       if (typeof count !== "number") throw new Error("RateLimitBucket upsert가 count를 돌려주지 않았습니다");
 
       // 만료 행 정리 — 인스턴스마다 최대 10분에 한 번, 한 번에 최대 CLEANUP_BATCH 행. 실패하면 위 DB 오류와 같이 throw 한다.
+      // 상한을 꽉 채워 지웠으면 아직 남은 만료 행이 있다는 뜻이므로 다음 호출에서 바로 이어서 지운다.
+      // (요청 1건은 행을 최대 1개 만들고 정리 1회는 최대 CLEANUP_BATCH 행을 지우므로 밀린 행은 반드시 줄어든다 — 적대 검증 2회차)
       if (at - lastCleanupAt >= CLEANUP_INTERVAL_MS) {
         lastCleanupAt = at;
-        await db.$executeRaw`
+        const deleted = await db.$executeRaw`
           DELETE FROM "RateLimitBucket" WHERE ctid IN (
             SELECT ctid FROM "RateLimitBucket" WHERE "expiresAt" < ${new Date(at)} LIMIT ${CLEANUP_BATCH}
           )`;
+        if (deleted >= CLEANUP_BATCH) lastCleanupAt = 0;
       }
       return count <= limit;
     },
