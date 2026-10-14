@@ -74,6 +74,8 @@ npm run build
 - GitHub main branch ruleset이 PR CI 성공을 merge 조건으로 요구하는지 확인
 - production 배포 후 signup → 실제 email verify → login smoke test 승인
 
+배포 직후 비로그인 자동 점검은 `npm run smoke -- <배포 주소>` 로 돌립니다. 홈 보안 헤더·Shop·DB 상태 확인(`/api/health`)·로그인 공급자·비로그인 차단(장바구니 401, 관리자·마이페이지 → `/login`) 7항목을 읽기 전용 GET 으로만 확인하고, 하나라도 실패하면 exit 1 로 끝납니다. 로그인이 필요한 흐름(가입·인증·로그인)은 위 항목처럼 수동으로 확인합니다. 외부 uptime 모니터는 `GET /api/health`(정상 200, DB 오류 503)를 보면 됩니다.
+
 기존 운영 DB baseline 절차의 SSoT는 [ADR-009](docs/adr/adr-009-prisma-migration-baseline.md)입니다. 과거 문서의 `db push` 지시는 운영 적용 근거로 사용하지 않습니다. 운영 DB에는 baseline SQL을 실행하지 않으며 backup/restore, read-only history/drift 증거를 검토한 뒤 별도 승인된 `migrate resolve --applied`만 수행합니다.
 
 실제 운영 비밀값과 외부 서비스 설정은 Vercel/Supabase/Resend/Google/Replicate 대시보드에서 관리합니다. 이 로컬 점검은 외부 설정이 완료되었다는 증거가 아닙니다.

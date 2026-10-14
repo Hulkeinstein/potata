@@ -28,7 +28,9 @@ function statusIs(expected: number) {
 async function redirectsToLogin(res: Response): Promise<string | null> {
   const location = res.headers.get("location") ?? "";
   if (res.status < 300 || res.status >= 400) return `status ${res.status} (기대 3xx redirect)`;
-  return location.includes("/login") ? null : `redirect 대상이 /login 이 아님: ${location || "(없음)"}`;
+  // 경로가 정확히 /login 이어야 한다(`/login-x` 같은 비슷한 경로는 통과시키지 않는다). 상대 주소는 요청 주소 기준으로 푼다.
+  const target = location ? new URL(location, res.url || "http://placeholder.invalid").pathname : "";
+  return target === "/login" ? null : `redirect 대상이 /login 이 아님: ${location || "(없음)"}`;
 }
 
 export const CHECKS: Check[] = [
@@ -82,10 +84,12 @@ export async function runSmoke(baseUrl: string, fetchImpl: FetchLike = fetch): P
   return results;
 }
 
+const USAGE = "사용법: npm run smoke -- <배포 주소>   (예: npm run smoke -- http://localhost:3000)";
+
 async function main(): Promise<number> {
   const baseUrl = process.argv[2] ?? process.env.SMOKE_BASE_URL;
-  if (!baseUrl) {
-    console.error("사용법: npm run smoke -- <배포 주소>   (예: npm run smoke -- http://localhost:3000)");
+  if (!baseUrl || !URL.canParse(baseUrl)) {
+    console.error(baseUrl ? `주소 형식이 올바르지 않습니다: ${baseUrl}\n${USAGE}` : USAGE);
     return 2;
   }
   const results = await runSmoke(baseUrl);

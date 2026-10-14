@@ -33,6 +33,12 @@ function healthySite(overrides: Record<string, () => Response> = {}) {
   return { fetchImpl, requested };
 }
 
+describe("CHECKS", () => {
+  it("계획(docs/work-plans/health-smoke.md)의 7항목을 그대로 점검한다 — 점검이 조용히 빠지지 않게", () => {
+    expect(CHECKS.map((check) => check.path)).toEqual(["/", "/shop", "/api/health", "/api/auth/providers", "/api/cart", "/admin", "/mypage"]);
+  });
+});
+
 describe("runSmoke", () => {
   it("정상 배포면 모든 점검이 통과하고, 읽기 전용 GET 을 redirect 따라가지 않고 보낸다", async () => {
     const { fetchImpl, requested } = healthySite();
@@ -50,12 +56,14 @@ describe("runSmoke", () => {
 
   it.each([
     ["보안 헤더가 빠지면", "/", () => new Response("<html></html>", { status: 200 }), "보안 헤더"],
+    ["Shop 이 500 이면", "/shop", () => new Response("error", { status: 500 }), "status 500"],
     ["상태 확인이 503 이면", "/api/health", () => Response.json({ ok: false, db: "error" }, { status: 503 }), "503"],
     ["상태 확인이 ok:false 면", "/api/health", () => Response.json({ ok: false }), "ok !== true"],
     ["Google 공급자가 없으면", "/api/auth/providers", () => Response.json({ credentials: {} }), "google"],
     ["장바구니가 비로그인에 열려 있으면", "/api/cart", () => Response.json([], { status: 200 }), "status 200"],
     ["관리자가 redirect 없이 열리면", "/admin", () => new Response("admin", { status: 200 }), "3xx"],
     ["마이페이지가 로그인 아닌 곳으로 보내면", "/mypage", () => new Response(null, { status: 307, headers: { location: "/" } }), "/login"],
+    ["마이페이지가 /login 과 비슷한 다른 경로로 보내면", "/mypage", () => new Response(null, { status: 307, headers: { location: "https://x.test/login-x" } }), "/login"],
   ])("%s 해당 점검만 FAIL 이다", async (_label, path, response, reason) => {
     const { fetchImpl } = healthySite({ [path]: response });
 

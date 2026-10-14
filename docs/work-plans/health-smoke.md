@@ -19,7 +19,7 @@
    - 성공: `200 { ok: true, db: "ok" }`
    - 실패: `503 { ok: false, db: "error" }`. 오류 내용은 응답에 싣지 않고 서버 로그에만 남긴다.
    - 캐시하지 않는다(`dynamic = "force-dynamic"`, `Cache-Control: no-store`). 인증·개인정보·환경값을 응답에 넣지 않는다.
-2. **`npm run smoke -- <BASE_URL>`** (`scripts/smoke.mjs`, 의존성 없음, 읽기 전용 GET 만):
+2. **`npm run smoke -- <BASE_URL>`** (`scripts/smoke.ts` 한 파일, 의존성 없음, 읽기 전용 GET 만). 구현 중 `.mjs` 두 파일 대신 TypeScript 한 파일로 바꿨다 — Node 22 가 type stripping 으로 바로 실행하고(추가 의존성 0), 타입 검사와 테스트 import 를 그대로 쓸 수 있다:
    | 점검 | 기대 |
    |---|---|
    | `/` | 200 + 보안 헤더 5종 |
@@ -30,7 +30,7 @@
    | `/admin`, `/mypage` (비로그인) | 로그인 화면으로 redirect |
 
    항목별 PASS/FAIL 표를 출력하고, 하나라도 실패하면 exit 1 로 끝난다. 데이터를 쓰거나 로그인하지 않는다.
-3. 점검 목록은 `scripts/smoke-checks.mjs` 한 곳에 두고, 단위 테스트는 가짜 fetch 로 판정 로직만 검증한다.
+3. 점검 목록은 `scripts/smoke.ts` 의 `CHECKS` 한 곳에 두고, 단위 테스트는 가짜 fetch 로 판정 로직만 검증한다.
 
 ## Success Criteria
 
@@ -41,7 +41,7 @@
 ## Tasks
 
 - T1 `app/api/health/route.ts` + 테스트 · 약 50줄 · low
-- T2 `scripts/smoke.mjs` · `scripts/smoke-checks.mjs` + 테스트 · `package.json` scripts 1줄 · 약 120줄 · low
+- T2 `scripts/smoke.ts` + 테스트 · `package.json` scripts 1줄 · 약 120줄 · low
 - T3 로드맵 9·11번과 README/운영 문서에 사용법 1단락
 
 ## 결정 필요
