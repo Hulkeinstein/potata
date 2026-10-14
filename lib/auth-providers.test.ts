@@ -20,8 +20,14 @@ vi.mock("bcryptjs", () => ({
   default: { compare: bcryptCompare },
 }));
 
+// 실제 요청 제한은 그대로 쓰고 호출(키·순서)만 기록한다 — 키 이름과 "발신지 버킷 먼저" 순서를 테스트로 고정하기 위해
+vi.mock("@/lib/rate-limit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/rate-limit")>();
+  return { ...actual, consumeRateLimit: vi.fn(actual.consumeRateLimit) };
+});
+
 import { authorizeCredentials, syncOAuthUser } from "./auth-providers";
-import { resetRateLimitsForTests } from "./rate-limit";
+import { consumeRateLimit, resetRateLimitsForTests } from "./rate-limit";
 
 const verifiedUser = {
   id: "u1",
@@ -108,6 +114,29 @@ describe("authorizeCredentials 발신지 횟수 제한", () => {
 
     expect(await authorizeCredentials("a@b.com", "correct", IP)).toBeNull();
     expect(bcryptCompare).toHaveBeenCalledTimes(50); // 51번째는 비교 자체를 하지 않는다
+  });
+
+  it("발신지 버킷(login-ip:)을 먼저 보고, 막히면 이메일 버킷은 건드리지 않는다", async () => {
+    userFindUnique.mockResolvedValue(verifiedUser);
+    bcryptCompare.mockResolvedValue(false);
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      await authorizeCredentials(`user${attempt}@b.com`, "wrong", IP);
+    }
+    vi.mocked(consumeRateLimit).mockClear();
+
+    expect(await authorizeCredentials("fresh@b.com", "pw", IP)).toBeNull();
+
+    // 발신지가 막혔으므로 이메일 버킷은 호출조차 되지 않는다(순서가 바뀌면 fresh@b.com 버킷이 소비된다)
+    expect(vi.mocked(consumeRateLimit).mock.calls).toEqual([[`login-ip:${IP}`, 50, 10 * 60 * 1000]]);
+  });
+
+  it("허용될 때는 발신지 → 이메일 순서로 정확한 키를 쓴다", async () => {
+    userFindUnique.mockResolvedValue(verifiedUser);
+    bcryptCompare.mockResolvedValue(true);
+
+    await authorizeCredentials("a@b.com", "correct", IP);
+
+    expect(vi.mocked(consumeRateLimit).mock.calls.map(([key]) => key)).toEqual([`login-ip:${IP}`, "login:a@b.com"]);
   });
 
   it("다른 발신지의 정상 로그인은 막지 않는다", async () => {
