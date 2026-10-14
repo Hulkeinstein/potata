@@ -37,40 +37,42 @@ beforeEach(() => {
   resetRateLimitsForTests();
 });
 
+const IP = "203.0.113.7";
+
 describe("authorizeCredentials", () => {
   it("이메일/비밀번호 누락 시 null", async () => {
-    expect(await authorizeCredentials(undefined, "pw")).toBeNull();
-    expect(await authorizeCredentials("a@b.com", undefined)).toBeNull();
+    expect(await authorizeCredentials(undefined, "pw", IP)).toBeNull();
+    expect(await authorizeCredentials("a@b.com", undefined, IP)).toBeNull();
     expect(userFindUnique).not.toHaveBeenCalled();
   });
 
   it("존재하지 않는 유저면 null", async () => {
     userFindUnique.mockResolvedValue(null);
-    expect(await authorizeCredentials("a@b.com", "pw")).toBeNull();
+    expect(await authorizeCredentials("a@b.com", "pw", IP)).toBeNull();
   });
 
   it("미인증(emailVerified=false) 유저면 null", async () => {
     userFindUnique.mockResolvedValue({ ...verifiedUser, emailVerified: false });
-    expect(await authorizeCredentials("a@b.com", "pw")).toBeNull();
+    expect(await authorizeCredentials("a@b.com", "pw", IP)).toBeNull();
     expect(bcryptCompare).not.toHaveBeenCalled();
   });
 
   it("OAuth 전용 유저(passwordHash=null)는 비밀번호 로그인 불가 → null", async () => {
     userFindUnique.mockResolvedValue({ ...verifiedUser, passwordHash: null });
-    expect(await authorizeCredentials("a@b.com", "pw")).toBeNull();
+    expect(await authorizeCredentials("a@b.com", "pw", IP)).toBeNull();
     expect(bcryptCompare).not.toHaveBeenCalled(); // null 가드가 compare 호출 차단
   });
 
   it("비밀번호 불일치면 null", async () => {
     userFindUnique.mockResolvedValue(verifiedUser);
     bcryptCompare.mockResolvedValue(false);
-    expect(await authorizeCredentials("a@b.com", "wrong")).toBeNull();
+    expect(await authorizeCredentials("a@b.com", "wrong", IP)).toBeNull();
   });
 
   it("정상 자격증명이면 user 반환", async () => {
     userFindUnique.mockResolvedValue(verifiedUser);
     bcryptCompare.mockResolvedValue(true);
-    expect(await authorizeCredentials("a@b.com", "pw")).toEqual({
+    expect(await authorizeCredentials("a@b.com", "pw", IP)).toEqual({
       id: "u1",
       email: "a@b.com",
       name: "A",
@@ -85,12 +87,38 @@ describe("authorizeCredentials 횟수 제한", () => {
     bcryptCompare.mockResolvedValue(false);
 
     for (let attempt = 0; attempt < 10; attempt += 1) {
-      expect(await authorizeCredentials("a@b.com", "wrong")).toBeNull();
+      expect(await authorizeCredentials("a@b.com", "wrong", IP)).toBeNull();
     }
     bcryptCompare.mockResolvedValue(true);
 
-    expect(await authorizeCredentials("a@b.com", "correct")).toBeNull();
+    expect(await authorizeCredentials("a@b.com", "correct", IP)).toBeNull();
     expect(bcryptCompare).toHaveBeenCalledTimes(10); // 11번째는 비교 자체를 하지 않는다
+  });
+});
+
+describe("authorizeCredentials 발신지 횟수 제한", () => {
+  it("같은 발신지에서 이메일을 바꿔 가며 시도해도 50회를 넘으면 비밀번호 확인 없이 막는다", async () => {
+    userFindUnique.mockResolvedValue(verifiedUser);
+    bcryptCompare.mockResolvedValue(false);
+
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      expect(await authorizeCredentials(`user${attempt}@b.com`, "wrong", IP)).toBeNull();
+    }
+    bcryptCompare.mockResolvedValue(true);
+
+    expect(await authorizeCredentials("a@b.com", "correct", IP)).toBeNull();
+    expect(bcryptCompare).toHaveBeenCalledTimes(50); // 51번째는 비교 자체를 하지 않는다
+  });
+
+  it("다른 발신지의 정상 로그인은 막지 않는다", async () => {
+    userFindUnique.mockResolvedValue(verifiedUser);
+    bcryptCompare.mockResolvedValue(false);
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      await authorizeCredentials(`user${attempt}@b.com`, "wrong", IP);
+    }
+    bcryptCompare.mockResolvedValue(true);
+
+    expect(await authorizeCredentials("a@b.com", "correct", "198.51.100.9")).not.toBeNull();
   });
 });
 

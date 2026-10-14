@@ -54,6 +54,19 @@ describe("POST /api/products/[id]/view", () => {
     expect(await blocked.json()).toEqual({ success: false });
   });
 
+  it("같은 발신지가 상품 id 를 바꿔 가며 호출해도 10분 120회를 넘으면 더 올리지 않는다", async () => {
+    productUpdate.mockResolvedValue({ id: "p", viewCount: 1 });
+
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      await POST(makeReq(), makeParams(`p${attempt}`));
+    }
+    const blocked = await POST(makeReq(), makeParams("p120"));
+
+    expect(productUpdate).toHaveBeenCalledTimes(120);
+    expect(blocked.status).toBe(200);
+    expect(await blocked.json()).toEqual({ success: false });
+  });
+
   it("유효한 id → prisma.product.update(increment:1) 1회 호출, revalidateTag('hot-products') 1회 호출, 200 {success:true}", async () => {
     productUpdate.mockResolvedValue({ id: "p1", viewCount: 1 });
 
