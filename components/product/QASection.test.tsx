@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
 /**
  * QASection 컴포넌트 테스트
  * - 케이스 ①: 질문 목록 GET mock(질문 1건+답변 1건) → 질문/답변 content + userName 렌더
@@ -8,7 +10,7 @@
  *
  * @testing-library/jest-dom 미설치 환경이므로 순수 vitest expect 사용
  */
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render as renderView, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { QASection } from "./QASection";
 
@@ -277,3 +279,4 @@ describe("QASection", () => {
     expect(screen.queryByRole("button", { name: /답변하기/ })).toBeNull();
   });
 });
+function render(children: ReactNode) { return renderView(<LanguageProvider initialLocale="ko">{children}</LanguageProvider>); }

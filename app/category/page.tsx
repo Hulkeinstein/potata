@@ -6,6 +6,8 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { categoryLabel, discoveryMessages } from '@/lib/i18n/discovery-messages';
 
 // Mock Data aligned with CATEGORIES
 const CATEGORIES_DATA = [
@@ -75,6 +77,8 @@ const CATEGORIES_DATA = [
 ];
 
 export default function CategoryPage() {
+    const { locale } = useLanguage();
+    const t = discoveryMessages[locale];
     const [selectedCategory, setSelectedCategory] = useState(CATEGORIES_DATA[0]);
 
     return (
@@ -93,7 +97,7 @@ export default function CategoryPage() {
                                 : "text-zinc-400 hover:text-white hover:bg-white/5"
                         )}
                     >
-                        <span className="font-bold text-lg">{cat.name}</span>
+                        <span className="font-bold text-lg">{categoryLabel(cat.name, locale)}</span>
                         {selectedCategory.id === cat.id && <ChevronRight className="w-5 h-5" />}
                     </button>
                 ))}
@@ -113,10 +117,10 @@ export default function CategoryPage() {
                         )}
                     >
                         <div className="relative w-8 h-8 rounded-full overflow-hidden opacity-80">
-                            <Image src={cat.image} alt={cat.name} fill className="object-cover" />
+                            <Image src={cat.image} alt={categoryLabel(cat.name, locale)} fill className="object-cover" />
                         </div>
                         <span className={cn("text-xs font-medium", selectedCategory.id === cat.id && "font-bold")}>
-                            {cat.name}
+                            {categoryLabel(cat.name, locale)}
                         </span>
                     </button>
                 ))}
@@ -134,7 +138,7 @@ export default function CategoryPage() {
                 >
                     <Image
                         src={selectedCategory.image}
-                        alt={selectedCategory.name}
+                        alt={categoryLabel(selectedCategory.name, locale)}
                         fill
                         className="object-cover opacity-60"
                         priority
@@ -142,14 +146,14 @@ export default function CategoryPage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent flex items-center px-8">
                         <div>
                             <h1 className="text-3xl md:text-5xl font-black font-outfit text-white uppercase italic tracking-tighter">
-                                {selectedCategory.name}
+                                {categoryLabel(selectedCategory.name, locale)}
                             </h1>
-                            <p className="text-zinc-400 text-sm mt-1">Explore the latest {selectedCategory.name} trends</p>
+                            <p className="text-zinc-400 text-sm mt-1">{t.explore} {categoryLabel(selectedCategory.name, locale)} {t.trends}</p>
                             <Link
                                 href={`/shop?category=${selectedCategory.id}`}
                                 className="mt-4 inline-flex items-center gap-1 rounded-full bg-brand-neon px-4 py-2 text-sm font-bold text-black"
                             >
-                                Shop {selectedCategory.name} <ArrowRight className="h-4 w-4" />
+                                {t.shop} {categoryLabel(selectedCategory.name, locale)} <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
                     </div>
@@ -168,13 +172,13 @@ export default function CategoryPage() {
                             >
                                 <Image
                                     src={sub.image}
-                                    alt={sub.name}
+                                    alt={categoryLabel(sub.name, locale)}
                                     fill
                                     className="object-cover opacity-70"
                                 />
                                 <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/20 to-transparent p-4">
-                                    <h3 className="text-lg font-bold text-white">{sub.name}</h3>
-                                    <p className="mt-1 text-xs text-zinc-400">{selectedCategory.name} collection</p>
+                                    <h3 className="text-lg font-bold text-white">{categoryLabel(sub.name, locale)}</h3>
+                                    <p className="mt-1 text-xs text-zinc-400">{categoryLabel(selectedCategory.name, locale)} {t.collection}</p>
                                 </div>
                             </motion.div>
                         ))}

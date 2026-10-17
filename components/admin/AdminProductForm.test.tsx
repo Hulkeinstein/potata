@@ -9,6 +9,13 @@ vi.mock("framer-motion", () => ({
 }));
 
 describe("AdminProductForm 옵션별 초기 재고", () => {
+  it('shows independent Korean and English description inputs', () => {
+    render(<AdminProductForm />);
+    fireEvent.change(screen.getByLabelText('한국어 설명'), { target: { value: '한국어' } });
+    fireEvent.change(screen.getByLabelText('영어 설명'), { target: { value: 'English' } });
+    expect(screen.getByDisplayValue('한국어')).toBeTruthy();
+    expect(screen.getByDisplayValue('English')).toBeTruthy();
+  });
   it("사이즈·컬러 조합별 수량 입력을 기본값 5로 표시하고 독립 수정한다", () => {
     render(<AdminProductForm />);
 

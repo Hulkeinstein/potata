@@ -9,8 +9,12 @@ import { ShoppingBag, Package, ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/lib/utils";
 import type { CreateOrderRequest } from "@/types";
+import { useLanguage } from "@/components/providers/LanguageProvider";
+import { getCommerceMessages } from "@/lib/i18n/commerce-messages";
 
 export default function CheckoutPage() {
+    const { locale } = useLanguage();
+    const text = getCommerceMessages(locale);
     const router = useRouter();
     const { items, clearCart } = useCartStore();
 
@@ -24,7 +28,7 @@ export default function CheckoutPage() {
     const idempotencyKey = useRef<string>(crypto.randomUUID());
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<'orderError' | 'networkError' | null>(null);
 
     // hydration 완료 전 스켈레톤
     if (!hasHydrated) {
@@ -85,9 +89,9 @@ export default function CheckoutPage() {
                 return;
             }
 
-            setErrorMessage(data.error ?? "주문 처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
+            setErrorMessage('orderError');
         } catch {
-            setErrorMessage("네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+            setErrorMessage('networkError');
         } finally {
             setIsSubmitting(false);
         }
@@ -106,13 +110,13 @@ export default function CheckoutPage() {
                     <button
                         onClick={() => router.back()}
                         className="p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
-                        aria-label="뒤로 가기"
+                        aria-label={text.back}
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="flex items-center gap-2">
                         <ShoppingBag className="w-6 h-6 text-brand-neon" />
-                        <h1 className="text-2xl font-bold font-outfit">주문 확인</h1>
+                        <h1 className="text-2xl font-bold font-outfit">{text.review}</h1>
                     </div>
                 </motion.div>
 
@@ -125,21 +129,21 @@ export default function CheckoutPage() {
                     >
                         <ShoppingBag className="w-20 h-20 text-zinc-700" />
                         <div className="space-y-2">
-                            <p className="text-xl font-bold text-zinc-300">장바구니가 비어 있습니다</p>
-                            <p className="text-sm text-zinc-500">마음에 드는 상품을 담아보세요</p>
+                            <p className="text-xl font-bold text-zinc-300">{text.empty}</p>
+                            <p className="text-sm text-zinc-500">{text.emptyHint}</p>
                         </div>
                         <div className="flex gap-4">
                             <Link
                                 href="/"
                                 className="px-6 py-3 bg-zinc-900 border border-white/10 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors font-medium text-sm"
                             >
-                                홈으로
+                                {text.home}
                             </Link>
                             <Link
                                 href="/shop"
                                 className="px-6 py-3 bg-linear-to-r from-brand-neon to-purple-500 text-black rounded-xl font-bold text-sm hover:opacity-90 transition-opacity"
                             >
-                                쇼핑하기
+                                {text.start}
                             </Link>
                         </div>
                     </motion.div>
@@ -153,7 +157,7 @@ export default function CheckoutPage() {
                             className="bg-zinc-900/50 border border-white/5 rounded-xl overflow-hidden mb-6"
                         >
                             <div className="p-4 border-b border-white/5">
-                                <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">주문 상품</h2>
+                                <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest">{text.products}</h2>
                             </div>
                             <div className="divide-y divide-white/5">
                                 {items.map((item) => (
@@ -191,7 +195,7 @@ export default function CheckoutPage() {
                                                     {formatPrice(item.product.price)}
                                                 </p>
                                                 <p className="text-xs text-zinc-400">
-                                                    수량 {item.quantity}
+                                                    {text.quantity} {item.quantity}
                                                 </p>
                                             </div>
                                         </div>
@@ -207,23 +211,23 @@ export default function CheckoutPage() {
                             transition={{ delay: 0.1 }}
                             className="bg-zinc-900/50 border border-white/5 rounded-xl p-6 mb-6"
                         >
-                            <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">결제 금액</h2>
+                            <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">{text.summary}</h2>
                             <div className="space-y-3">
                                 <div className="flex justify-between text-sm text-zinc-300">
-                                    <span>상품 합계</span>
+                                    <span>{text.subtotal}</span>
                                     <span>{formatPrice(subtotal)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-zinc-300">
-                                    <span>배송비</span>
-                                    <span>{shipping === 0 ? "무료" : formatPrice(shipping)}</span>
+                                    <span>{text.shipping}</span>
+                                    <span>{shipping === 0 ? text.free : formatPrice(shipping)}</span>
                                 </div>
                                 {shipping > 0 && (
                                     <p className="text-xs text-zinc-500">
-                                        AED 50,000 이상 구매 시 무료 배송
+                                        {text.shippingHint}
                                     </p>
                                 )}
                                 <div className="flex justify-between text-base font-bold text-white pt-3 border-t border-white/5">
-                                    <span>최종 결제 금액</span>
+                                    <span>{text.total}</span>
                                     <span className="text-brand-neon">{formatPrice(total)}</span>
                                 </div>
                             </div>
@@ -236,7 +240,7 @@ export default function CheckoutPage() {
                                 animate={{ opacity: 1 }}
                                 className="text-red-400 text-sm text-center bg-red-400/10 rounded-lg px-4 py-3 mb-4"
                             >
-                                {errorMessage}
+                                {text[errorMessage]}
                             </motion.p>
                         )}
 
@@ -252,10 +256,10 @@ export default function CheckoutPage() {
                                 className="w-full py-4 bg-linear-to-r from-brand-neon to-purple-500 text-black font-bold text-lg rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <Package className="w-5 h-5" />
-                                {isSubmitting ? "주문 처리 중..." : "주문하기"}
+                                {isSubmitting ? text.submitting : text.submit}
                             </button>
                             <p className="text-xs text-zinc-500 text-center mt-3">
-                                주문은 결제 대기 상태로 저장됩니다. 실제 결제는 아직 진행되지 않습니다.
+                                {text.pendingNotice}
                             </p>
                         </motion.div>
                     </>

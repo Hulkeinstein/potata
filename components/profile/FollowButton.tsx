@@ -1,4 +1,5 @@
 "use client";
+import { useAccountMessage } from "@/components/mypage/AccountText";
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
@@ -28,6 +29,7 @@ export default function FollowButton({
   initialFollowing,
   initialCount,
 }: FollowButtonProps) {
+  const t = useAccountMessage();
   const { status } = useSession();
   const router = useRouter();
   const [following, setFollowing] = useState(initialFollowing);
@@ -37,7 +39,7 @@ export default function FollowButton({
   const handleClick = async () => {
     // 비로그인 — confirm 후 /login 유도
     if (status !== "authenticated") {
-      if (confirm("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?")) {
+      if (confirm(t("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?"))) {
         router.push("/login");
       }
       return;
@@ -85,10 +87,10 @@ export default function FollowButton({
             : "bg-brand-neon text-black hover:opacity-90"
         } disabled:opacity-50 disabled:cursor-not-allowed`}
       >
-        {following ? "팔로잉" : "팔로우"}
+        {t(following ? "팔로잉" : "팔로우")}
       </button>
       <span className="text-sm text-zinc-400">
-        팔로워 <span className="text-white font-semibold">{count}</span>
+        {t("팔로워")} <span className="text-white font-semibold">{count}</span>
       </span>
     </div>
   );

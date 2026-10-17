@@ -78,6 +78,20 @@ const VALID_FIELDS = {
 };
 
 describe("POST /api/admin/products", () => {
+  it('transfers both language descriptions independently when valid', async () => {
+    authMock.mockResolvedValue({ user: { id: 'admin', email: 'admin@test.com' } });
+    isAdminMock.mockReturnValue(true);
+    uploadMock.mockResolvedValue({ publicUrl: 'https://storage.example.com/new.jpg' });
+    createProductMock.mockResolvedValue({ id: 'new' });
+    const response = await POST(adminPostReq({ ...VALID_FIELDS, descriptionKo: '한국어', descriptionEn: 'English' }, jpeg()));
+    expect(response.status).toBe(200);
+    expect(createProductMock).toHaveBeenCalledWith(expect.objectContaining({ descriptionKo: '한국어', descriptionEn: 'English' }));
+  });
+  it('rejects overlength descriptions before storage upload', async () => {
+    const response = await POST(adminPostReq({ ...VALID_FIELDS, descriptionEn: 'a'.repeat(10001) }, jpeg()));
+    expect(response.status).toBe(400);
+    expect(uploadMock).not.toHaveBeenCalled();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     // 기본 mock 반환값 설정

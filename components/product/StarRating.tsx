@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/providers/LanguageProvider";
 
 interface StarRatingProps {
   value: number;
@@ -17,6 +18,7 @@ export function StarRating({
   readonly = false,
   size = "md",
 }: StarRatingProps) {
+  const { locale } = useLanguage();
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const isInteractive = !!onChange && !readonly;
@@ -34,7 +36,7 @@ export function StarRating({
             onMouseEnter={() => setHoverIndex(n)}
             onMouseLeave={() => setHoverIndex(null)}
             onClick={() => onChange(n)}
-            aria-label={`별점 ${n}점`}
+            aria-label={locale === 'ko' ? `별점 ${n}점` : `Rate ${n} out of 5`}
             className="focus:outline-none"
           >
             <Star

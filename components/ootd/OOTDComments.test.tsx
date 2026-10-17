@@ -17,18 +17,18 @@ describe("OOTDComments", () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(page), { status: 200 }));
     render(<OOTDComments postId="p1" initialCount={1} currentUserId="u1" authStatus="authenticated" onCountChange={vi.fn()} onRequireLogin={vi.fn()} />);
     expect(fetchMock).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "댓글 1개 펼치기" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand comments (1)" }));
     expect(await screen.findByText("멋진 룩이에요")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "댓글 접기" }));
-    fireEvent.click(screen.getByRole("button", { name: "댓글 1개 펼치기" }));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse comments" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand comments (1)" }));
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("로그아웃 상태에서 작성 시 로그인 안내를 호출한다", () => {
     const onRequireLogin = vi.fn();
     render(<OOTDComments postId="p1" initialCount={0} authStatus="unauthenticated" onCountChange={vi.fn()} onRequireLogin={onRequireLogin} />);
-    fireEvent.click(screen.getByRole("button", { name: "댓글 0개 펼치기" }));
-    fireEvent.click(screen.getByRole("button", { name: "댓글 작성" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand comments (0)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Post comment" }));
     expect(onRequireLogin).toHaveBeenCalledTimes(1);
   });
 
@@ -40,11 +40,11 @@ describe("OOTDComments", () => {
       .mockImplementationOnce(() => new Promise((resolve) => { resolvePost = resolve; }));
     const onCountChange = vi.fn();
     render(<OOTDComments postId="p1" initialCount={0} currentUserId="u1" authStatus="authenticated" onCountChange={onCountChange} onRequireLogin={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "댓글 0개 펼치기" }));
-    await screen.findByText("첫 댓글을 남겨보세요.");
-    fireEvent.change(screen.getByLabelText("댓글 내용"), { target: { value: " 새 댓글 " } });
-    fireEvent.click(screen.getByRole("button", { name: "댓글 작성" }));
-    fireEvent.click(screen.getByRole("button", { name: "댓글 작성 중" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand comments (0)" }));
+    await screen.findByText("Leave the first comment.");
+    fireEvent.change(screen.getByLabelText("Comment content"), { target: { value: " 새 댓글 " } });
+    fireEvent.click(screen.getByRole("button", { name: "Post comment" }));
+    fireEvent.click(screen.getByRole("button", { name: "Posting comment" }));
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
     resolvePost?.(new Response(JSON.stringify({ success: true, data: created }), { status: 201 }));
     expect(await screen.findByText("새 댓글")).toBeTruthy();
@@ -57,10 +57,11 @@ describe("OOTDComments", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify(page), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ success: false, error: "삭제 실패" }), { status: 500 }));
     render(<OOTDComments postId="p1" initialCount={1} currentUserId="u1" authStatus="authenticated" onCountChange={vi.fn()} onRequireLogin={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "댓글 1개 펼치기" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand comments (1)" }));
     await screen.findByText("멋진 룩이에요");
-    fireEvent.click(screen.getByRole("button", { name: "Mina님의 댓글 삭제" }));
-    expect(await screen.findByText("삭제 실패")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Mina — Delete" }));
+    expect(await screen.findByText("Could not delete the comment.")).toBeTruthy();
+    expect(screen.queryByText("삭제 실패")).toBeNull();
     expect(screen.getByText("멋진 룩이에요")).toBeTruthy();
   });
 
@@ -70,9 +71,9 @@ describe("OOTDComments", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify(page), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, data: { items: [page.data.items[0], older], nextCursor: null } }), { status: 200 }));
     render(<OOTDComments postId="p1" initialCount={2} authStatus="unauthenticated" onCountChange={vi.fn()} onRequireLogin={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "댓글 2개 펼치기" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand comments (2)" }));
     await screen.findByText("멋진 룩이에요");
-    fireEvent.click(screen.getByRole("button", { name: "이전 댓글 불러오기" }));
+    fireEvent.click(screen.getByRole("button", { name: "Load earlier comments" }));
     expect(await screen.findByText("이전 댓글")).toBeTruthy();
     await waitFor(() => expect(screen.getAllByText("멋진 룩이에요")).toHaveLength(1));
   });

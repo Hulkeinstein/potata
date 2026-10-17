@@ -1,4 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
+import { fireEvent, render as renderView, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OOTDPostCard } from "./OOTDPostCard";
 
@@ -32,7 +34,7 @@ describe("OOTDPostCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "수정" }));
     fireEvent.change(screen.getByLabelText("OOTD 설명"), { target: { value: "취소할 값" } });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
-    expect((await screen.findByRole("alert")).textContent).toBe("수정 실패");
+    expect((await screen.findByRole("alert")).textContent).toBe("수정하지 못했어요.");
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
     expect(screen.getByText("기존 룩")).toBeTruthy();
   });
@@ -49,3 +51,4 @@ describe("OOTDPostCard", () => {
     expect(onDelete).not.toHaveBeenCalled();
   });
 });
+function render(children: ReactNode) { const result = renderView(<LanguageProvider initialLocale="ko">{children}</LanguageProvider>); return { ...result, rerender: (next: ReactNode) => result.rerender(<LanguageProvider initialLocale="ko">{next}</LanguageProvider>) }; }

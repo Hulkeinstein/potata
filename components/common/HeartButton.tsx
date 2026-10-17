@@ -6,6 +6,8 @@ import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { motion } from "framer-motion";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { sharedMessages } from '@/lib/i18n/shared-messages';
 
 interface HeartButtonProps {
     productId: string;
@@ -14,6 +16,8 @@ interface HeartButtonProps {
 }
 
 export function HeartButton({ productId, className, iconSize = 20 }: HeartButtonProps) {
+    const { locale } = useLanguage();
+    const text = sharedMessages[locale];
     const router = useRouter();
     const { status } = useSession();
     const { hasItem, toggleItem } = useWishlistStore();
@@ -27,7 +31,7 @@ export function HeartButton({ productId, className, iconSize = 20 }: HeartButton
         if (!isLoggedIn) {
             // Show simple toast or alert, then redirect
             // Ideally we use a Toast component, but for now simple alert/log is fine or a custom minimal absolute overlay
-            if (confirm("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?")) {
+            if (confirm(text.loginRequired)) {
                 router.push("/login");
             }
             return;
@@ -57,7 +61,7 @@ export function HeartButton({ productId, className, iconSize = 20 }: HeartButton
                 "group relative p-2 rounded-full transition-all duration-300 hover:bg-white/10 active:scale-90",
                 className
             )}
-            aria-label={isLiked ? "Unlike" : "Like"}
+            aria-label={isLiked ? text.unlike : text.like}
         >
             <Heart
                 size={iconSize}

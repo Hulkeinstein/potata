@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UserSettingsForm } from "./UserSettingsForm";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
 
 vi.mock("next-auth/react", () => ({ useSession: () => ({ update: vi.fn() }) }));
 
@@ -13,7 +14,7 @@ describe("UserSettingsForm", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: { avatar: "https://google.example/me.jpg" } }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: { preferredSize: "L", aiCoordinatorEnabled: false, heightCm: null, weightKg: null } }) });
     vi.stubGlobal("fetch", fetchMock);
-    render(<UserSettingsForm />);
+    render(<LanguageProvider initialLocale="ko"><UserSettingsForm /></LanguageProvider>);
     const size = await screen.findByLabelText("선호 사이즈");
     fireEvent.change(size, { target: { value: "L" } });
     fireEvent.click(screen.getByRole("checkbox", { name: "AI Coordinator 표시" }));
@@ -29,7 +30,7 @@ describe("UserSettingsForm", () => {
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: { preferredSize: null, aiCoordinatorEnabled: true, heightCm: null, weightKg: null } }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: { avatar: "https://google.example/me.jpg" } }) }));
-    render(<UserSettingsForm />);
+    render(<LanguageProvider initialLocale="ko"><UserSettingsForm /></LanguageProvider>);
     expect((await screen.findByRole("img", { name: "프로필 사진 미리보기" })).getAttribute("src")).toContain("google.example");
     expect(screen.getByRole("button", { name: "사진 삭제" })).toBeTruthy();
   });

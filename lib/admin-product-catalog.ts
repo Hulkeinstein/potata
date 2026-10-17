@@ -51,7 +51,9 @@ export type AdminProductUpdate = {
   readonly brand: string;
   readonly price: number;
   readonly category: string;
-  readonly description: string | null;
+  readonly description?: string | null;
+  readonly descriptionKo?: string | null;
+  readonly descriptionEn?: string | null;
   readonly originalPrice: number | null;
   readonly discountRate: number | null;
   readonly isActive: boolean;

@@ -1,4 +1,5 @@
 "use client";
+import { useAccountMessage } from "@/components/mypage/AccountText";
 
 import { useEffect, useState } from "react";
 import type { ApiResponse } from "@/types";
@@ -6,6 +7,7 @@ import { PREFERRED_SIZES, type UserSettingsData } from "@/lib/user-settings";
 import { ProfilePhotoField } from "@/components/onboarding/ProfilePhotoField";
 
 export function UserSettingsForm() {
+  const t = useAccountMessage();
   const [settings, setSettings] = useState<UserSettingsData | null>(null);
   const [status, setStatus] = useState("설정을 불러오는 중입니다.");
   const [saving, setSaving] = useState(false);
@@ -20,7 +22,7 @@ export function UserSettingsForm() {
         const profilePayload = (await profileResponse.json()) as ApiResponse<{ readonly avatar: string | null }>;
         if (!active) return;
         if (!response.ok || !payload.success || !payload.data) {
-          setStatus(payload.error ?? "설정을 불러오지 못했습니다.");
+          setStatus("설정을 불러오지 못했습니다.");
           return;
         }
         setSettings(payload.data);
@@ -50,7 +52,7 @@ export function UserSettingsForm() {
         setSettings(payload.data);
         setStatus("설정을 저장했습니다.");
       } else {
-        setStatus(payload.error ?? "설정을 저장하지 못했습니다.");
+        setStatus("설정을 저장하지 못했습니다.");
       }
     } catch (error) {
       if (!(error instanceof Error)) throw error;
@@ -59,36 +61,36 @@ export function UserSettingsForm() {
     setSaving(false);
   };
 
-  if (!settings) return <p role="status" className="rounded-xl border border-white/10 bg-zinc-900/50 p-5 text-sm text-zinc-400">{status}</p>;
+  if (!settings) return <p role="status" className="rounded-xl border border-white/10 bg-zinc-900/50 p-5 text-sm text-zinc-400">{t(status)}</p>;
 
   return (
     <div className="space-y-6">
       <section className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5"><ProfilePhotoField avatar={avatar} onAvatarChange={setAvatar} /></section>
       <section className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5">
-        <h2 className="text-lg font-bold">쇼핑 사이즈</h2>
-        <p className="mt-1 text-sm text-zinc-400">상품에 같은 사이즈가 있으면 선택을 도와드립니다.</p>
-        <label className="mt-4 block text-sm font-medium" htmlFor="preferred-size">선호 사이즈</label>
+        <h2 className="text-lg font-bold">{t("쇼핑 사이즈")}</h2>
+        <p className="mt-1 text-sm text-zinc-400">{t("상품에 같은 사이즈가 있으면 선택을 도와드립니다.")}</p>
+        <label className="mt-4 block text-sm font-medium" htmlFor="preferred-size">{t("선호 사이즈")}</label>
         <select id="preferred-size" value={settings.preferredSize ?? ""} onChange={(event) => setSettings({ ...settings, preferredSize: event.target.value || null })} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black px-3">
-          <option value="">선택 안 함</option>
+          <option value="">{t("선택 안 함")}</option>
           {PREFERRED_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
         </select>
       </section>
       <section className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5">
-        <h2 className="text-lg font-bold">AI 스타일·핏 추천 정보</h2>
-        <p className="mt-1 text-sm text-zinc-400">선택 정보이며 언제든 비워서 삭제할 수 있습니다.</p>
+        <h2 className="text-lg font-bold">{t("AI 스타일·핏 추천 정보")}</h2>
+        <p className="mt-1 text-sm text-zinc-400">{t("선택 정보이며 언제든 비워서 삭제할 수 있습니다.")}</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm font-medium">키 (cm)<input aria-label="키 (cm)" type="number" min="100" max="250" step="0.1" value={settings.heightCm ?? ""} onChange={(event) => setSettings({ ...settings, heightCm: event.target.value === "" ? null : Number(event.target.value) })} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black px-3" /></label>
-          <label className="text-sm font-medium">몸무게 (kg)<input aria-label="몸무게 (kg)" type="number" min="25" max="300" step="0.1" value={settings.weightKg ?? ""} onChange={(event) => setSettings({ ...settings, weightKg: event.target.value === "" ? null : Number(event.target.value) })} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black px-3" /></label>
+          <label className="text-sm font-medium">{t("키 (cm)")}<input aria-label={t("키 (cm)")} type="number" min="100" max="250" step="0.1" value={settings.heightCm ?? ""} onChange={(event) => setSettings({ ...settings, heightCm: event.target.value === "" ? null : Number(event.target.value) })} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black px-3" /></label>
+          <label className="text-sm font-medium">{t("몸무게 (kg)")}<input aria-label={t("몸무게 (kg)")} type="number" min="25" max="300" step="0.1" value={settings.weightKg ?? ""} onChange={(event) => setSettings({ ...settings, weightKg: event.target.value === "" ? null : Number(event.target.value) })} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black px-3" /></label>
         </div>
       </section>
       <section className="rounded-2xl border border-white/10 bg-zinc-900/50 p-5">
         <div className="flex items-start justify-between gap-4">
-          <div><h2 className="text-lg font-bold">AI Coordinator</h2><p className="mt-1 text-sm text-zinc-400">홈에서 AI 코디 안내 팝업을 표시합니다.</p></div>
-          <input aria-label="AI Coordinator 표시" type="checkbox" checked={settings.aiCoordinatorEnabled} onChange={(event) => setSettings({ ...settings, aiCoordinatorEnabled: event.target.checked })} className="mt-1 h-5 w-5 accent-lime-300" />
+          <div><h2 className="text-lg font-bold">AI Coordinator</h2><p className="mt-1 text-sm text-zinc-400">{t("홈에서 AI 코디 안내 팝업을 표시합니다.")}</p></div>
+          <input aria-label={t("AI Coordinator 표시")} type="checkbox" checked={settings.aiCoordinatorEnabled} onChange={(event) => setSettings({ ...settings, aiCoordinatorEnabled: event.target.checked })} className="mt-1 h-5 w-5 accent-lime-300" />
         </div>
       </section>
-      <button type="button" onClick={save} disabled={saving} className="h-12 w-full rounded-xl bg-brand-neon font-bold text-black disabled:opacity-50">{saving ? "저장 중..." : "설정 저장"}</button>
-      <p role="status" className="min-h-5 text-center text-sm text-zinc-400">{status}</p>
+      <button type="button" onClick={save} disabled={saving} className="h-12 w-full rounded-xl bg-brand-neon font-bold text-black disabled:opacity-50">{t(saving ? "저장 중..." : "설정 저장")}</button>
+      <p role="status" className="min-h-5 text-center text-sm text-zinc-400">{t(status)}</p>
     </div>
   );
 }

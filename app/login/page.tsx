@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/components/providers/LanguageProvider";
+import { authMessages } from "@/lib/i18n/auth-messages";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -9,12 +11,13 @@ import { Mail, ArrowRight, X } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
 
 export default function LoginPage() {
+    const { locale } = useLanguage(); const t = authMessages[locale];
     const router = useRouter();
     const { status } = useSession();
     const [showEmailForm, setShowEmailForm] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+    const [error, setError] = useState<"invalidCredentials" | "">("");
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -37,7 +40,7 @@ export default function LoginPage() {
         setIsLoading(false);
 
         if (result?.error) {
-            setError("이메일 또는 비밀번호가 올바르지 않습니다.");
+            setError("invalidCredentials");
             return;
         }
 
@@ -97,7 +100,7 @@ export default function LoginPage() {
                                 className="space-y-3"
                             >
                                 <p className="text-center text-zinc-400 text-sm mb-6">
-                                    Sign in with
+                                    {t.signInWith}
                                 </p>
 
                                 {/* Google */}
@@ -109,7 +112,7 @@ export default function LoginPage() {
                                     )}
                                     className="w-full h-12 bg-white text-black font-bold rounded-lg flex items-center justify-center gap-2 border border-zinc-200 transition-transform hover:scale-[1.02]"
                                 >
-                                    <span className="text-lg">G</span> Google로 계속하기
+                                    <span className="text-lg">G</span> {t.google}
                                 </button>
 
                                 <div className="pt-4 border-t border-white/10 mt-6">
@@ -117,7 +120,7 @@ export default function LoginPage() {
                                         onClick={() => setShowEmailForm(true)}
                                         className="w-full h-12 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 font-medium rounded-lg flex items-center justify-center gap-2 transition-colors border border-white/5"
                                     >
-                                        <Mail className="w-4 h-4" /> 이메일로 로그인
+                                        <Mail className="w-4 h-4" /> {t.emailLogin}
                                     </button>
                                 </div>
                             </motion.div>
@@ -129,8 +132,9 @@ export default function LoginPage() {
                                 exit={{ opacity: 0, x: 20 }}
                             >
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-xl font-bold text-white">이메일 로그인</h2>
+                                    <h2 className="text-xl font-bold text-white">{t.loginTitle}</h2>
                                     <button
+                                        aria-label={t.close}
                                         onClick={() => setShowEmailForm(false)}
                                         className="text-zinc-400 hover:text-white transition-colors"
                                     >
@@ -141,11 +145,11 @@ export default function LoginPage() {
                                 <form onSubmit={handleLogin} className="space-y-4">
                                     {error && (
                                         <p className="text-red-400 text-xs text-center bg-red-400/10 rounded-lg px-3 py-2">
-                                            {error}
+                                            {error && t[error]}
                                         </p>
                                     )}
                                     <div className="space-y-1">
-                                        <label className="text-xs text-zinc-400 font-medium ml-1">이메일</label>
+                                        <label className="text-xs text-zinc-400 font-medium ml-1">{t.email}</label>
                                         <input
                                             type="email"
                                             value={email}
@@ -155,7 +159,7 @@ export default function LoginPage() {
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs text-zinc-400 font-medium ml-1">비밀번호</label>
+                                        <label className="text-xs text-zinc-400 font-medium ml-1">{t.password}</label>
                                         <input
                                             type="password"
                                             value={password}
@@ -170,7 +174,7 @@ export default function LoginPage() {
                                         disabled={isLoading}
                                         className="w-full h-12 bg-brand-neon text-black font-bold rounded-lg flex items-center justify-center gap-2 mt-6 hover:bg-brand-neon/90 transition-all shadow-[0_0_15px_rgba(204,243,129,0.4)] disabled:opacity-50"
                                     >
-                                        {isLoading ? "로그인 중..." : "로그인"}
+                                        {isLoading ? t.loggingIn : t.login}
                                     </button>
                                 </form>
 
@@ -179,9 +183,9 @@ export default function LoginPage() {
                     </AnimatePresence>
 
                     <div className="text-center mt-4">
-                        <span className="text-xs text-zinc-400">계정이 없으신가요? </span>
+                        <span className="text-xs text-zinc-400">{t.noAccount}</span>
                         <Link href="/signup" className="text-xs text-zinc-400 hover:text-white underline decoration-zinc-700">
-                            회원가입
+                            {t.signup}
                         </Link>
                     </div>
                 </div>
@@ -192,7 +196,7 @@ export default function LoginPage() {
                         href="/"
                         className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-brand-neon transition-colors font-medium group"
                     >
-                        로그인 없이 둘러보기 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        {t.guest} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
                 </div>
 

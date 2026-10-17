@@ -8,8 +8,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/lib/utils";
+import { useLanguage } from "@/components/providers/LanguageProvider";
+import { getCommerceMessages, removeCartLabel } from "@/lib/i18n/commerce-messages";
 
 export function CartDrawer() {
+    const { locale } = useLanguage();
+    const text = getCommerceMessages(locale);
     const { items, isOpen, closeCart, updateQuantity, removeItem, totalItems } = useCartStore();
     const router = useRouter();
 
@@ -52,14 +56,14 @@ export function CartDrawer() {
                         <div className="flex items-center justify-between p-6 border-b border-white/5">
                             <div className="flex items-center gap-2">
                                 <ShoppingBag className="w-5 h-5 text-brand-neon" />
-                                <h2 className="text-lg font-bold text-white">Shopping Bag</h2>
+                                <h2 className="text-lg font-bold text-white">{text.bag}</h2>
                                 <span className="bg-white/10 text-xs px-2 py-0.5 rounded-full text-zinc-400">
                                     {items.length}
                                 </span>
                             </div>
                             <button
                                 onClick={closeCart}
-                                aria-label="Close cart"
+                                aria-label={text.close}
                                 autoFocus
                                 className="p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
                             >
@@ -72,13 +76,13 @@ export function CartDrawer() {
                             {items.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-60">
                                     <ShoppingBag className="w-16 h-16 text-zinc-700" />
-                                    <p className="text-zinc-400 font-medium">Your bag is empty.</p>
+                                    <p className="text-zinc-400 font-medium">{text.empty}</p>
                                     <Link
                                         href="/shop"
                                         onClick={closeCart}
                                         className="text-brand-neon hover:text-white transition-colors text-sm font-bold"
                                     >
-                                        Start Shopping
+                                        {text.start}
                                     </Link>
                                 </div>
                             ) : (
@@ -101,7 +105,7 @@ export function CartDrawer() {
                                                     <h3 className="text-sm font-bold text-white line-clamp-2">{item.product.name}</h3>
                                                     <button
                                                         onClick={() => removeItem(item)}
-                                                        aria-label={`Remove ${item.product.name}`}
+                                                        aria-label={removeCartLabel(locale, item.product.name)}
                                                         className="text-zinc-400 hover:text-red-400 transition-colors"
                                                     >
                                                         <X className="w-4 h-4" />
@@ -123,7 +127,7 @@ export function CartDrawer() {
                                                 <div className="flex items-center gap-3 bg-white/5 rounded-full px-2 py-1">
                                                     <button
                                                         onClick={() => updateQuantity(item, -1)}
-                                                        aria-label="Decrease quantity"
+                                                        aria-label={text.decrease}
                                                         className="p-1 hover:text-white text-zinc-400 transition-colors"
                                                         disabled={item.quantity <= 1}
                                                     >
@@ -132,7 +136,7 @@ export function CartDrawer() {
                                                     <span className="text-xs font-medium w-4 text-center text-white">{item.quantity}</span>
                                                     <button
                                                         onClick={() => updateQuantity(item, 1)}
-                                                        aria-label="Increase quantity"
+                                                        aria-label={text.increase}
                                                         className="p-1 hover:text-white text-zinc-400 transition-colors"
                                                     >
                                                         <Plus className="w-3 h-3" />
@@ -150,15 +154,15 @@ export function CartDrawer() {
                             <div className="p-6 border-t border-white/5 bg-zinc-900/95 backdrop-blur-sm">
                                 <div className="space-y-2 mb-6">
                                     <div className="flex justify-between text-sm text-zinc-300">
-                                        <span>Subtotal</span>
+                                        <span>{text.subtotal}</span>
                                         <span>{formatPrice(subtotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-zinc-300">
-                                        <span>Shipping</span>
-                                        <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
+                                        <span>{text.shipping}</span>
+                                        <span>{shipping === 0 ? text.free : formatPrice(shipping)}</span>
                                     </div>
                                     <div className="flex justify-between text-base font-bold text-white pt-2 border-t border-white/5">
-                                        <span>Total</span>
+                                        <span>{text.total}</span>
                                         <span>{formatPrice(total)}</span>
                                     </div>
                                 </div>
@@ -171,7 +175,7 @@ export function CartDrawer() {
                                     disabled={totalItems() === 0}
                                     className="w-full py-4 bg-gradient-to-r from-brand-neon to-purple-500 text-black font-bold text-lg rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    Checkout <ArrowRight className="w-5 h-5" />
+                                    {text.checkout} <ArrowRight className="w-5 h-5" />
                                 </button>
                             </div>
                         )}

@@ -5,6 +5,7 @@ import { ProfileOnboardingForm } from "./ProfileOnboardingForm";
 const { replace, refresh } = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }));
 const sessionUpdate = vi.hoisted(() => vi.fn());
 const router = { replace, refresh };
+vi.mock("@/components/providers/LanguageProvider", () => ({ useLanguage: () => ({ locale: "ko" }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("next-auth/react", () => ({ useSession: () => ({ update: sessionUpdate }) }));
 

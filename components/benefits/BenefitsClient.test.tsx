@@ -1,4 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
+import { render as renderView, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BenefitsClient } from "./BenefitsClient";
 
@@ -14,7 +16,8 @@ describe("BenefitsClient", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, data: { coupons: [{ id: "g1", name: "Pilot", ratePercent: 15, minOrderAed: 100, maxDiscountAed: 50, scope: "BRANDS", brands: ["Potata"], status: "ACTIVE", expiresAt: null }], points: { balance: 70, entries: [{ id: "p1", type: "ADMIN_GRANT", amount: 100, label: "관리자 포인트 지급", createdAt: "2026-08-24T00:00:00Z" }, { id: "p2", type: "ADMIN_REVERSAL", amount: -30, label: "포인트 지급 취소", createdAt: "2026-08-24T01:00:00Z" }], nextCursor: null } } }) }));
     render(<BenefitsClient />);
     expect(await screen.findByText("15% · 최소 주문 100 AED · 최대 50 AED")).toBeTruthy();
-    expect(screen.getByText("Potata 상품")).toBeTruthy();
+    expect(screen.getByText("Potata")).toBeTruthy();
     expect(screen.getByText("70 P")).toBeTruthy();
   });
 });
+function render(children: ReactNode) { const result = renderView(<LanguageProvider initialLocale="ko">{children}</LanguageProvider>); return { ...result, rerender: (next: ReactNode) => result.rerender(<LanguageProvider initialLocale="ko">{next}</LanguageProvider>) }; }

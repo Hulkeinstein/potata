@@ -4,8 +4,10 @@ import { useRef, useState, useEffect } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import type { Product } from "@/types";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { brandEditorialLabel, discoveryMessages } from '@/lib/i18n/discovery-messages';
 
 // Mock Data for "Brand Focus" Carousel (Top Brands from 4910.kr)
 // Mock Data for "Brand Focus" Carousel (Top Brands from 4910.kr)
@@ -26,6 +28,8 @@ interface BrandsContentProps {
 }
 
 export function BrandsContent({ products }: BrandsContentProps) {
+    const { locale } = useLanguage();
+    const t = discoveryMessages[locale];
     // Infinite Loop: Triple the items
     const INFINITE_ITEMS = [...BRAND_FOCUS_ITEMS, ...BRAND_FOCUS_ITEMS, ...BRAND_FOCUS_ITEMS];
 
@@ -100,7 +104,7 @@ export function BrandsContent({ products }: BrandsContentProps) {
                 {/* 1. Brand Focus Carousel (Infinite Draggable) */}
                 <section className="px-4 py-8">
                     <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-wider flex items-center gap-2">
-                        Featured Brands
+                        {t.featuredBrands}
                         <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
                     </h2>
                     <div
@@ -126,9 +130,9 @@ export function BrandsContent({ products }: BrandsContentProps) {
                                     <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white font-bold mb-4 border border-white/20 group-hover:bg-purple-600 group-hover:border-purple-400 transition-colors">
                                         {item.logo}
                                     </div>
-                                    <h3 className="text-white text-2xl font-black leading-none mb-2 whitespace-pre-line uppercase tracking-tight shadow-black drop-shadow-lg">{item.title}</h3>
+                                    <h3 className="text-white text-2xl font-black leading-none mb-2 whitespace-pre-line uppercase tracking-tight shadow-black drop-shadow-lg">{brandEditorialLabel(item.title, locale)}</h3>
                                     <p className="text-gray-400 text-sm font-medium tracking-widest">{item.brand}</p>
-                                    <Link href={`/search?q=${encodeURIComponent(item.brand)}`} className="mt-3 w-fit text-xs font-bold text-white underline decoration-purple-400 underline-offset-4">View brand products</Link>
+                                    <Link href={`/search?q=${encodeURIComponent(item.brand)}`} className="mt-3 w-fit text-xs font-bold text-white underline decoration-purple-400 underline-offset-4">{t.brandProducts}</Link>
                                 </div>
                             </div>
                         ))}
@@ -138,10 +142,10 @@ export function BrandsContent({ products }: BrandsContentProps) {
                 {/* 3. Product Grid (Brand Focus Mode) */}
                 <section className="px-4 mt-8">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-white">Trending Now</h3>
+                        <h3 className="text-xl font-bold text-white">{t.trending}</h3>
                         <div className="flex gap-2 text-sm text-gray-400">
-                            <span>Sort by:</span>
-                            <span className="text-purple-400 font-bold">Popular</span>
+                            <span>{t.sort}</span>
+                            <span className="text-purple-400 font-bold">{t.popular}</span>
                         </div>
                     </div>
 
@@ -163,8 +167,10 @@ export function BrandsContent({ products }: BrandsContentProps) {
                                     <p className="text-xs font-bold text-purple-400 mb-1 tracking-wider uppercase">{product.brand}</p>
                                     <p className="text-sm text-gray-300 truncate mb-1.5 group-hover:text-white transition-colors">{product.name}</p>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-base font-bold text-white">{(Math.round(product.price * 0.003)).toLocaleString()} AED</span>
-                                        <span className="text-xs text-zinc-400 line-through">{(Math.round(product.price * 0.004)).toLocaleString()}</span>
+                                        <span className="text-base font-bold text-white">{formatPrice(product.price)}</span>
+                                        {product.originalPrice !== undefined && product.originalPrice > product.price && (
+                                            <span className="text-xs text-zinc-400 line-through">{formatPrice(product.originalPrice)}</span>
+                                        )}
                                     </div>
                                 </div>
                             </Link>

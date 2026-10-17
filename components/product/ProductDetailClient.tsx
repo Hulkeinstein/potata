@@ -10,12 +10,18 @@ import { formatPrice } from "@/lib/utils";
 import { ReviewSection } from "@/components/product/ReviewSection";
 import { QASection } from "@/components/product/QASection";
 import { ProductPurchaseActions } from "@/components/product/ProductPurchaseActions";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { getProductMessages } from '@/lib/i18n/product-messages';
+import { resolveProductDescription } from '@/lib/product-description';
 
 interface ProductDetailClientProps {
     product: Product;
 }
 
 export function ProductDetailClient({ product }: ProductDetailClientProps) {
+    const { locale } = useLanguage();
+    const messages = getProductMessages(locale);
+    const description = resolveProductDescription(product, locale);
     const [activeTab, setActiveTab] = useState("detail");
     const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -83,7 +89,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                                     </div>
                                     <span className="w-1 h-1 bg-zinc-700 rounded-full" />
                                     <button onClick={() => { setActiveTab("review"); tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="underline decoration-zinc-700 hover:text-white">
-                                        {productReviewCount} Reviews
+                                        {productReviewCount} {messages.reviews}
                                     </button>
                                 </div>
                             </div>
@@ -108,7 +114,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {/* Tags */}
                             {product.tags && product.tags.length > 0 && (
                                 <div className="space-y-3">
-                                    <label className="text-sm font-medium text-zinc-300">태그</label>
+                                    <label className="text-sm font-medium text-zinc-300">{messages.tags}</label>
                                     <div className="flex flex-wrap gap-2">
                                         {product.tags.map((tag) => (
                                             <span
@@ -134,19 +140,19 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                     {/* Sticky Tabs */}
                     <div className="sticky top-16 z-30 bg-black/80 backdrop-blur-md border-b border-white/10 mb-12">
                         <div className="flex gap-8">
-                            {["Detail", "Review", "Q&A"].map((tab) => (
+                            {[{ id: 'detail', label: messages.detail }, { id: 'review', label: messages.reviews }, { id: 'q&a', label: messages.qa }].map((tab) => (
                                 <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab.toLowerCase())}
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
                                     className={cn(
                                         "py-4 text-sm font-medium border-b-2 transition-colors relative",
-                                        activeTab === tab.toLowerCase()
+                                        activeTab === tab.id
                                             ? "border-brand-neon text-brand-neon"
                                             : "border-transparent text-zinc-400 hover:text-white"
                                     )}
                                 >
-                                    {tab}
-                                    {tab === "Review" && <span className="ml-1 text-xs text-zinc-400 font-normal">({productReviewCount})</span>}
+                                    {tab.label}
+                                    {tab.id === "review" && <span className="ml-1 text-xs text-zinc-400 font-normal">({productReviewCount})</span>}
                                 </button>
                             ))}
                         </div>
@@ -159,9 +165,10 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
                             {/* Detail Tab */}
                             {activeTab === "detail" && (
                                 <div className="space-y-4">
-                                    <h3 className="text-xl font-bold mb-6">Product Detail</h3>
-                                    <p className="text-gray-300 leading-relaxed mb-8">
-                                        {product.description || "No description available."}
+                                    <h3 className="text-xl font-bold mb-6">{messages.heading}</h3>
+                                    {description.fallback ? <p className="text-sm text-zinc-400">{description.language === 'en' ? messages.englishSource : description.language === 'ko' ? messages.koreanSource : messages.legacySource}</p> : null}
+                                    <p lang={description.language ?? undefined} className="whitespace-pre-wrap text-gray-300 leading-relaxed mb-8">
+                                        {description.text ?? messages.empty}
                                     </p>
                                     {productImages.map((img, idx) => (
                                         <div key={idx} className="relative w-full aspect-4/6 bg-zinc-900 rounded-lg overflow-hidden border border-white/5">

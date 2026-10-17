@@ -1,3 +1,4 @@
+import { ShellText } from '@/components/common/ShellText';
 export default function Loading() {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">
@@ -10,7 +11,7 @@ export default function Loading() {
 
         {/* 브랜드 텍스트 */}
         <p className="text-sm font-bold text-gray-400 tracking-[0.2em] animate-pulse">
-          LOADING
+          <ShellText name="loading" />
         </p>
       </div>
     </div>

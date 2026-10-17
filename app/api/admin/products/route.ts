@@ -8,6 +8,8 @@ import { parseSizeGuide } from "@/lib/size-guide";
 import { uploadProductImage, removeProductImagesByUrl } from "@/lib/supabase-storage";
 import type { CreateProductInput, AdminProductCreateData } from "@/types";
 import type { ProductVariantStockInput } from "@/types";
+import { parseDescriptionField } from '@/lib/product-description';
+import { sniffProductImage } from '@/lib/product-image-signature';
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -33,26 +35,6 @@ function parseVariantStocks(raw: string): readonly ProductVariantStockInput[] | 
   } catch {
     return null;
   }
-}
-
-/**
- * 파일 앞 바이트(magic number)로 실제 이미지 형식 확인.
- * 클라이언트 제공 MIME(Content-Type)만 신뢰하지 않고 바이트 수준에서 검증(공개 버킷 — defense-in-depth).
- */
-function sniffImage(buf: ArrayBuffer): "jpg" | "png" | "webp" | null {
-  const b = new Uint8Array(buf);
-  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "jpg";
-  if (
-    b.length >= 8 &&
-    b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 &&
-    b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a
-  ) return "png";
-  if (
-    b.length >= 12 &&
-    b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
-    b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50
-  ) return "webp";
-  return null;
 }
 
 // POST: 관리자 상품 등록 — admin 게이트 → 검증 → Storage 업로드 → DB 생성 → 보상(실패 시)
@@ -84,6 +66,11 @@ export async function POST(req: NextRequest) {
     const originalPriceRaw = String(form.get("originalPrice") ?? "").trim();
     const discountRateRaw = String(form.get("discountRate") ?? "").trim();
     const description = String(form.get("description") ?? "").trim() || undefined;
+    const descriptionKo = parseDescriptionField(form.get('descriptionKo'));
+    const descriptionEn = parseDescriptionField(form.get('descriptionEn'));
+    if (!descriptionKo.valid || !descriptionEn.valid) {
+      return NextResponse.json({ success: false, error: '상품 설명은 언어별 10,000자 이하의 텍스트여야 합니다.' }, { status: 400 });
+    }
 
     // 콤마 구분 배열(빈값 필터)
     const sizesRaw = String(form.get("sizes") ?? "").trim();
@@ -238,7 +225,7 @@ export async function POST(req: NextRequest) {
     const data = await image.arrayBuffer();
 
     // magic-byte 검사 — 선언 MIME과 실제 바이트 일치 여부 확인(헤더만 믿지 않음, 업로드 前)
-    const sniffed = sniffImage(data);
+    const sniffed = sniffProductImage(data);
     if (sniffed === null || sniffed !== ext) {
       return NextResponse.json(
         { success: false, error: "유효한 이미지 파일이 아닙니다." },
@@ -260,6 +247,8 @@ export async function POST(req: NextRequest) {
         originalPrice,
         discountRate,
         description,
+        descriptionKo: descriptionKo.value,
+        descriptionEn: descriptionEn.value,
         sizes,
         colors,
         tags,

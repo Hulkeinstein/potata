@@ -5,8 +5,13 @@ import { TRENDS } from "@/data/dummy";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { sharedMessages } from '@/lib/i18n/shared-messages';
+import { trendMessages } from '@/lib/i18n/trend-messages';
 
 export function K_TrendSection() {
+    const { locale } = useLanguage();
+    const text = sharedMessages[locale];
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const scroll = (direction: "left" | "right") => {
@@ -20,14 +25,14 @@ export function K_TrendSection() {
         <section className="w-full bg-black py-16 text-white overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 flex justify-between items-end">
                 <div>
-                    <span className="text-brand-neon font-bold tracking-wider text-xs uppercase mb-2 block">Curated for UAE</span>
-                    <h2 className="text-3xl font-bold">Trending in Seoul</h2>
+                    <span className="text-brand-neon font-bold tracking-wider text-xs uppercase mb-2 block">{text.curated}</span>
+                    <h2 className="text-3xl font-bold">{text.trending}</h2>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={() => scroll("left")} aria-label="Scroll left" className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
+                    <button onClick={() => scroll("left")} aria-label={text.left} className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
                         <ArrowRight className="w-5 h-5 rotate-180" />
                     </button>
-                    <button onClick={() => scroll("right")} aria-label="Scroll right" className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
+                    <button onClick={() => scroll("right")} aria-label={text.right} className="p-2 border border-white/20 rounded-full hover:bg-white/10 transition-colors">
                         <ArrowRight className="w-5 h-5" />
                     </button>
                 </div>
@@ -45,8 +50,8 @@ export function K_TrendSection() {
                         />
                         <div className="absolute inset-0 bg-linear-to-t from-black/80 to-transparent"></div>
                         <div className="absolute bottom-6 left-6">
-                            <h3 className="text-xl font-bold mb-1">{trend.title}</h3>
-                            <p className="text-gray-300 text-sm">{trend.description}</p>
+                            <h3 className="text-xl font-bold mb-1">{locale === 'ko' ? trendMessages[trend.id]?.title ?? trend.title : trend.title}</h3>
+                            <p className="text-gray-300 text-sm">{locale === 'ko' ? trendMessages[trend.id]?.description ?? trend.description : trend.description}</p>
                         </div>
                     </Link>
                 ))}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import type { ApiResponse, AdminProductCreateData, ProductCategory } from "@/types";
+import { ProductDescriptionFields } from './ProductDescriptionFields';
 
 // 'All' 제외 6종 카테고리
 const CATEGORIES: Exclude<ProductCategory, "All">[] = [
@@ -56,7 +57,8 @@ export function AdminProductForm() {
       : null;
 
   // 선택 필드
-  const [description, setDescription] = useState("");
+  const [descriptionKo, setDescriptionKo] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
   const [sizes, setSizes] = useState("");
   const [colors, setColors] = useState("");
   const [variantStocks, setVariantStocks] = useState<Record<string, string>>({});
@@ -165,7 +167,8 @@ export function AdminProductForm() {
       }
 
       // 선택 필드 — 값이 있을 때만 append
-      if (description.trim()) fd.append("description", description.trim());
+      fd.append("descriptionKo", descriptionKo.trim());
+      fd.append("descriptionEn", descriptionEn.trim());
       if (sizes.trim()) fd.append("sizes", sizes.trim());
       if (colors.trim()) fd.append("colors", colors.trim());
       fd.append("variantStocks", JSON.stringify(initialVariantStocks));
@@ -474,18 +477,7 @@ export function AdminProductForm() {
           </div>
 
           {/* 설명 */}
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-400 font-medium ml-1">
-              상품 설명
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="상품의 특징과 소재를 간략히 설명해주세요."
-              className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-brand-neon transition-colors resize-none"
-            />
-          </div>
+          <ProductDescriptionFields korean={descriptionKo} english={descriptionEn} onKoreanChange={setDescriptionKo} onEnglishChange={setDescriptionEn} />
 
           {/* 배지 — 모두 자동 부여 */}
           <div className="space-y-2">

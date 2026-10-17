@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Navbar } from "./Navbar";
+import { LanguageProvider } from '@/components/providers/LanguageProvider';
 
 vi.mock("next-auth/react", () => ({
   useSession: () => ({ data: { user: { name: "Mirim" } }, status: "authenticated" }),
@@ -19,7 +20,7 @@ describe("Navbar notification badge", () => {
       new Response(JSON.stringify({ success: true, data: { items: [], nextCursor: null, unreadCount: 3 } }), { status: 200 }),
     );
 
-    render(<Navbar />);
+    render(<LanguageProvider initialLocale="ko"><Navbar /></LanguageProvider>);
 
     const link = await screen.findByRole("link", { name: "알림, 읽지 않은 알림 3개" });
     expect(link.getAttribute("href")).toBe("/notifications");
@@ -31,7 +32,7 @@ describe("Navbar notification badge", () => {
       new Response(JSON.stringify({ success: true, data: { items: [], nextCursor: null, unreadCount: 1 } }), { status: 200 }),
     );
 
-    render(<Navbar />);
+    render(<LanguageProvider initialLocale="ko"><Navbar /></LanguageProvider>);
     expect(await screen.findByText("1")).toBeTruthy();
 
     act(() => window.dispatchEvent(new Event("potata:notifications-read")));
@@ -45,7 +46,7 @@ describe("Navbar notification badge", () => {
       new Response(JSON.stringify({ success: true, data: { items: [], nextCursor: null, unreadCount: 0 } }), { status: 200 }),
     );
 
-    render(<Navbar />);
+    render(<LanguageProvider initialLocale="ko"><Navbar /></LanguageProvider>);
 
     expect(await screen.findByRole("link", { name: "알림" })).toBeTruthy();
     expect(screen.queryByText("0")).toBeNull();

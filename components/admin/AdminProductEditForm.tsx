@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { ProductDescriptionFields } from './ProductDescriptionFields';
 
 type EditableProduct = {
   readonly id: string;
@@ -11,6 +12,8 @@ type EditableProduct = {
   readonly price: number;
   readonly category: string;
   readonly description: string | null;
+  readonly descriptionKo?: string | null;
+  readonly descriptionEn?: string | null;
   readonly originalPrice: number | null;
   readonly discountRate: number | null;
   readonly isActive: boolean;
@@ -56,7 +59,8 @@ export function AdminProductEditForm({ product }: { readonly product: EditablePr
     <label className="block text-sm">브랜드<input className="mt-1 w-full rounded bg-zinc-900 p-2" value={form.brand} onChange={(event) => change("brand", event.target.value)} /></label>
     <label className="block text-sm">판매가 (AED)<input type="number" min="1" className="mt-1 w-full rounded bg-zinc-900 p-2" value={form.price} onChange={(event) => change("price", event.target.value)} /></label>
     <label className="block text-sm">카테고리<select className="mt-1 w-full rounded bg-zinc-900 p-2" value={form.category} onChange={(event) => change("category", event.target.value)}>{CATEGORIES.map((category) => <option key={category}>{category}</option>)}</select></label>
-    <label className="block text-sm">설명<textarea className="mt-1 w-full rounded bg-zinc-900 p-2" value={form.description ?? ""} onChange={(event) => change("description", event.target.value)} /></label>
+    {product.description ? <section className="rounded border border-zinc-800 p-3"><h2 className="text-sm font-medium">기존 설명 원문 (보존)</h2><p className="whitespace-pre-wrap text-sm text-zinc-400">{product.description}</p></section> : null}
+    <ProductDescriptionFields korean={form.descriptionKo ?? ''} english={form.descriptionEn ?? ''} onKoreanChange={(value) => change('descriptionKo', value)} onEnglishChange={(value) => change('descriptionEn', value)} />
     <label className="flex gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={(event) => change("isActive", event.target.checked)} />판매 중으로 노출</label>
     <section className="space-y-3 rounded border border-zinc-800 p-4" aria-labelledby="inventory-heading">
       <div><h2 id="inventory-heading" className="font-bold">옵션별 재고 및 품절</h2><p className="mt-1 text-xs text-zinc-400">재고는 별도 재고 운영 화면에서 입고·정정·폐기 사유와 함께 조정합니다. 여기서는 수동 품절만 관리합니다.</p><Link href={`/admin/inventory?q=${encodeURIComponent(product.name)}`} className="mt-2 inline-block text-sm text-brand-neon underline">이 상품 재고 운영으로 이동</Link></div>

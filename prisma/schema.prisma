@@ -326,6 +326,8 @@ model Product {
   images        String[]          @default([])
   category      String // enum 정규화 안 함 (YAGNI)
   description   String?
+  descriptionKo String?           @db.Text
+  descriptionEn String?           @db.Text
   sizes         String[]          @default([])
   colors        String[]          @default([])
   tags          String[]          @default([])

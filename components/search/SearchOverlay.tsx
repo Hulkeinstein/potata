@@ -6,6 +6,8 @@ import { Search, X, TrendingUp, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { discoveryMessages } from '@/lib/i18n/discovery-messages';
 
 interface SearchOverlayProps {
     isOpen: boolean;
@@ -21,6 +23,8 @@ const RECENT_BRANDS = [
 ];
 
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
+    const { locale } = useLanguage();
+    const t = discoveryMessages[locale];
     const router = useRouter();
     const inputRef = useRef<HTMLInputElement>(null);
     const [searchTerm, setSearchTerm] = useState("");
@@ -67,7 +71,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     {/* Close Button */}
                     <button
                         onClick={onClose}
-                        aria-label="Close search"
+                        aria-label={t.closeSearch}
                         className="absolute top-6 right-6 p-2 text-gray-400 hover:text-white transition-colors"
                     >
                         <X className="w-8 h-8" />
@@ -86,8 +90,8 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search brands, items..."
-                                aria-label="Search products"
+                                placeholder={t.searchPlaceholder}
+                                aria-label={t.searchProducts}
                                 autoFocus
                                 className="w-full bg-transparent border-b-2 border-white/20 text-3xl md:text-5xl font-bold text-white placeholder-gray-500 py-4 focus:outline-none focus:border-brand-neon transition-colors"
                             />
@@ -106,7 +110,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                         <div>
                             <div className="flex items-center gap-2 text-brand-neon mb-6">
                                 <TrendingUp className="w-5 h-5" />
-                                <h3 className="text-sm font-bold uppercase tracking-wider">Popular Now</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-wider">{t.popularNow}</h3>
                             </div>
                             <ul className="space-y-4">
                                 {POPULAR_SEARCHES.map((term, index) => (
@@ -131,7 +135,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                         <div>
                             <div className="flex items-center gap-2 text-purple-400 mb-6">
                                 <Store className="w-5 h-5" />
-                                <h3 className="text-sm font-bold uppercase tracking-wider">Trending Brands</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-wider">{t.trendingBrands}</h3>
                             </div>
                             <div className="flex flex-wrap gap-3">
                                 {RECENT_BRANDS.map((brand) => (

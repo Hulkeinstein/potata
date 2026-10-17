@@ -19,7 +19,7 @@ describe("MyPage navigation", () => {
     const link = screen.getByRole("link", { name: /My Posts/ });
     expect(link.getAttribute("href")).toBe("/mypage/posts");
     expect(screen.getAllByText("My Posts")).toHaveLength(1);
-    expect(screen.getByText("OOTD · Reviews · Q&A 관리")).toBeTruthy();
+    expect(screen.getByText("Manage OOTD · reviews · Q&A")).toBeTruthy();
   });
 
   it("지원되는 메뉴를 실제 경로로 연결한다", () => {

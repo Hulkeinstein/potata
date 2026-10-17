@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertCircle, RefreshCcw, Home } from "lucide-react";
 import Link from "next/link";
+import { ShellText } from '@/components/common/ShellText';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -27,10 +28,10 @@ export default function Error({ error, reset }: ErrorProps) {
 
         {/* 메시지 */}
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Something went wrong
+          <ShellText name="error" />
         </h1>
         <p className="text-gray-400 mb-8">
-          We apologize for the inconvenience. Please try again.
+          <ShellText name="errorHint" />
         </p>
 
         {/* 에러 정보 (개발 환경에서만) */}
@@ -54,14 +55,14 @@ export default function Error({ error, reset }: ErrorProps) {
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-black text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
           >
             <RefreshCcw className="w-4 h-4" />
-            Try Again
+            <ShellText name="retry" />
           </button>
           <Link
             href="/"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 text-gray-700 font-bold rounded-full hover:bg-gray-50 transition-colors"
           >
             <Home className="w-4 h-4" />
-            Go Home
+            <ShellText name="home" />
           </Link>
         </div>
       </div>

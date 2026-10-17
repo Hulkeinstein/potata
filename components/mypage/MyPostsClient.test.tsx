@@ -1,4 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
+import { fireEvent, render as renderView, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MyPostsClient } from "./MyPostsClient";
 
@@ -36,7 +38,7 @@ describe("MyPostsClient", () => {
     render(<MyPostsClient handle={null} />);
 
     await screen.findByText("아직 올린 OOTD가 없습니다.");
-    fireEvent.click(screen.getByRole("tab", { name: "Reviews" }));
+    fireEvent.click(screen.getByRole("tab", { name: "리뷰" }));
 
     expect(replace).toHaveBeenCalledWith("/mypage/posts?tab=reviews", { scroll: false });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/users/me/posts?type=reviews"));
@@ -73,7 +75,7 @@ describe("MyPostsClient", () => {
     const view = render(<MyPostsClient handle={null} />);
     await screen.findByText("아직 올린 OOTD가 없습니다.");
 
-    fireEvent.click(screen.getByRole("tab", { name: "Reviews" }));
+    fireEvent.click(screen.getByRole("tab", { name: "리뷰" }));
     await screen.findByText("좋아요");
     queryTab = "reviews";
     view.rerender(<MyPostsClient handle={null} />);
@@ -90,7 +92,7 @@ describe("MyPostsClient", () => {
     render(<MyPostsClient handle={null} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "더 보기" }));
-    expect(await screen.findByText("더 불러오지 못했어요.")).toBeTruthy();
+    expect(await screen.findByText("게시물을 불러오지 못했어요.")).toBeTruthy();
     expect(screen.getByText("출근 룩")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
@@ -109,3 +111,4 @@ describe("MyPostsClient", () => {
     expect(fetchMock).toHaveBeenLastCalledWith("/api/ootd/o1", { method: "DELETE" });
   });
 });
+function render(children: ReactNode) { const result = renderView(<LanguageProvider initialLocale="ko">{children}</LanguageProvider>); return { ...result, rerender: (next: ReactNode) => result.rerender(<LanguageProvider initialLocale="ko">{next}</LanguageProvider>) }; }

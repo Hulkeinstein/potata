@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { discoveryMessages } from '@/lib/i18n/discovery-messages';
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/types";
@@ -10,6 +12,8 @@ interface RankingContentProps {
 }
 
 export function RankingContent({ products }: RankingContentProps) {
+    const { locale } = useLanguage();
+    const t = discoveryMessages[locale];
     return (
         <div className="min-h-screen bg-black pt-20 pb-20">
             <div className="max-w-7xl mx-auto px-4">
@@ -17,11 +21,11 @@ export function RankingContent({ products }: RankingContentProps) {
                 {/* 1. Header & Filters */}
                 <header className="mb-8 sticky top-16 z-40 bg-black/80 backdrop-blur-md py-4 -mx-4 px-4 border-b border-white/5">
                     <h2 className="text-3xl font-black text-white mb-6 uppercase tracking-tight flex items-center gap-3">
-                        Real-time Ranking
-                        <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full tracking-normal align-middle animate-pulse">Updated</span>
+                        {t.ranking}
+                        <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full tracking-normal align-middle animate-pulse">{t.updated}</span>
                     </h2>
 
-                    <p className="text-sm text-gray-400">Products ranked by the current catalog order.</p>
+                    <p className="text-sm text-gray-400">{t.rankingNote}</p>
                 </header>
 
                 {/* 2. Ranking Grid */}
@@ -49,7 +53,7 @@ export function RankingContent({ products }: RankingContentProps) {
                                 <p className="text-sm text-gray-200 truncate mb-1.5 font-medium group-hover:text-white transition-colors">{product.name}</p>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-lg font-bold text-white">{formatPrice(product.price)}</span>
-                                    {i < 3 && <span className="text-xs text-red-500 font-bold animate-pulse">HOT</span>}
+                                    {i < 3 && <span className="text-xs text-red-500 font-bold animate-pulse">{t.hot}</span>}
                                 </div>
                             </div>
                         </Link>

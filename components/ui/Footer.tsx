@@ -1,29 +1,41 @@
+'use client';
 import Link from "next/link";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { parseLocale } from '@/lib/i18n/locale';
+import { sharedMessages } from '@/lib/i18n/shared-messages';
 
 export function Footer() {
+    const { locale, setLocale } = useLanguage();
+    const text = sharedMessages[locale];
     return (
         <footer className="bg-black text-white py-12 border-t border-white/10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                     <h3 className="text-xl font-bold mb-4">POTATA</h3>
                     <p className="text-gray-400 text-sm">
-                        Linking Seoul&apos;s vibrancy to Dubai&apos;s modern style.<br />
-                        Premium K-Fashion &amp; AI experience.
+                        {text.footerIntro}<br />{text.footerExperience}
                     </p>
                 </div>
 
                 <div>
-                    <h4 className="font-bold mb-4">Shop</h4>
+                    <h4 className="font-bold mb-4">{text.shop}</h4>
                     <ul className="space-y-2 text-sm text-gray-400">
-                        <li><Link href="/shop" className="hover:text-white">New Arrivals</Link></li>
-                        <li><Link href="/ranking" className="hover:text-white">Best Sellers</Link></li>
-                        <li><Link href="/category" className="hover:text-white">Modest Wear</Link></li>
+                        <li><Link href="/shop" className="hover:text-white">{text.newArrivals}</Link></li>
+                        <li><Link href="/ranking" className="hover:text-white">{text.bestSellers}</Link></li>
+                        <li><Link href="/category" className="hover:text-white">{text.modestWear}</Link></li>
                     </ul>
                 </div>
 
             </div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-white/10 text-center text-xs text-gray-400">
-                © 2024 POTATA. All rights reserved.
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <span>© 2024 POTATA. {text.rights}</span>
+                  <label className="flex items-center gap-3">Language / 언어
+                    <select value={locale} onChange={(event) => setLocale(parseLocale(event.target.value))} className="min-h-11 min-w-36 rounded-md border border-white/20 bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-neon">
+                      <option value="en" lang="en">English</option><option value="ko" lang="ko">한국어</option>
+                    </select>
+                  </label>
+                </div>
             </div>
         </footer>
     );

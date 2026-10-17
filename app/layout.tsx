@@ -8,6 +8,9 @@ import { CustomCursor } from "@/components/ui/CustomCursor";
 import { Footer } from "@/components/ui/Footer";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { StoreSync } from "@/components/providers/StoreSync";
+import { cookies } from 'next/headers';
+import { LanguageProvider } from '@/components/providers/LanguageProvider';
+import { LANGUAGE_COOKIE, parseLocale } from '@/lib/i18n/locale';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -27,22 +30,23 @@ export const metadata: Metadata = {
   description: "Premier Korean Fashion for UAE",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = parseLocale((await cookies()).get(LANGUAGE_COOKIE)?.value);
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className={cn(outfit.variable, notoSansKr.variable, "font-sans min-h-screen bg-background text-foreground")}>
-        <AuthProvider>
+        <LanguageProvider initialLocale={locale}><AuthProvider>
           <StoreSync />
           <InitialLoader />
           <CustomCursor />
           <Navbar />
           {children}
           <Footer />
-        </AuthProvider>
+        </AuthProvider></LanguageProvider>
       </body>
     </html>
   );

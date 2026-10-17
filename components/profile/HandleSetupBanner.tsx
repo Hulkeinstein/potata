@@ -1,4 +1,5 @@
 "use client";
+import { useAccountMessage } from "@/components/mypage/AccountText";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
  * - 닫기(X) 버튼으로 세션 내 숨기기 가능 (localStorage 미사용 — 단순화)
  */
 export function HandleSetupBanner({ returnTo }: { returnTo?: string }) {
+  const t = useAccountMessage();
   const { status } = useSession();
   const [showBanner, setShowBanner] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -59,8 +61,8 @@ export function HandleSetupBanner({ returnTo }: { returnTo?: string }) {
               <Hash className="w-4 h-4 text-brand-neon" />
             </div>
             <p className="text-sm text-zinc-200 truncate">
-              <span className="font-semibold text-white">핸들을 설정하면</span>{" "}
-              프로필이 공개되고 팔로워가 나를 찾을 수 있어요.
+              <span className="font-semibold text-white">{t("핸들을 설정하면")}</span>{" "}
+              {t("프로필이 공개되고 팔로워가 나를 찾을 수 있어요.")}
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -68,11 +70,11 @@ export function HandleSetupBanner({ returnTo }: { returnTo?: string }) {
               href={handleUrl}
               className="text-xs font-bold text-brand-neon hover:text-brand-neon/80 transition-colors whitespace-nowrap px-3 py-1.5 border border-brand-neon/40 rounded-lg hover:bg-brand-neon/10"
             >
-              설정하기
+              {t("설정하기")}
             </Link>
             <button
               onClick={() => setDismissed(true)}
-              aria-label="배너 닫기"
+              aria-label={t("배너 닫기")}
               className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
             >
               <X className="w-4 h-4" />

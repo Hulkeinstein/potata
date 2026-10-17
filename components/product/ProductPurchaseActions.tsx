@@ -11,6 +11,8 @@ import type { UserSettingsData } from "@/lib/user-settings";
 import { SizeGuideDialog } from "@/components/product/SizeGuideDialog";
 import { useSession } from "next-auth/react";
 import { getInventoryStatus } from "@/lib/inventory";
+import { useLanguage } from "@/components/providers/LanguageProvider";
+import { productActionMessages, type PurchaseFeedbackKey } from "@/lib/i18n/product-action-messages";
 
 interface ProductPurchaseActionsProps {
   readonly product: Product & { readonly sizeGuide?: SizeGuide };
@@ -18,12 +20,14 @@ interface ProductPurchaseActionsProps {
 }
 
 export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseActionsProps) {
+  const { locale } = useLanguage();
+  const text = productActionMessages[locale];
   const sizes = useMemo(() => product.sizes?.length ? product.sizes : ["Free"], [product.sizes]);
   const colors = useMemo(() => product.colors?.length ? product.colors : ["Default"], [product.colors]);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [quantity, setQuantity] = useState(1);
-  const [copyStatus, setCopyStatus] = useState("");
+  const [copyStatus, setCopyStatus] = useState<{ readonly key: PurchaseFeedbackKey; readonly count?: number } | null>(null);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const sizeGuideTriggerRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCartStore();
@@ -54,36 +58,36 @@ export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseAct
   const addToCart = () => {
     const size = selectedSize ?? sizes[0];
     if (!selectedSize && size !== "Free" && size !== "One Size") {
-      setCopyStatus("사이즈를 선택해 주세요.");
+      setCopyStatus({ key: "selectSize" });
       return;
     }
     if (!isPurchasable) {
-      setCopyStatus(selectedStatus === "MANUAL_SOLD_OUT" ? "관리자가 품절 처리한 옵션입니다." : "품절된 옵션입니다.");
+      setCopyStatus({ key: selectedStatus === "MANUAL_SOLD_OUT" ? "manualUnavailable" : "unavailable" });
       return;
     }
     if (selectedVariant && quantity > selectedVariant.stock) {
-      setCopyStatus(`현재 재고는 ${selectedVariant.stock}개입니다.`);
+      setCopyStatus({ key: "stockRemaining", count: selectedVariant.stock });
       return;
     }
     addItem({ product: { ...product, imageUrl }, quantity, color: selectedColor, size });
-    setCopyStatus(`${quantity}개를 장바구니에 담았습니다.`);
+    setCopyStatus({ key: "cartAdded", count: quantity });
   };
 
   const copyProductLink = () => {
     if (!navigator.clipboard) {
-      setCopyStatus("이 브라우저에서는 링크 복사를 지원하지 않습니다.");
+      setCopyStatus({ key: "copyUnsupported" });
       return;
     }
     void navigator.clipboard.writeText(window.location.href).then(
-      () => setCopyStatus("상품 링크를 복사했습니다."),
-      () => setCopyStatus("링크를 복사하지 못했습니다.")
+      () => setCopyStatus({ key: "copied" }),
+      () => setCopyStatus({ key: "copyFailed" })
     );
   };
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <span className="text-sm font-medium text-zinc-300">Color</span>
+        <span className="text-sm font-medium text-zinc-300">{text.color}</span>
         <div className="flex flex-wrap gap-2">
           {colors.map((color) => {
             const available = !hasInventory || (product.variants ?? []).some((variant) => variant.color === color && getInventoryStatus(variant) === "ON_SALE");
@@ -94,34 +98,34 @@ export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseAct
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-medium text-zinc-300">Size</span>
-          {product.sizeGuide && <button ref={sizeGuideTriggerRef} type="button" onClick={() => setSizeGuideOpen(true)} className="text-sm font-medium text-brand-neon underline underline-offset-4">Size Guide</button>}
+          <span className="text-sm font-medium text-zinc-300">{text.size}</span>
+          {product.sizeGuide && <button ref={sizeGuideTriggerRef} type="button" onClick={() => setSizeGuideOpen(true)} className="text-sm font-medium text-brand-neon underline underline-offset-4">{text.sizeGuide}</button>}
         </div>
         <div className="grid grid-cols-4 gap-2">
           {sizes.map((size) => {
             const variant = product.variants?.find((item) => item.size === size && item.color === selectedColor);
             const status = variant ? getInventoryStatus(variant) : "SOLD_OUT";
             const available = !hasInventory || status === "ON_SALE";
-            return <button key={size} onClick={() => available && setSelectedSize(size)} aria-pressed={selectedSize === size} disabled={!available} className={cn("py-3 rounded-lg border text-sm font-medium transition-all", selectedSize === size ? "border-brand-neon text-black bg-brand-neon" : "border-white/10 text-zinc-400 hover:border-white/30 hover:bg-white/5", !available && "cursor-not-allowed opacity-40")}>{size}{!available ? " · 품절" : ""}</button>;
+            return <button key={size} onClick={() => available && setSelectedSize(size)} aria-pressed={selectedSize === size} disabled={!available} className={cn("py-3 rounded-lg border text-sm font-medium transition-all", selectedSize === size ? "border-brand-neon text-black bg-brand-neon" : "border-white/10 text-zinc-400 hover:border-white/30 hover:bg-white/5", !available && "cursor-not-allowed opacity-40")}>{size}{!available ? ` · ${text.soldOut}` : ""}</button>;
           })}
         </div>
       </div>
 
       <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
         <div className="flex items-center gap-3 rounded bg-black/20 px-2 py-1">
-          <button onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label="수량 줄이기" disabled={quantity === 1} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><Minus className="h-3 w-3" /></button>
+          <button onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label={text.decrease} disabled={quantity === 1} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><Minus className="h-3 w-3" /></button>
           <span className="min-w-5 text-center text-sm font-medium">{quantity}</span>
-          <button onClick={() => setQuantity((value) => selectedVariant ? Math.min(selectedVariant.stock, value + 1) : value + 1)} aria-label="수량 늘리기" disabled={!isPurchasable || (selectedVariant ? quantity >= selectedVariant.stock : false)} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><Plus className="h-3 w-3" /></button>
+          <button onClick={() => setQuantity((value) => selectedVariant ? Math.min(selectedVariant.stock, value + 1) : value + 1)} aria-label={text.increase} disabled={!isPurchasable || (selectedVariant ? quantity >= selectedVariant.stock : false)} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><Plus className="h-3 w-3" /></button>
         </div>
         <span className="text-lg font-bold">{formatPrice(product.price * quantity)}</span>
       </div>
 
       <div className="flex gap-4">
-        <button onClick={addToCart} disabled={!isPurchasable} className="flex h-14 flex-1 items-center justify-center rounded-xl bg-white text-lg font-bold text-black transition-colors hover:bg-brand-neon disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300">{isPurchasable ? "Add to Cart" : selectedStatus === "MANUAL_SOLD_OUT" ? "Sold Out" : "Out of Stock"}</button>
+        <button onClick={addToCart} disabled={!isPurchasable} className="flex h-14 flex-1 items-center justify-center rounded-xl bg-white text-lg font-bold text-black transition-colors hover:bg-brand-neon disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300">{isPurchasable ? text.addToCart : selectedStatus === "MANUAL_SOLD_OUT" ? text.soldOut : text.outOfStock}</button>
         <HeartButton productId={product.id} className="h-14 w-14 rounded-xl border border-white/10" iconSize={24} />
-        <button onClick={copyProductLink} aria-label="상품 링크 복사" className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/10 transition-colors hover:border-white/50"><Copy className="h-6 w-6" /></button>
+        <button onClick={copyProductLink} aria-label={text.copyLink} className="flex h-14 w-14 items-center justify-center rounded-xl border border-white/10 transition-colors hover:border-white/50"><Copy className="h-6 w-6" /></button>
       </div>
-      {copyStatus && <p role="status" className="text-sm text-zinc-400">{copyStatus}</p>}
+      {copyStatus && <p role="status" className="text-sm text-zinc-400">{text[copyStatus.key].replace("{count}", String(copyStatus.count ?? ""))}</p>}
       {product.sizeGuide && sizeGuideOpen && <SizeGuideDialog productName={product.name} guide={product.sizeGuide} triggerRef={sizeGuideTriggerRef} onClose={() => setSizeGuideOpen(false)} />}
     </div>
   );

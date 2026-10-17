@@ -1,8 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "./page";
 
 const { signInMock } = vi.hoisted(() => ({ signInMock: vi.fn() }));
+const language = vi.hoisted(() => ({ locale: "ko" }));
+vi.mock("@/components/providers/LanguageProvider", () => ({ useLanguage: () => language }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
@@ -27,7 +29,38 @@ vi.mock("framer-motion", () => ({
 }));
 
 describe("LoginPage", () => {
-  beforeEach(() => signInMock.mockReset());
+  beforeEach(() => { signInMock.mockReset(); language.locale = "ko"; });
+
+  it("translates the login screen when English is selected", () => {
+    // Given
+    language.locale = "en";
+    // When
+    render(<LoginPage />);
+    // Then
+    expect(screen.getByRole("link", { name: "Sign up" }).getAttribute("href")).toBe("/signup");
+    expect(screen.getByRole("button", { name: /Continue with Google/ })).toBeTruthy();
+  });
+
+  it("preserves credentials and translates existing errors when locale changes", async () => {
+    // Given
+    signInMock.mockResolvedValue({ error: "CredentialsSignin" });
+    const view = render(<LoginPage />);
+    fireEvent.click(screen.getByRole("button", { name: "이메일로 로그인" }));
+    const emailInput = view.container.querySelector('input[type="email"]');
+    const passwordInput = view.container.querySelector('input[type="password"]');
+    if (!(emailInput instanceof HTMLInputElement) || !(passwordInput instanceof HTMLInputElement)) throw new Error("Missing credentials inputs");
+    fireEvent.change(emailInput, { target: { value: "test@example.com" } });
+    fireEvent.change(passwordInput, { target: { value: "keep-this-password" } });
+    fireEvent.click(screen.getByRole("button", { name: "로그인" }));
+    await waitFor(() => expect(screen.getByText("이메일 또는 비밀번호가 올바르지 않습니다.")).toBeTruthy());
+    // When
+    language.locale = "en";
+    view.rerender(<LoginPage />);
+    // Then
+    expect(screen.getByText("The email or password is incorrect.")).toBeTruthy();
+    expect(emailInput.value).toBe("test@example.com");
+    expect(passwordInput.value).toBe("keep-this-password");
+  });
 
   it("회원가입 링크를 첫 로그인 화면에 표시한다", () => {
     render(<LoginPage />);

@@ -1,4 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
+import { fireEvent, render as renderView, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProductPostCard } from "./ProductPostCard";
 
@@ -87,7 +89,8 @@ describe("ProductPostCard", () => {
     fireEvent.change(screen.getByLabelText(fieldName), { target: { value: "실패할 변경" } });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
-    expect((await screen.findByRole("alert")).textContent).toBe("수정 실패");
+    expect((await screen.findByRole("alert")).textContent).toBe("수정하지 못했어요.");
     expect(onChange).not.toHaveBeenCalled();
   });
 });
+function render(children: ReactNode) { const result = renderView(<LanguageProvider initialLocale="ko">{children}</LanguageProvider>); return { ...result, rerender: (next: ReactNode) => result.rerender(<LanguageProvider initialLocale="ko">{next}</LanguageProvider>) }; }

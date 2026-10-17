@@ -1,3 +1,4 @@
+import { AccountText } from "@/components/mypage/AccountText";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { auth } from "@/auth";
@@ -59,19 +60,19 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <span className="text-xl font-bold font-outfit text-white">
                   {profile.postCount}
                 </span>
-                <span className="text-xs text-zinc-400">Posts</span>
+                <span className="text-xs text-zinc-400"><AccountText source="Posts" /></span>
               </div>
               <div className="bg-zinc-900/50 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center">
                 <span className="text-xl font-bold font-outfit text-white">
                   {profile.followerCount}
                 </span>
-                <span className="text-xs text-zinc-400">Followers</span>
+                <span className="text-xs text-zinc-400"><AccountText source="Followers" /></span>
               </div>
               <div className="bg-zinc-900/50 border border-white/5 rounded-xl p-3 flex flex-col items-center justify-center">
                 <span className="text-xl font-bold font-outfit text-white">
                   {profile.followingCount}
                 </span>
-                <span className="text-xs text-zinc-400">Following</span>
+                <span className="text-xs text-zinc-400"><AccountText source="Following" /></span>
               </div>
             </div>
 
@@ -89,8 +90,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         {/* OOTD 그리드 */}
         {profile.posts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
-            <p className="text-lg font-medium mb-1">아직 게시물이 없습니다</p>
-            <p className="text-sm">첫 OOTD를 기다려봐요!</p>
+            <p className="text-lg font-medium mb-1"><AccountText source="아직 게시물이 없습니다" /></p>
+            <p className="text-sm"><AccountText source="첫 OOTD를 기다려봐요!" /></p>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-1">

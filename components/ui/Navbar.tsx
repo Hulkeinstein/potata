@@ -11,8 +11,13 @@ import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
 import { NotificationNavLink } from "@/components/ui/NotificationNavLink";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { sharedMessages } from '@/lib/i18n/shared-messages';
 
 export function Navbar() {
+    const { locale } = useLanguage();
+    const text = sharedMessages[locale];
+    const navLabels = { '/category': text.category, '/shop': text.shop, '/what-to-wear': text.ootd, '/for-you': text.forYou, '/ranking': text.ranking, '/brands': text.brands };
     const { data: session, status } = useSession();
     const router = useRouter();
     const { toggleCart, items: cartItems } = useCartStore();
@@ -38,7 +43,7 @@ export function Navbar() {
             <nav
                 className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-black/60 backdrop-blur-xl border-b border-white/5"
                 role="navigation"
-                aria-label="Main navigation"
+                aria-label={text.mainNavigation}
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-16">
@@ -46,7 +51,7 @@ export function Navbar() {
                         <Link
                             href="/"
                             className="text-2xl font-black tracking-tighter text-white hover:text-purple-400 transition-colors uppercase"
-                            aria-label="POTATA Home"
+                            aria-label={text.home}
                         >
                             POTATA
                         </Link>
@@ -60,7 +65,7 @@ export function Navbar() {
                                     className="text-sm font-bold text-gray-400 hover:text-white transition-colors relative py-1"
                                     role="menuitem"
                                 >
-                                    {link.label}
+                                    {navLabels[link.href]}
                                 </Link>
                             ))}
                             <Link
@@ -76,6 +81,7 @@ export function Navbar() {
                         <div className="flex items-center space-x-2 sm:space-x-4">
                             <button
                                 onClick={() => setIsSearchOpen(true)}
+                                aria-label={text.search}
                                 className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
                             >
                                 <Search className="w-5 h-5" />
@@ -84,7 +90,7 @@ export function Navbar() {
                             <Link
                                 href="/liked"
                                 className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                                aria-label="Wishlist"
+                                aria-label={text.wishlist}
                             >
                                 <div className="relative">
                                     <Heart className="w-5 h-5" />
@@ -96,16 +102,16 @@ export function Navbar() {
                             {isLoggedIn && (
                                 <span
                                     className="text-[10px] font-bold px-2 py-1 rounded-full border border-purple-500 text-purple-400 hidden sm:block"
-                                    aria-label="Account name"
+                                    aria-label={text.accountName}
                                 >
-                                    {session?.user.name ?? "Account"}
+                                    {session?.user.name ?? text.account}
                                 </span>
                             )}
 
                             <Link
                                 href={isLoggedIn ? "/mypage" : "/login"}
                                 className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                                aria-label="User profile"
+                                aria-label={text.profile}
                             >
                                 <User className="w-5 h-5" aria-hidden="true" />
                             </Link>
@@ -113,7 +119,7 @@ export function Navbar() {
                             <button
                                 onClick={toggleCart}
                                 className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors relative"
-                                aria-label="Shopping cart with items"
+                                aria-label={text.cart}
                             >
                                 <ShoppingBag className="w-5 h-5" aria-hidden="true" />
                                 {cartItems.length > 0 && (
@@ -128,7 +134,7 @@ export function Navbar() {
                             <button
                                 className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
                                 onClick={toggleMobileMenu}
-                                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                                aria-label={isMobileMenuOpen ? text.closeMenu : text.openMenu}
                                 aria-expanded={isMobileMenuOpen}
                                 aria-controls="mobile-menu"
                             >
@@ -167,7 +173,7 @@ export function Navbar() {
                         : "opacity-0 -translate-y-4 pointer-events-none"
                 )}
                 role="menu"
-                aria-label="Mobile navigation"
+                aria-label={text.mobileNavigation}
             >
                 <div className="max-w-7xl mx-auto px-4 py-4">
                     <div className="flex flex-col space-y-1">
@@ -179,7 +185,7 @@ export function Navbar() {
                                 className="text-sm font-bold py-3 px-4 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-brand-neon"
                                 role="menuitem"
                             >
-                                {link.label}
+                                {navLabels[link.href]}
                             </Link>
                         ))}
                         <Link
@@ -207,7 +213,7 @@ export function Navbar() {
                                     : "bg-white/10 text-gray-300 hover:bg-white/20"
                             )}
                         >
-                            {isLoggedIn ? "Logout" : "Login"}
+                            {isLoggedIn ? text.logout : text.login}
                         </button>
                     </div>
                 </div>

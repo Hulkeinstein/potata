@@ -3,6 +3,8 @@
 import { X } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { SizeGuide } from "@/lib/size-guide";
+import { useLanguage } from "@/components/providers/LanguageProvider";
+import { productActionMessages } from "@/lib/i18n/product-action-messages";
 
 type SizeGuideDialogProps = {
   readonly productName: string;
@@ -12,6 +14,8 @@ type SizeGuideDialogProps = {
 };
 
 export function SizeGuideDialog({ productName, guide, triggerRef, onClose }: SizeGuideDialogProps) {
+  const { locale } = useLanguage();
+  const text = productActionMessages[locale];
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const [displayUnit, setDisplayUnit] = useState<"cm" | "in">("cm");
@@ -42,7 +46,7 @@ export function SizeGuideDialog({ productName, guide, triggerRef, onClose }: Siz
   }, [onClose, triggerRef]);
 
   const formatMeasurement = (value: number) => displayUnit === "cm" ? value : (value / 2.54).toFixed(1);
-  const measurementLabel = guide.measurementType === "garment" ? "상품 실측" : "신체 권장 치수";
+  const measurementLabel = guide.measurementType === "garment" ? text.garment : text.body;
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/70 p-4" onMouseDown={onClose}>
@@ -50,30 +54,30 @@ export function SizeGuideDialog({ productName, guide, triggerRef, onClose }: Siz
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={`${productName} Size Guide`}
+        aria-label={`${productName} ${text.sizeGuide}`}
         className="max-h-[85vh] w-full max-w-2xl overflow-auto rounded-2xl border border-white/10 bg-zinc-950 p-5 shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-white">Size Guide</h2>
+            <h2 className="text-xl font-bold text-white">{text.sizeGuide}</h2>
             <p className="text-sm text-zinc-400">{productName} · {measurementLabel}</p>
           </div>
-          <button ref={closeRef} type="button" onClick={onClose} aria-label="Size Guide 닫기" className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-white">
+          <button ref={closeRef} type="button" onClick={onClose} aria-label={text.closeGuide} className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-white">
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="mb-3 flex justify-end" aria-label="치수 단위">
+        <div className="mb-3 flex justify-end" aria-label={text.units}>
           {(["cm", "in"] as const).map((unit) => (
             <button key={unit} type="button" aria-pressed={displayUnit === unit} onClick={() => setDisplayUnit(unit)} className="rounded px-3 py-1 text-sm text-zinc-300 aria-pressed:bg-white aria-pressed:text-black">{unit}</button>
           ))}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-96 border-collapse text-sm">
-            <caption className="sr-only">{productName} {measurementLabel}, 단위 {displayUnit}</caption>
+            <caption className="sr-only">{productName} {measurementLabel}, {text.unit} {displayUnit}</caption>
             <thead>
               <tr className="border-b border-white/10 text-left text-zinc-300">
-                <th scope="col" className="p-3">Size</th>
+                <th scope="col" className="p-3">{text.size}</th>
                 {guide.columns.map((column) => <th key={column.key} scope="col" className="p-3">{column.label}</th>)}
               </tr>
             </thead>

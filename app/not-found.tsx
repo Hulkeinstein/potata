@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Home, Search } from "lucide-react";
+import { ShellText } from '@/components/common/ShellText';
 
 export default function NotFound() {
   return (
@@ -10,15 +11,14 @@ export default function NotFound() {
           <h1 className="text-8xl font-black text-gray-100 select-none">404</h1>
           <div className="relative -mt-12">
             <h2 className="text-2xl font-bold text-gray-900">
-              Page Not Found
+              <ShellText name="notFound" />
             </h2>
           </div>
         </div>
 
         {/* 메시지 */}
         <p className="text-gray-400 mb-8">
-          The page you&apos;re looking for doesn&apos;t exist or has been moved.
-          Let&apos;s get you back on track.
+          <ShellText name="notFoundHint" />
         </p>
 
         {/* 액션 버튼 */}
@@ -28,25 +28,25 @@ export default function NotFound() {
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-black text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
           >
             <Home className="w-4 h-4" />
-            Go Home
+            <ShellText name="home" />
           </Link>
           <Link
             href="/shop"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 text-gray-700 font-bold rounded-full hover:bg-gray-50 transition-colors"
           >
             <Search className="w-4 h-4" />
-            Browse Shop
+            <ShellText name="browse" />
           </Link>
         </div>
 
         {/* 추가 링크 */}
         <div className="mt-12 pt-8 border-t border-gray-100">
-          <p className="text-sm text-gray-400 mb-4">Popular Destinations</p>
+          <p className="text-sm text-gray-400 mb-4"><ShellText name="destinations" /></p>
           <div className="flex flex-wrap justify-center gap-2">
             {[
-              { href: "/shop", label: "Shop" },
-              { href: "/brands", label: "Brands" },
-              { href: "/ranking", label: "Ranking" },
+              { href: "/shop", label: <ShellText name="shop" /> },
+              { href: "/brands", label: <ShellText name="brands" /> },
+              { href: "/ranking", label: <ShellText name="ranking" /> },
               { href: "/try-on", label: "AI Studio" },
             ].map((link) => (
               <Link

@@ -1,4 +1,5 @@
 "use client";
+import { useAccountMessage } from "@/components/mypage/AccountText";
 
 import { useWishlistStore } from "@/store/wishlist-store";
 import { ProductCard } from "@/components/ui/ProductCard";
@@ -12,6 +13,7 @@ interface LikedClientProps {
 }
 
 export function LikedClient({ products }: LikedClientProps) {
+  const t = useAccountMessage();
     const likedIds = useWishlistStore((state) => state.items);
     const hasHydrated = useWishlistStore((state) => state.hasHydrated);
 
@@ -25,7 +27,7 @@ export function LikedClient({ products }: LikedClientProps) {
             <div className="max-w-7xl mx-auto">
                 <div className="flex items-center gap-3 mb-8">
                     <Heart className="w-8 h-8 text-brand-neon fill-brand-neon" />
-                    <h1 className="text-3xl font-bold font-outfit text-white">Liked Items</h1>
+                    <h1 className="text-3xl font-bold font-outfit text-white">{t("Liked Items")}</h1>
                     <span className="text-zinc-400 text-lg font-medium">({likedProducts.length})</span>
                 </div>
 
@@ -47,13 +49,13 @@ export function LikedClient({ products }: LikedClientProps) {
                         <div className="w-24 h-24 rounded-full bg-zinc-900 flex items-center justify-center mb-6">
                             <Heart className="w-10 h-10 text-zinc-400" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white mb-2">Your wishlist is empty</h2>
-                        <p className="text-zinc-400 mb-8">Save items you love to find them easily later.</p>
+                        <h2 className="text-2xl font-bold text-white mb-2">{t("Your wishlist is empty")}</h2>
+                        <p className="text-zinc-400 mb-8">{t("Save items you love to find them easily later.")}</p>
                         <Link
                             href="/shop"
                             className="px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-brand-neon transition-colors flex items-center gap-2"
                         >
-                            Start Shopping <ArrowRight className="w-4 h-4" />
+                            {t("Start Shopping")} <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
                 )}

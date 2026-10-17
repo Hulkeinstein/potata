@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { categoryLabel, discoveryMessages } from '@/lib/i18n/discovery-messages';
 import { ProductCard } from "@/components/ui/ProductCard";
 import { cn } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/constants";
@@ -19,6 +21,8 @@ function isProductCategory(value: string | null): value is ProductCategory {
 }
 
 export function ShopContent({ products }: ShopContentProps) {
+    const { locale } = useLanguage();
+    const t = discoveryMessages[locale];
     const searchParams = useSearchParams();
     const initialCategory = searchParams.get("category");
     const [selectedCategory, setSelectedCategory] = useState<ProductCategory>(
@@ -46,7 +50,7 @@ export function ShopContent({ products }: ShopContentProps) {
                     <div
                         className="flex items-center gap-4 overflow-x-auto no-scrollbar"
                         role="tablist"
-                        aria-label="Product categories"
+                        aria-label={t.categories}
                     >
                         {CATEGORIES.map((cat) => (
                             <button
@@ -61,13 +65,13 @@ export function ShopContent({ products }: ShopContentProps) {
                                         : "text-gray-400 hover:text-white"
                                 )}
                             >
-                                {cat}
+                                {categoryLabel(cat, locale)}
                             </button>
                         ))}
                     </div>
 
                     <p className="text-sm font-medium text-gray-400">
-                        Sort by: <span className="text-white">Newest</span>
+                        {t.sort} <span className="text-white">{t.newest}</span>
                     </p>
                 </div>
             </div>
@@ -75,7 +79,7 @@ export function ShopContent({ products }: ShopContentProps) {
             {/* Product Grid */}
             <div className="max-w-7xl mx-auto px-4 py-8">
                 <h1 className="text-xl font-bold mb-6 flex items-baseline gap-2">
-                    {selectedCategory === "All" ? "All Products" : selectedCategory}
+                    {selectedCategory === "All" ? t.allProducts : categoryLabel(selectedCategory, locale)}
                     <span className="text-gray-400 text-sm font-normal">
                         ({filteredProducts.length})
                     </span>
@@ -94,7 +98,7 @@ export function ShopContent({ products }: ShopContentProps) {
                             onClick={handleLoadMore}
                             className="px-8 py-3 border border-white/20 rounded-full font-bold hover:bg-white hover:text-black transition-colors"
                         >
-                            Load More
+                            {t.loadMore}
                         </button>
                     </div>
                 )}
@@ -103,7 +107,7 @@ export function ShopContent({ products }: ShopContentProps) {
                 {filteredProducts.length === 0 && (
                     <div className="py-20 text-center">
                         <p className="text-gray-400 font-medium">
-                            No products found in this category.
+                            {t.empty}
                         </p>
                     </div>
                 )}

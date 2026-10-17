@@ -1,4 +1,5 @@
 "use client";
+import { useAccountMessage } from "@/components/mypage/AccountText";
 
 import { useEffect } from "react";
 import Image from "next/image";
@@ -13,7 +14,7 @@ import {
 
 const MY_MENU = [
     { label: "Order History", icon: FileText, href: "/mypage/orders" },
-    { label: "My Posts", description: "OOTD · Reviews · Q&A 관리", icon: Images, href: "/mypage/posts" },
+    { label: "My Posts", description: "OOTD · 리뷰 · Q&A 관리", icon: Images, href: "/mypage/posts" },
     { label: "Wishlist", icon: Heart, href: "/liked" },
     { label: "Notifications", icon: Bell, href: "/notifications" },
     { label: "Settings", description: "쇼핑 사이즈 · AI 코디 표시", icon: Settings, href: "/mypage/settings" },
@@ -21,6 +22,7 @@ const MY_MENU = [
 ];
 
 export default function MyPage() {
+  const t = useAccountMessage();
     const { data: session, status } = useSession();
     const router = useRouter();
     const user = session?.user;
@@ -58,7 +60,7 @@ export default function MyPage() {
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold font-outfit mb-1">
-                            Hello, <span className="text-brand-neon">{user.name}</span>
+                            {t("Hello,")} <span className="text-brand-neon">{user.name}</span>
                         </h1>
                         <p className="text-sm text-zinc-400">{user.email}</p>
                     </div>
@@ -73,7 +75,7 @@ export default function MyPage() {
                 >
                     {MY_MENU.map((item) => (
                         <Link
-                            key={item.label}
+                            key={t(item.label)}
                             href={item.href}
                             className="w-full flex items-center justify-between p-4 bg-zinc-900/30 border border-white/5 rounded-lg hover:bg-white/5 transition-all group"
                         >
@@ -85,7 +87,7 @@ export default function MyPage() {
                                     <span className="font-medium text-zinc-300 group-hover:text-white transition-colors">
                                         {item.label}
                                     </span>
-                                    {item.description && <span className="block text-xs text-zinc-500">{item.description}</span>}
+                                    {item.description && <span className="block text-xs text-zinc-500">{t(item.description)}</span>}
                                 </div>
                             </div>
                             <ChevronRight className="w-4 h-4 text-zinc-400 group-hover:text-white transition-colors" />
@@ -106,7 +108,7 @@ export default function MyPage() {
                     className="w-full py-4 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                 >
                     <LogOut className="w-4 h-4" />
-                    Sign Out
+                    {t("Sign Out")}
                 </motion.button>
 
             </div>

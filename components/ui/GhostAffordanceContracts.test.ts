@@ -7,7 +7,8 @@ const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf
 describe("unsupported affordance source contracts", () => {
   it("checkout은 실제 결제 대신 PENDING 주문 저장 경계를 정직하게 알린다", () => {
     const checkout = source("app/checkout/page.tsx");
-    expect(checkout).toContain("실제 결제는 아직 진행되지 않습니다");
+    expect(checkout).toContain("text.pendingNotice");
+    expect(source("lib/i18n/commerce-messages.ts")).toContain("실제 결제는 아직 진행되지 않습니다");
     expect(checkout).not.toContain("결제가 진행됩니다");
   });
 

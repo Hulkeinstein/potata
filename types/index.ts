@@ -16,6 +16,8 @@ export interface Product {
   isHot?: boolean;
   category?: ProductCategory;
   description?: string;
+  readonly descriptionKo?: string | null;
+  readonly descriptionEn?: string | null;
   sizes?: string[];
   colors?: string[];
   tags?: string[];
@@ -317,6 +319,8 @@ export interface CreateProductInput {
   originalPrice?: number;
   discountRate?: number;
   description?: string;
+  readonly descriptionKo?: string | null;
+  readonly descriptionEn?: string | null;
   sizes?: string[];
   colors?: string[];
   tags?: string[];

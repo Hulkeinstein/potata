@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
 /**
  * ReviewSection 컴포넌트 테스트
  * - 케이스 ①: reviews 다건 GET mock → 목록 렌더
@@ -9,7 +11,7 @@
  *
  * @testing-library/jest-dom 미설치 환경이므로 순수 vitest expect 사용
  */
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render as renderView, screen, waitFor, fireEvent } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { ReviewSection } from "./ReviewSection";
 
@@ -142,7 +144,7 @@ describe("ReviewSection", () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByText("No reviews yet. Be the first to review!"),
+        screen.queryByText("아직 리뷰가 없습니다."),
       ).not.toBeNull();
     });
   });
@@ -158,7 +160,7 @@ describe("ReviewSection", () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByText("No reviews yet. Be the first to review!"),
+        screen.queryByText("아직 리뷰가 없습니다."),
       ).not.toBeNull();
     });
 
@@ -308,3 +310,4 @@ describe("ReviewSection", () => {
     expect(previewImg).not.toBeNull();
   });
 });
+function render(children: ReactNode) { return renderView(<LanguageProvider initialLocale="ko">{children}</LanguageProvider>); }

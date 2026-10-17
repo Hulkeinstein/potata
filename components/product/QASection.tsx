@@ -1,4 +1,5 @@
 "use client";
+import { useAccountMessage, useAccountDateLocale } from "@/components/mypage/AccountText";
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
@@ -10,6 +11,8 @@ interface QASectionProps {
 }
 
 export function QASection({ productId }: QASectionProps) {
+  const t = useAccountMessage();
+  const dateLocale = useAccountDateLocale();
   const { data: session, status } = useSession();
   const isLoggedIn = status === "authenticated" && !!session?.user?.id;
 
@@ -82,7 +85,7 @@ export function QASection({ productId }: QASectionProps) {
         return;
       }
       if (!json.success) {
-        setFormError(json.error ?? "질문 제출에 실패했습니다.");
+        setFormError("질문 제출에 실패했습니다.");
         return;
       }
       setQuestionContent("");
@@ -122,7 +125,7 @@ export function QASection({ productId }: QASectionProps) {
         return;
       }
       if (!json.success) {
-        setFormError(json.error ?? "수정에 실패했습니다.");
+        setFormError("수정에 실패했습니다.");
         return;
       }
       setEditingQuestionId(null);
@@ -138,7 +141,7 @@ export function QASection({ productId }: QASectionProps) {
 
   // 질문 삭제
   const handleQuestionDelete = async (questionId: string) => {
-    if (!confirm("문의를 삭제하시겠습니까?")) return;
+    if (!confirm(t("문의를 삭제하시겠습니까?"))) return;
     setFormError(null);
     setNotice(null);
     setSubmitting(true);
@@ -156,7 +159,7 @@ export function QASection({ productId }: QASectionProps) {
         return;
       }
       if (!json.success) {
-        setFormError(json.error ?? "삭제에 실패했습니다.");
+        setFormError("삭제에 실패했습니다.");
         return;
       }
       setNotice("문의가 삭제되었습니다.");
@@ -197,7 +200,7 @@ export function QASection({ productId }: QASectionProps) {
         return;
       }
       if (!json.success) {
-        setFormError(json.error ?? "답변 제출에 실패했습니다.");
+        setFormError("답변 제출에 실패했습니다.");
         return;
       }
       setAnsweringQuestionId(null);
@@ -244,7 +247,7 @@ export function QASection({ productId }: QASectionProps) {
         return;
       }
       if (!json.success) {
-        setFormError(json.error ?? "수정에 실패했습니다.");
+        setFormError("수정에 실패했습니다.");
         return;
       }
       setEditingAnswerId(null);
@@ -260,7 +263,7 @@ export function QASection({ productId }: QASectionProps) {
 
   // 답변 삭제
   const handleAnswerDelete = async (questionId: string, answerId: string) => {
-    if (!confirm("답변을 삭제하시겠습니까?")) return;
+    if (!confirm(t("답변을 삭제하시겠습니까?"))) return;
     setFormError(null);
     setNotice(null);
     setSubmitting(true);
@@ -279,7 +282,7 @@ export function QASection({ productId }: QASectionProps) {
         return;
       }
       if (!json.success) {
-        setFormError(json.error ?? "삭제에 실패했습니다.");
+        setFormError("삭제에 실패했습니다.");
         return;
       }
       setNotice("답변이 삭제되었습니다.");
@@ -297,16 +300,16 @@ export function QASection({ productId }: QASectionProps) {
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold">Q&amp;A</h3>
         {data && data.questionCount > 0 && (
-          <span className="text-zinc-400 text-sm">{data.questionCount}개 문의</span>
+          <span className="text-zinc-400 text-sm">{data.questionCount}{t("개 문의")}</span>
         )}
       </div>
 
       {/* 전역 알림/에러 */}
       {notice && (
-        <p className="text-sm text-brand-neon">{notice}</p>
+        <p className="text-sm text-brand-neon">{t(notice)}</p>
       )}
       {formError && !asking && editingQuestionId === null && answeringQuestionId === null && editingAnswerId === null && (
-        <p className="text-sm text-red-400">{formError}</p>
+        <p className="text-sm text-red-400">{t(formError)}</p>
       )}
 
       {/* 로그인 상태 — 문의하기 버튼 또는 폼 */}
@@ -323,9 +326,7 @@ export function QASection({ productId }: QASectionProps) {
                 setAsking(true);
               }}
               className="px-5 py-2 rounded-full bg-brand-neon text-black text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              문의하기
-            </button>
+            >{t("문의하기")}</button>
           )}
 
           {/* 질문 작성 폼 */}
@@ -334,18 +335,16 @@ export function QASection({ productId }: QASectionProps) {
               onSubmit={handleAskSubmit}
               className="bg-zinc-900/30 border border-white/10 rounded-xl p-5 space-y-4"
             >
-              <p className="text-sm font-medium text-zinc-300">문의 작성</p>
+              <p className="text-sm font-medium text-zinc-300">{t("문의 작성")}</p>
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400" htmlFor="question-content">
-                  질문 내용 * (최대 2000자)
-                </label>
+                <label className="text-xs text-zinc-400" htmlFor="question-content">{t("질문 내용 * (최대 2000자)")}</label>
                 <textarea
                   id="question-content"
                   value={questionContent}
                   onChange={(e) => setQuestionContent(e.target.value)}
                   maxLength={2000}
                   rows={4}
-                  placeholder="상품에 대해 궁금한 점을 남겨 주세요."
+                  placeholder={t("상품에 대해 궁금한 점을 남겨 주세요.")}
                   className="w-full bg-zinc-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-brand-neon/50 transition-colors"
                 />
                 <p className="text-right text-xs text-zinc-600">
@@ -353,7 +352,7 @@ export function QASection({ productId }: QASectionProps) {
                 </p>
               </div>
               {formError && asking && (
-                <p className="text-sm text-red-400">{formError}</p>
+                <p className="text-sm text-red-400">{t(formError)}</p>
               )}
               <div className="flex items-center gap-3">
                 <button
@@ -361,7 +360,7 @@ export function QASection({ productId }: QASectionProps) {
                   disabled={submitting}
                   className="px-6 py-2 rounded-full bg-brand-neon text-black text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {submitting ? "제출 중..." : "문의 등록"}
+                  {t(submitting ? "제출 중..." : "문의 등록")}
                 </button>
                 <button
                   type="button"
@@ -371,9 +370,7 @@ export function QASection({ productId }: QASectionProps) {
                     setFormError(null);
                   }}
                   className="px-5 py-2 rounded-full border border-white/15 text-zinc-400 text-sm hover:text-zinc-200 hover:border-white/30 transition-colors"
-                >
-                  취소
-                </button>
+                >{t("취소")}</button>
               </div>
             </form>
           )}
@@ -381,12 +378,8 @@ export function QASection({ productId }: QASectionProps) {
       ) : (
         status !== "loading" && (
           <div className="bg-zinc-900/20 border border-white/5 rounded-xl px-5 py-4 text-sm text-zinc-400">
-            문의를 작성하려면{" "}
-            <a href="/login" className="text-brand-neon hover:underline">
-              로그인
-            </a>
-            이 필요합니다.
-          </div>
+            {t("문의를 작성하려면")}{" "}
+            <a href="/login" className="text-brand-neon hover:underline">{t("로그인")}</a>{t("이 필요합니다.")}</div>
         )
       )}
 
@@ -417,12 +410,10 @@ export function QASection({ productId }: QASectionProps) {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-zinc-200">
-                      {question.userName || "익명"}
+                      {question.userName || t("익명")}
                     </span>
                     {isMyQuestion && (
-                      <span className="text-xs text-brand-neon border border-brand-neon/30 rounded-full px-2 py-0.5 leading-none">
-                        내 문의
-                      </span>
+                      <span className="text-xs text-brand-neon border border-brand-neon/30 rounded-full px-2 py-0.5 leading-none">{t("내 문의")}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -438,25 +429,21 @@ export function QASection({ productId }: QASectionProps) {
                             setNotice(null);
                           }}
                           className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
-                          aria-label="문의 수정"
+                          aria-label={t("문의 수정")}
                         >
-                          <Pencil className="w-3 h-3" />
-                          수정
-                        </button>
+                          <Pencil className="w-3 h-3" />{t("수정")}</button>
                         <button
                           type="button"
                           onClick={() => handleQuestionDelete(question.id)}
                           disabled={submitting}
                           className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
-                          aria-label="문의 삭제"
+                          aria-label={t("문의 삭제")}
                         >
-                          <Trash2 className="w-3 h-3" />
-                          삭제
-                        </button>
+                          <Trash2 className="w-3 h-3" />{t("삭제")}</button>
                       </>
                     )}
                     <span className="text-xs text-zinc-600">
-                      {new Date(question.createdAt).toLocaleDateString("ko-KR")}
+                      {new Date(question.createdAt).toLocaleDateString(dateLocale, { timeZone: "UTC" })}
                     </span>
                   </div>
                 </div>
@@ -475,7 +462,7 @@ export function QASection({ productId }: QASectionProps) {
                       className="w-full bg-zinc-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-brand-neon/50 transition-colors"
                     />
                     {formError && isEditingThisQuestion && (
-                      <p className="text-sm text-red-400">{formError}</p>
+                      <p className="text-sm text-red-400">{t(formError)}</p>
                     )}
                     <div className="flex items-center gap-3">
                       <button
@@ -483,7 +470,7 @@ export function QASection({ productId }: QASectionProps) {
                         disabled={submitting}
                         className="px-5 py-1.5 rounded-full bg-brand-neon text-black text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                       >
-                        {submitting ? "저장 중..." : "수정 완료"}
+                        {t(submitting ? "저장 중..." : "수정 완료")}
                       </button>
                       <button
                         type="button"
@@ -493,9 +480,7 @@ export function QASection({ productId }: QASectionProps) {
                           setFormError(null);
                         }}
                         className="px-4 py-1.5 rounded-full border border-white/15 text-zinc-400 text-xs hover:text-zinc-200 hover:border-white/30 transition-colors"
-                      >
-                        취소
-                      </button>
+                      >{t("취소")}</button>
                     </div>
                   </form>
                 ) : (
@@ -518,12 +503,10 @@ export function QASection({ productId }: QASectionProps) {
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-zinc-200">
-                                {answer.userName || "관리자"}
+                                {answer.userName || t("관리자")}
                               </span>
                               {/* 관리자 답변 배지 */}
-                              <span className="text-xs text-brand-neon border border-brand-neon/30 rounded-full px-2 py-0.5 leading-none">
-                                판매자
-                              </span>
+                              <span className="text-xs text-brand-neon border border-brand-neon/30 rounded-full px-2 py-0.5 leading-none">{t("판매자")}</span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               {/* admin — 답변 수정/삭제 버튼 */}
@@ -538,11 +521,9 @@ export function QASection({ productId }: QASectionProps) {
                                       setNotice(null);
                                     }}
                                     className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
-                                    aria-label="답변 수정"
+                                    aria-label={t("답변 수정")}
                                   >
-                                    <Pencil className="w-3 h-3" />
-                                    수정
-                                  </button>
+                                    <Pencil className="w-3 h-3" />{t("수정")}</button>
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -550,15 +531,13 @@ export function QASection({ productId }: QASectionProps) {
                                     }
                                     disabled={submitting}
                                     className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
-                                    aria-label="답변 삭제"
+                                    aria-label={t("답변 삭제")}
                                   >
-                                    <Trash2 className="w-3 h-3" />
-                                    삭제
-                                  </button>
+                                    <Trash2 className="w-3 h-3" />{t("삭제")}</button>
                                 </>
                               )}
                               <span className="text-xs text-zinc-600">
-                                {new Date(answer.createdAt).toLocaleDateString("ko-KR")}
+                                {new Date(answer.createdAt).toLocaleDateString(dateLocale, { timeZone: "UTC" })}
                               </span>
                             </div>
                           </div>
@@ -579,7 +558,7 @@ export function QASection({ productId }: QASectionProps) {
                                 className="w-full bg-zinc-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-brand-neon/50 transition-colors"
                               />
                               {formError && isEditingThisAnswer && (
-                                <p className="text-sm text-red-400">{formError}</p>
+                                <p className="text-sm text-red-400">{t(formError)}</p>
                               )}
                               <div className="flex items-center gap-3">
                                 <button
@@ -587,7 +566,7 @@ export function QASection({ productId }: QASectionProps) {
                                   disabled={submitting}
                                   className="px-5 py-1.5 rounded-full bg-brand-neon text-black text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                                 >
-                                  {submitting ? "저장 중..." : "수정 완료"}
+                                  {t(submitting ? "저장 중..." : "수정 완료")}
                                 </button>
                                 <button
                                   type="button"
@@ -597,9 +576,7 @@ export function QASection({ productId }: QASectionProps) {
                                     setFormError(null);
                                   }}
                                   className="px-4 py-1.5 rounded-full border border-white/15 text-zinc-400 text-xs hover:text-zinc-200 hover:border-white/30 transition-colors"
-                                >
-                                  취소
-                                </button>
+                                >{t("취소")}</button>
                               </div>
                             </form>
                           ) : (
@@ -627,25 +604,23 @@ export function QASection({ productId }: QASectionProps) {
                         }}
                         className="text-xs text-zinc-400 hover:text-brand-neon transition-colors flex items-center gap-1"
                       >
-                        <MessageSquare className="w-3 h-3" />
-                        답변하기
-                      </button>
+                        <MessageSquare className="w-3 h-3" />{t("답변하기")}</button>
                     ) : (
                       <form
                         onSubmit={(e) => handleAnswerSubmit(e, question.id)}
                         className="space-y-2 pl-4 border-l-2 border-brand-neon/20"
                       >
-                        <p className="text-xs text-zinc-400">답변 작성</p>
+                        <p className="text-xs text-zinc-400">{t("답변 작성")}</p>
                         <textarea
                           value={answerContent}
                           onChange={(e) => setAnswerContent(e.target.value)}
                           maxLength={2000}
                           rows={3}
-                          placeholder="고객 문의에 대한 답변을 입력해 주세요."
+                          placeholder={t("고객 문의에 대한 답변을 입력해 주세요.")}
                           className="w-full bg-zinc-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-brand-neon/50 transition-colors"
                         />
                         {formError && isAnsweringThisQuestion && (
-                          <p className="text-sm text-red-400">{formError}</p>
+                          <p className="text-sm text-red-400">{t(formError)}</p>
                         )}
                         <div className="flex items-center gap-3">
                           <button
@@ -653,7 +628,7 @@ export function QASection({ productId }: QASectionProps) {
                             disabled={submitting}
                             className="px-5 py-1.5 rounded-full bg-brand-neon text-black text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                           >
-                            {submitting ? "제출 중..." : "답변 등록"}
+                            {t(submitting ? "제출 중..." : "답변 등록")}
                           </button>
                           <button
                             type="button"
@@ -663,9 +638,7 @@ export function QASection({ productId }: QASectionProps) {
                               setFormError(null);
                             }}
                             className="px-4 py-1.5 rounded-full border border-white/15 text-zinc-400 text-xs hover:text-zinc-200 hover:border-white/30 transition-colors"
-                          >
-                            취소
-                          </button>
+                          >{t("취소")}</button>
                         </div>
                       </form>
                     )}
@@ -679,7 +652,7 @@ export function QASection({ productId }: QASectionProps) {
         /* 빈 상태 */
         <div className="py-20 flex flex-col items-center justify-center text-center gap-3 bg-zinc-900/20 rounded-xl border border-white/5">
           <MessageSquare className="w-10 h-10 text-zinc-700" />
-          <p className="text-zinc-400 font-medium">아직 문의가 없습니다.</p>
+          <p className="text-zinc-400 font-medium">{t("아직 문의가 없습니다.")}</p>
         </div>
       )}
     </div>

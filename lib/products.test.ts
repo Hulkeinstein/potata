@@ -48,6 +48,8 @@ function makeCreateMock() {
         images: data.images,
         category: data.category,
         description: data.description ?? null,
+        descriptionKo: data.descriptionKo ?? null,
+        descriptionEn: data.descriptionEn ?? null,
         sizes: data.sizes,
         colors: data.colors,
         tags: data.tags ?? [],
@@ -72,6 +74,12 @@ const baseInput: CreateProductInput = {
 };
 
 describe("createProduct", () => {
+  it('persists bilingual descriptions without overwriting legacy original', async () => {
+    makeCreateMock();
+    const result = await createProduct({ ...baseInput, description: 'legacy', descriptionKo: '한국어', descriptionEn: 'English' });
+    expect(result).toMatchObject({ description: 'legacy', descriptionKo: '한국어', descriptionEn: 'English' });
+    expect(productCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ description: 'legacy', descriptionKo: '한국어', descriptionEn: 'English' }) }));
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });

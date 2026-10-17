@@ -1,11 +1,11 @@
 # Potata Master Roadmap
 
-> 마지막 업데이트: 2026-09-12
-> 기준: 현재 `main` 코드와 완료된 로컬 검증 결과. 이 문서는 제품·운영의 현재 상태, 보류 사유, 다음 결정 지점을 함께 기록한다.
+> 마지막 업데이트: 2026-10-17
+> 기준: 현재 작업 폴더와 완료된 검증 기록. 로컬 구현 완료와 운영 배포 완료를 구분한다. 최신 배포 상태를 실시간 점검한 문서는 아니다.
 
 ## 현재 결론
 
-Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태**다. 상품·재고·쿠폰·포인트·소셜 기능과 관리자 대시보드는 구현됐고, 실제 판매를 시작하는 데 필요한 결제·운영 배포·실이메일 발송은 의도적으로 보류 중이다.
+Potata는 **로컬 개발·운영 관리 기능과 고객 화면 English/한국어 전환까지 구현된 상태**다. 관리자 상품 설명의 언어별 저장도 실제 로컬 화면에서 검증했다. 기존 Vercel 배포에서는 허용된 본인 Google 계정 로그인·프로필 완성을 사용자가 확인했지만, 이번 번역·상품 설명 변경은 아직 운영에 배포하지 않았다. 공개 가입은 계속 제한하며, 실제 판매·결제·법률 문서 승인·발신 도메인 인증은 대기 중이다.
 
 | 영역 | 상태 | 현재 의미 |
 | --- | --- | --- |
@@ -14,7 +14,21 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 | 상품·재고 운영 | 완료 | 관리자 상품 등록·수정·판매 중지, 옵션 재고·수동 품절·재고 조정 이력 사용 가능 |
 | 혜택 운영 | Pilot 완료 | 쿠폰 캠페인·발급·포인트 기록은 가능하나 checkout에는 아직 적용하지 않음 |
 | 실제 결제·매출 분석 | 보류 | 결제사·환불·정산 정책 및 실거래 시작 전까지 연결하지 않음 |
-| 운영 배포 | 외부 대기 | 운영 DB, 이메일, Vercel·Storage·OAuth 설정과 명시적 승인 필요 |
+| 고객 UI 언어 | 로컬 완료 | Footer English/한국어, 고객 화면 문구 전환, 언어 선택·미저장 입력 유지; 관리자·원문 콘텐츠·법률 전문 제외 |
+| 상품 언어별 설명 | 로컬 완료 | 관리자 등록·수정의 descriptionKo/descriptionEn, 선택 언어 → 다른 언어 → 기존 원문 순서 표시 |
+| 운영 배포 | 기존 배포 / 이번 변경 대기 | Vercel·본인 Google 로그인 확인 기록 있음. 새 설명 컬럼의 운영 적용을 승인·검증한 뒤 이번 변경 배포 필요 |
+
+### 이번 변경의 배포 전 우선순위
+
+| 순서 | 중요도 | 작업 | 완료 기준·안전 경계 |
+| --- | --- | --- | --- |
+| 1 | P1 / High | 브랜드 가격 표시 정정·회귀 검증 — 완료 | 임의 환산 계수 제거, 공통 formatPrice로 DB AED 값 표시. 원래 가격이 판매가보다 높을 때만 취소선; 가격 회귀 7개와 기존 링크 3개 통과, 실제 화면 EN/KO 확인 |
+| 2 | P1 / High | 번역·설명·가격 수정과 문서 커밋 | 관련 코드·테스트·additive migration만 선별, 비밀값·백업·임시 로그 제외. 푸시는 별도 |
+| 3 | P1 / High | 운영 설명 컬럼 migration 준비·승인 | 정확한 운영 대상과 최신 백업 확인, 격리 복원 검증 후 descriptionKo/descriptionEn 추가 승인. 기존 description 보존, reset/seed/db push 금지 |
+| 4 | P1 / High | 승인 후 푸시·배포와 EN/KO smoke | main 푸시 자동 배포 전에 운영 컬럼 준비. 운영 조회·로그인·설명 fallback·언어 선택·관리자 차단 확인, 공개 가입 제한 유지 |
+| 5 | P1 / High | 공개 출시 조건 | 법률 문서·운영 연락처·실재고·발신 도메인·공유 rate limit 등의 기존 release gate 확인. 유료 구매 항목은 사용자 결정 전 보류 |
+
+**가장 중요한 순서**: 로컬 커밋은 가능하지만 운영 DB 컬럼 준비 없이 main에 푸시하면 자동 배포 후 상품 조회가 실패할 수 있다. 이번 요청은 운영 DB 변경·푸시·배포 승인이 아니다.
 
 ---
 
@@ -34,6 +48,9 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 - Size Guide UI·검증·관리자 입력 경로는 준비됐지만, 권위 있는 상품별 실측 데이터가 아직 없어 치수 안내 버튼은 데이터가 있는 상품에만 보이도록 했다.
 - 장바구니와 찜, 최근 본 상품은 로그인 사용자 기준으로 저장된다.
 - checkout은 서버 가격을 다시 계산해 `PENDING` 주문을 생성한다. 실제 결제 완료로 가장하거나 매출을 계산하지 않는다.
+- 공통 Footer에서 English/한국어를 선택하며 기본값은 English다. cookie와 최초 HTML lang을 맞추고 전환 시 URL·검색 조건·세션·장바구니·미저장 입력을 보존한다.
+- 탐색·검색·추천·랭킹·브랜드, 마이페이지·설정·혜택·작성물·알림·공개 프로필, 장바구니·주문, 리뷰·Q&A·OOTD·AI Studio 및 로딩/오류 안내를 번역했다. 상품명·브랜드명·사용자 콘텐츠는 원문 유지, 관리자 UI는 번역 대상이 아니다.
+- 관리자 상품 등록과 수정에서 한국어·영어 설명을 분리 입력한다. 빈 번역은 다른 언어로 대체하고 출처를 알리며, 기존 description은 언어를 추정하지 않고 원문으로 표시한다. 공식 법률 번역·이메일 템플릿·다국어 SEO는 이번 범위에서 제외한다.
 
 ### P2 — 콘텐츠·소셜·개인 영역
 
@@ -126,28 +143,74 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 | --- | --- | --- | --- | --- | --- |
 | 1 | **P0 / Critical** | 가입·온보딩 변경 안전하게 저장 | 이름·handle·동의·프로필 사진 변경이 커밋되지 않으면 유실·혼합 위험이 있다. | 임시 로그·스크린샷·로컬 비밀값 제외, diff·secret 검사, 현재 품질 기준 재확인 후 단일 커밋 | 완료 — 이 로드맵과 함께 저장 |
 | 2 | **P0 / Critical** | Google 신규 계정 OAuth callback 검증 | 신규 Google 사용자가 callback에서 실패하면 가입 자체가 불가능하다. | Docker·기존 개발 DB 복구 후 `localhost`에서 다른 Google 계정 login → callback → `/onboarding/profile` 진입과 API 정상 응답 확인 | 완료 |
-| 3 | **P0 / Critical** | 신규 가입 E2E | 개별 화면이 동작해도 실제 계정 생성·동의 저장·handle 선점이 한 흐름에서 검증되지 않으면 출시할 수 없다. | Google 신규 계정 흐름과 Email preview signup → verify → profile → session, 중복 handle·재시도·기존 사용자 검증 | 로컬 완료 — Resend 실메일은 P1 대기 |
+| 3 | **P0 / Critical** | 신규 가입 E2E | 개별 화면이 동작해도 실제 계정 생성·동의 저장·handle 선점이 한 흐름에서 검증되지 않으면 출시할 수 없다. | Google 신규 계정 흐름과 Email preview signup → verify → profile → session, 중복 handle·재시도·기존 사용자 검증 | 로컬 완료 — sandbox 실메일도 확인, 공개 가입은 법률 gate 유지 |
 | 4 | **P1 / High** | 프로필 이미지 Storage 연결 | 사용자 사진이 Google 기본 이미지에 고정되지 않고 모든 화면에서 동일하게 보여야 한다. | 전용 public bucket, 새·기존 secret key 지원, upload → replace, DB 단일 URL, 이전 파일 정리, session refresh와 My Page 반영 확인 | 완료 |
-| 5 | **P1 / High** | Resend 실메일 검증 | preview 성공만으로는 실제 가입 인증 메일의 전달성을 보장할 수 없다. | API key, 인증된 발신자, 테스트 수신 주소로 인증 메일 1건 → code 인증 → login 확인 | 외부 설정 대기 |
+| 5 | **P1 / High** | Resend 실메일 검증 | preview 성공만으로는 실제 가입 인증 메일의 전달성을 보장할 수 없다. | sandbox 소유자 수신함 → code 인증 → 재로그인 → 프로필 저장 사용자 확인. 고객 발송은 도메인 인증 후 별도 검증 | 로컬 sandbox 완료 — 사용자 확인 |
 | 6 | **P1 / High** | 가입 법률 문서 확정 | 현재 Terms·Privacy·Marketing 본문은 명시적인 비운영 초안이라 실제 사용자 동의를 받을 수 없다. | UAE 법인·라이선스·주소, processor·retention, Arabic/English 문안 및 UAE 자격 법률 검토 승인 | 외부 결정 대기 |
-| 7 | **P1 / High** | 운영 DB 안전 검증 | schema 이력을 잘못 등록하면 운영 데이터 손상이나 drift 은폐가 발생할 수 있다. | 대상 DB 식별, timestamped backup, restore rehearsal, read-only drift empty 확인 후 별도 baseline resolve 승인 | 외부 승인 대기 |
-| 8 | **P1 / High** | 배포 환경 연결 | 로컬 성공만으로 OAuth·Storage·메일·AI가 운영 환경에서 동작한다고 볼 수 없다. | Vercel env, Supabase host/bucket, Google 운영 callback, Resend, Replicate 대상과 권한 확인 | 외부 설정 대기 |
-| 9 | **P1 / High** | 배포 smoke test | 공개 환경의 callback·cookie·DB·권한 경계를 최종 확인해야 한다. | 승인된 배포에서 signup → verify → login → 상품 탐색 → 관리자 권한 흐름 PASS | 배포 후 |
+| 7 | **P1 / High** | 운영 DB 안전 검증 | schema 이력을 잘못 등록하면 운영 데이터 손상이나 drift 은폐가 발생할 수 있다. | 대상 DB 식별, timestamped backup, 격리 restore rehearsal, migration 이력에 맞는 drift 검증과 별도 write 승인 | 완료 — 기존 Supabase 최신 백업·복원 검증 후 승인된 17개 migration 적용, 원래 데이터 보존 |
+| 8 | **P1 / High** | 배포 환경 연결 | 로컬 성공만으로 OAuth·Storage·메일·AI가 운영 환경에서 동작한다고 볼 수 없다. | Vercel env, Supabase host/bucket, Google 운영 callback, Resend, Replicate 대상과 권한 확인 | 기존 Vercel·본인 Google 로그인 부분 확인, 전체 공개 출시 설정은 대기 |
+| 9 | **P1 / High** | 배포 smoke test | 공개 환경의 callback·cookie·DB·권한 경계를 최종 확인해야 한다. | 승인된 배포에서 signup → verify → login → 상품 탐색 → 관리자 권한 흐름 PASS | 이번 변경의 운영 migration·배포 승인 후. 공개 가입 제한을 풀어 검증하지 않음 |
 | 10 | **P2 / Medium** | 상품 실데이터 입력 | 현재 외부 이미지와 치수 누락은 고객 신뢰와 Size Guide 노출을 제한한다. | 사용 권한이 있는 대표 이미지와 권위 있는 상품별 cm 치수 입력; 없는 경우 CTA 숨김 유지 | 데이터 대기 |
 | 11 | **P2 / Medium** | 운영 관찰성·정책 보완 | 운영 어시스턴트는 감지·안내만 하므로 실서비스 장애 대응 기준이 별도로 필요하다. | 오류·메일·재고·문의 모니터링, 감사 로그 보존, 담당자와 대응 기준 문서화 | 출시 전 계획 |
 | 12 | **P3 / Deferred** | 결제·혜택 사용·매출 분석 | 실거래 정책 없이 연결하면 주문·재고·환불·정산 불일치 위험이 크다. | 상품·물량, provider, 통화·세금, webhook, 환불·정산 정책 확정 후 별도 계획 승인 | 보류 |
 
-### 지금 실행할 작업
+### 공개 출시를 위한 기존 대기 작업 (위 배포 전 우선순위 이후)
 
-1. Resend 인증 발신자와 테스트 수신 주소로 실메일 1건을 검증한다.
+1. Resend sandbox 실메일 검증은 완료했다. 공개 발송 전에 발신 도메인을 인증하고 발신 주소를 변경한다.
 2. UAE 법인·라이선스·주소와 Arabic/English 약관 문안을 확정하고 자격 있는 법률 검토를 받는다.
-3. 운영 DB의 대상 식별·백업·복원 rehearsal·read-only drift 검증을 완료한다.
-4. Vercel·Supabase·Google OAuth·Resend 운영 환경을 연결하고 배포 smoke test를 수행한다.
+3. 기존 Supabase 운영 DB의 최신 백업·격리 복원·구조 비교 후 승인된 migration 적용을 2026-10-04 완료한 기록이 있다. 당시 사용자 3명·상품 11개의 원래 데이터 보존을 확인했다. 일반 절차는 [ADR-009](../adr/adr-009-prisma-migration-baseline.md), 상세 로컬 기록은 `evidence/supabase-rehearsal/remote-apply-2026-10-04.md`에 있다(이번 선별 커밋에서는 해당 과거 미추적 산출물 제외). 이는 새 설명 migration의 운영 적용 증거가 아니다. 로컬 앱은 계속 개발 PostgreSQL을 사용하며 새 옵션 59개의 실제 재고 입력, 법률 문서 확정, 배포 인증/권한 smoke는 공개 전 필요하다.
+4. 기존 Vercel·Google 로그인 확인을 바탕으로 새 변경의 운영 migration·재배포를 별도 승인하고 전체 release smoke를 수행한다. 기존 본인 로그인 성공을 공개 가입·Storage·Resend·AI 전체 운영 검증으로 간주하지 않는다.
 5. 실제 상품·판매 정책이 확정되기 전까지 결제·혜택 사용·매출 분석은 보류한다.
 
 **OAuth 확인 기록**: 2026-09-12에 Google provider·CSRF·client ID·정확한 localhost callback·PKCE challenge·scope, DB query와 온보딩 API를 확인했다. 이전 실패의 직접 원인은 Google API key가 아니라 Docker stale socket으로 인한 개발 DB 중단이었으며, 기존 데이터 볼륨을 유지한 복구 후 다른 Google 계정 로그인이 성공했다.
 
 **보류 기준**: 실제 상품·판매·결제사·환불·정산 정책이 확정되기 전에는 결제 연동, 쿠폰 사용, 포인트 사용, 매출·판매 순위 분석을 연결하지 않는다.
+
+### 브랜드 가격 정정·커밋 전 검증 — 2026-10-17
+
+- Brands 전용 0.003/0.004 환산을 제거했다. 공통 formatPrice로 DB의 AED 판매가를 그대로 표시하며 originalPrice가 판매가보다 클 때만 실제 원가를 취소선으로 표시한다.
+- 가격 회귀 7개에서 수정 전 실패를 확인했고 수정 후 기존 링크 3개와 함께 10개 통과했다. 전체 회귀는 124 files / 685 tests 통과, 5 files / 11 guarded skips다. TypeScript 통과, lint 오류 0 / 기존 경고 3, build exit 0 / 62개 페이지 통과.
+- 실제 로컬 `/brands`에서 EN/KO 모두 판매가 AED 719·원가 AED 779, 원가 없는 상품 AED 685 단독 표시를 확인했다. 당시 Docker 개발 DB 엔진 연결은 복구되지 않아 페이지는 기존 상품 캐시를 사용했다. 빌드의 DB 재조회 경고를 숨기지 않으며 새 DB 조회·로그인 검증 완료로 간주하지 않는다.
+- 이번 저장 대상은 고객 번역·상품 설명 분리·가격 정정과 관련 테스트/문서/migration이다. 기존 ADR 수정·이전 운영 실사 산출물·비밀값·DB 백업·임시 로그·스크린샷은 제외하고 보존한다. 운영 DB 변경·푸시·배포는 수행하지 않는다.
+- 가격 상세 증거: [회귀 검증](../../evidence/brand-price-fix/verification.md). 다음 실행은 기존 개발 DB 재가동을 확인한 뒤 별도 승인된 운영 설명 migration·배포 절차다.
+
+### 고객 번역·상품 설명 검증 기록 — 2026-10-13
+
+- 전체 123 files / 678 tests 통과, 5 files / 11 guarded skips. TypeScript 통과, lint 오류 0 / 기존 경고 3, production build 62/62 통과. 이는 당시 실행 결과이며 10월 17일 재실행 결과와 구분한다.
+- 관리자 상품 1의 한국어·영어 설명을 실제 저장한 뒤 고객 상세에서 언어별 본문을 확인하고 원래 null 값으로 복원했다. 기존 description은 보존했다.
+- 로컬 상품 9개 / 옵션 40개 / 총 재고 200 / 각 옵션 5 / 수동 품절 0 확인. 일반 상품 조회 기록과 수정 시각은 앱의 기존 동작으로 갱신될 수 있으므로 DB 전체 무변경을 주장하지 않는다.
+- 실제 데스크톱·390×844 모바일에서 언어 전환, 검색어 유지, 미저장 선호 사이즈·질문 입력 유지, 빈 목록 및 Footer 표시를 확인했다. 주문·게시·외부 업로드·AI 생성은 실행하지 않았다.
+- 날짜는 locale별 표기와 명시적 UTC 기준을 사용한다. 법률 본문은 한국어 초안·버전을 유지한다. root cookie 읽기로 request-time 렌더링되며 데이터 캐시 정책은 유지한다.
+- 기존 For You의 Sarah·12개 조회 데모 표현은 실제 개인화가 아니며 이번 번역에서 제품화하지 않았다. 실제 개인화 연결 또는 데모 표시 정정은 후속 품질 과제다.
+- 증거: [고객 번역 검증](../../evidence/customer-translation/verification.md), [로컬 설명 검증](../../evidence/bilingual-product-description/local-db-2026-10-13.md), [실행 계획](../../plans/footer-language-switch.md).
+
+### 이전 로컬 확인 — 2026-10-03
+
+- 원격 main의 보안·인증·관리자 dynamic rendering 개선을 반영했다.
+- Next 16.3.6 / Sharp 0.35.5 설치, Prisma Client 생성 완료.
+- Docker stale Ingest socket 폴더를 보존 이름으로 옮긴 후 기존 개발 DB를 복구했다.
+- 로컬 potata_dev에 RLS migration 적용, 17개 migration 최신 상태와 기존 상품 9개 조회 확인.
+- 테스트 597 passed / 11 skipped, TypeScript 통과, lint 오류 0 / 기존 경고 3, production build 62개 페이지 통과.
+- Resend sandbox의 수신자 제한을 실제 실패 응답으로 확인했다. 계정 소유자 주소로 재가입 후 이메일 인증 상태를 DB에서 확인했고 사용자가 재로그인·프로필 완료를 확인했다. 수신함 직접 관찰과 provider 전달 로그 확인은 수행하지 않았다.
+- 삭제 후 남은 이전 JWT 세션으로 온보딩 404가 발생했으며 로그아웃·재로그인으로 해결했다.
+
+### 다음 P1 — 가입 법률 문서 확정 입력 목록
+
+현재 법률 본문은 `lib/legal-documents.ts`의 Terms / Privacy / Marketing 공통 초안이다. 팝업과 전문 페이지가 같은 본문을 사용한다. 아래 사실과 검토가 확정되기 전에는 초안 표시와 production 가입 차단을 유지한다.
+
+| 확인 대상 | 필요한 입력 또는 검토 | 현재 상태 |
+| --- | --- | --- |
+| 사업자 신원 | 계약 주체의 법적 명칭, 설립 관할, 라이선스 종류·번호, 등록 주소 | 사용자 입력 대기 |
+| 연락처 | 고객지원·개인정보 문의·민원 접수 주소와 담당자 | 사용자 입력 대기 |
+| 이용 대상 | 공개 국가, 가입 연령, 미성년자 허용 여부와 보호자 절차 | 사용자·법률 검토 대기 |
+| 개인정보 흐름 | 실제 사용 업체, 저장 지역, 전송 데이터, 국외 이전 검토; Replicate 등 AI 처리도 포함 | 설정 대조 필요 |
+| 보관·삭제 | 계정·동의·콘텐츠·보안·혜택 감사 기록별 보관 기간, 삭제와 백업 처리 | 정책 결정 대기 |
+| 사용자 권리 | 열람·정정·삭제·선택 동의 철회 접수와 처리 절차 | 운영 절차 필요 |
+| 이용약관 | 계정·콘텐츠 권리·관리·정지·분쟁 조항과 현재 판매 전 상태 | 법률 검토 대기 |
+| 마케팅 | 현재 선택 기록만 저장; 실제 발송 전 철회·수신거부 방식과 문안 확정 | 실제 발송 보류 |
+| 언어·출시 승인 | 관할 법률 확인, 영문·아랍어 문안, 자격 있는 법률 검토와 문서 버전 승인 | 승인 대기 |
+
+다음 첫 결정은 실제 운영 주체의 법인/사업자 보유 여부와 설립 관할이다. 미설립 상태라면 출시 전 법률 문서 확정은 대기하고 개발 검증을 계속한다. 이 목록은 현 초안의 미확정 사실 목록이며 법률 준수 승인이나 최신 법률 조사 결과가 아니다.
 
 ### 1. 운영 어시스턴트 — 완료
 
@@ -209,9 +272,9 @@ Potata는 **로컬 개발·운영 관리 기능까지는 사용 가능한 상태
 
 아래 항목은 계정·비밀값·운영 환경 접근·명시적 승인 전까지 수행하지 않는다.
 
-1. Resend 발신 도메인 인증과 실메일 1건 검증
-2. 운영 PostgreSQL backup/restore 증거, read-only drift 확인, baseline resolve 별도 승인
-3. Vercel 환경 변수와 deployment 대상 확정
+1. Resend sandbox 검증 이후의 고객 발송용 도메인 인증·발신 주소 설정과 전달성 검증
+2. 운영 PostgreSQL의 새 변경용 최신 backup/restore·read-only drift 확인·migration 별도 승인(기존 17개 이력의 baseline을 재등록하지 않음)
+3. 기존 Vercel 배포의 새 변경 환경 변수·deployment 대상 재확인
 4. Supabase Storage bucket, Google OAuth 운영 callback, Replicate 접근 확인
 5. 배포 승인 후 signup → verify → login → 상품 탐색 → 관리자 권한 smoke test
 

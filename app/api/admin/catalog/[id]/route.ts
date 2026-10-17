@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
 import { getAdminProduct, updateAdminProduct } from "@/lib/admin-product-catalog";
+import { parseDescriptionField } from "@/lib/product-description";
 
 const CATEGORIES = new Set(["Outer", "Top", "Bottom", "Dress", "Acc", "Shoes"]);
 
@@ -16,7 +17,10 @@ function parseUpdate(value: unknown) {
   const isActive = body.isActive;
   const originalPrice = body.originalPrice === null ? null : body.originalPrice;
   const discountRate = body.discountRate === null ? null : body.discountRate;
-  const description = body.description === null ? null : typeof body.description === "string" ? body.description.trim() || null : null;
+  const description = parseDescriptionField(body.description);
+  const descriptionKo = parseDescriptionField(body.descriptionKo);
+  const descriptionEn = parseDescriptionField(body.descriptionEn);
+  if (!description.valid || !descriptionKo.valid || !descriptionEn.valid) return null;
   const variants: { id: string; isManuallySoldOut: boolean }[] = [];
   if (body.variants !== undefined && !Array.isArray(body.variants)) return null;
   for (const value of body.variants ?? []) {
@@ -28,7 +32,11 @@ function parseUpdate(value: unknown) {
   if (!name || !brand || !CATEGORIES.has(category) || typeof price !== "number" || !Number.isInteger(price) || price <= 0 || typeof isActive !== "boolean") return null;
   if (originalPrice !== null && (typeof originalPrice !== "number" || !Number.isInteger(originalPrice) || originalPrice <= 0 || originalPrice < price)) return null;
   if (discountRate !== null && (typeof discountRate !== "number" || !Number.isInteger(discountRate) || discountRate < 0 || discountRate > 100)) return null;
-  return { name, brand, category, price, isActive, originalPrice, discountRate, description, ...(body.variants !== undefined ? { variants } : {}) };
+  return { name, brand, category, price, isActive, originalPrice, discountRate,
+    ...(body.description !== undefined ? { description: description.value } : {}),
+    ...(body.descriptionKo !== undefined ? { descriptionKo: descriptionKo.value } : {}),
+    ...(body.descriptionEn !== undefined ? { descriptionEn: descriptionEn.value } : {}),
+    ...(body.variants !== undefined ? { variants } : {}) };
 }
 
 async function requireAdmin() {

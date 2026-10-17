@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NOTIFICATIONS_READ_EVENT } from "@/lib/notification-events";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { sharedMessages } from '@/lib/i18n/shared-messages';
 
 function getUnreadCount(value: unknown): number | null {
   if (!value || typeof value !== "object" || !("success" in value) || value.success !== true || !("data" in value)) return null;
@@ -13,6 +15,8 @@ function getUnreadCount(value: unknown): number | null {
 }
 
 export function NotificationNavLink() {
+  const { locale } = useLanguage();
+  const text = sharedMessages[locale];
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -34,7 +38,7 @@ export function NotificationNavLink() {
     };
   }, []);
 
-  const label = unreadCount > 0 ? `알림, 읽지 않은 알림 ${unreadCount}개` : "알림";
+  const label = unreadCount > 0 ? `${text.notifications}, ${text.unread} ${unreadCount}${locale === 'ko' ? '개' : ''}` : text.notifications;
 
   return (
     <Link href="/notifications" aria-label={label} className="relative rounded-full p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white">

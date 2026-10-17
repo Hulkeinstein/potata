@@ -1,4 +1,5 @@
 "use client";
+import { useAccountMessage, useAccountDateLocale } from "@/components/mypage/AccountText";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
@@ -16,6 +17,8 @@ interface ReviewSectionProps {
 }
 
 export function ReviewSection({ productId }: ReviewSectionProps) {
+  const t = useAccountMessage();
+  const dateLocale = useAccountDateLocale();
   const { data: session, status } = useSession();
   const isLoggedIn = status === "authenticated" && !!session?.user?.id;
 
@@ -56,7 +59,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
     const picked = Array.from(e.target.files ?? []);
     // 총 개수 검증
     if (keepUrls.length + files.length + picked.length > MAX_IMAGES) {
-      setFormError(`사진은 최대 ${MAX_IMAGES}장`);
+      setFormError("사진은 최대 3장");
       e.target.value = "";
       return;
     }
@@ -143,7 +146,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
         return;
       }
       if (!json.success) {
-        setFormError(json.error ?? "리뷰 제출에 실패했습니다.");
+        setFormError("리뷰 제출에 실패했습니다.");
         return;
       }
 
@@ -160,7 +163,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
   };
 
   const handleDelete = async () => {
-    if (!confirm("리뷰를 삭제하시겠습니까?")) return;
+    if (!confirm(t("리뷰를 삭제하시겠습니까?"))) return;
     setFormError(null);
     setNotice(null);
     setDeleting(true);
@@ -171,7 +174,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       const json = await res.json();
 
       if (!json.success) {
-        setFormError(json.error ?? "삭제에 실패했습니다.");
+        setFormError("삭제에 실패했습니다.");
         return;
       }
 
@@ -194,7 +197,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
     <div className="pt-4 space-y-6">
       {/* 헤더 — 평균 별점 + 리뷰 수 */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">Reviews</h3>
+        <h3 className="text-xl font-bold">{t("Reviews")}</h3>
         {data && data.reviewCount > 0 && (
           <div className="flex items-center gap-2">
             <StarRating
@@ -208,7 +211,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                 : "—"}
             </span>
             <span className="text-zinc-400 text-sm">
-              ({data.reviewCount}개 리뷰)
+              ({data.reviewCount} {t("Reviews")})
             </span>
           </div>
         )}
@@ -232,18 +235,16 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                     setEditing(true);
                   }}
                   className="px-5 py-2 rounded-full bg-brand-neon text-black text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  리뷰 작성하기
-                </button>
+                >{t("리뷰 작성하기")}</button>
               ) : (
-                <p className="text-xs text-zinc-500">내 리뷰가 등록되어 있습니다. 목록에서 수정·삭제할 수 있습니다.</p>
+                <p className="text-xs text-zinc-500">{t("내 리뷰가 등록되어 있습니다. 목록에서 수정·삭제할 수 있습니다.")}</p>
               )}
             </div>
           )}
 
           {/* 성공 알림 — 폼 닫힌 후에도 표시 */}
           {notice && !editing && (
-            <p className="text-sm text-brand-neon">{notice}</p>
+            <p className="text-sm text-brand-neon">{t(notice)}</p>
           )}
 
           {/* 작성/수정 폼 — editing 상태일 때만 렌더 */}
@@ -254,13 +255,13 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-zinc-300">
-                  {myReview ? "내 리뷰 수정" : "리뷰 작성"}
+                  {t(myReview ? "내 리뷰 수정" : "리뷰 작성")}
                 </p>
               </div>
 
               {/* 별점 선택 */}
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400">별점 *</label>
+                <label className="text-xs text-zinc-400">{t("별점 *")}</label>
                 <StarRating
                   value={myRating}
                   onChange={setMyRating}
@@ -269,16 +270,14 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
 
               {/* 코멘트 */}
               <div className="space-y-1">
-                <label className="text-xs text-zinc-400" htmlFor="review-comment">
-                  코멘트 (선택, 최대 2000자)
-                </label>
+                <label className="text-xs text-zinc-400" htmlFor="review-comment">{t("코멘트 (선택, 최대 2000자)")}</label>
                 <textarea
                   id="review-comment"
                   value={myComment}
                   onChange={(e) => setMyComment(e.target.value)}
                   maxLength={2000}
                   rows={3}
-                  placeholder="상품에 대한 솔직한 리뷰를 남겨 주세요."
+                  placeholder={t("상품에 대한 솔직한 리뷰를 남겨 주세요.")}
                   className="w-full bg-zinc-800/60 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 resize-none focus:outline-none focus:border-brand-neon/50 transition-colors"
                 />
                 <p className="text-right text-xs text-zinc-600">
@@ -288,7 +287,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
 
               {/* 사진 갤러리 편집기 */}
               <div className="space-y-2">
-                <p className="text-xs text-zinc-400">사진 (선택, 최대 3장)</p>
+                <p className="text-xs text-zinc-400">{t("사진 (선택, 최대 3장)")}</p>
                 <div className="flex flex-wrap gap-2">
                   {/* 기존 이미지 썸네일 (hover X → 제거) */}
                   {keepUrls.map((url) => (
@@ -297,7 +296,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                         src={url}
                         width={80}
                         height={80}
-                        alt="리뷰 이미지"
+                        alt={t("리뷰 이미지")}
                         className="rounded-lg object-cover w-20 h-20"
                       />
                       <button
@@ -306,7 +305,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                           setKeepUrls((prev) => prev.filter((u) => u !== url))
                         }
                         className="absolute -top-1.5 -right-1.5 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="사진 삭제"
+                        aria-label={t("사진 삭제")}
                       >
                         <X className="w-3.5 h-3.5 text-white" />
                       </button>
@@ -320,7 +319,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={previews[idx]}
-                        alt="새 리뷰 이미지 미리보기"
+                        alt={t("새 리뷰 이미지 미리보기")}
                         className="rounded-lg object-cover w-20 h-20"
                       />
                       <button
@@ -329,7 +328,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                           setFiles((prev) => prev.filter((_, i) => i !== idx))
                         }
                         className="absolute -top-1.5 -right-1.5 bg-black/70 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="사진 삭제"
+                        aria-label={t("사진 삭제")}
                       >
                         <X className="w-3.5 h-3.5 text-white" />
                       </button>
@@ -342,7 +341,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="w-20 h-20 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center text-zinc-500 hover:border-brand-neon hover:text-brand-neon transition-colors"
-                      aria-label="사진 추가"
+                      aria-label={t("사진 추가")}
                     >
                       <Plus className="w-6 h-6" />
                     </button>
@@ -356,17 +355,17 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                   accept="image/jpeg,image/png,image/webp"
                   multiple
                   className="hidden"
-                  aria-label="사진 파일 선택"
+                  aria-label={t("사진 파일 선택")}
                   onChange={onAddFiles}
                 />
               </div>
 
               {/* 오류/알림 메시지 */}
               {formError && (
-                <p className="text-sm text-red-400">{formError}</p>
+                <p className="text-sm text-red-400">{t(formError)}</p>
               )}
               {notice && (
-                <p className="text-sm text-brand-neon">{notice}</p>
+                <p className="text-sm text-brand-neon">{t(notice)}</p>
               )}
 
               {/* 버튼 영역 */}
@@ -376,11 +375,11 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                   disabled={submitting}
                   className="px-6 py-2 rounded-full bg-brand-neon text-black text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {submitting
+                  {t(submitting
                     ? "제출 중..."
                     : myReview
                     ? "리뷰 수정"
-                    : "리뷰 등록"}
+                    : "리뷰 등록")}
                 </button>
                 <button
                   type="button"
@@ -400,9 +399,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                     setEditing(false);
                   }}
                   className="px-5 py-2 rounded-full border border-white/15 text-zinc-400 text-sm hover:text-zinc-200 hover:border-white/30 transition-colors"
-                >
-                  취소
-                </button>
+                >{t("취소")}</button>
               </div>
             </form>
           )}
@@ -410,12 +407,8 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       ) : (
         status !== "loading" && (
           <div className="bg-zinc-900/20 border border-white/5 rounded-xl px-5 py-4 text-sm text-zinc-400">
-            리뷰를 작성하려면{" "}
-            <a href="/login" className="text-brand-neon hover:underline">
-              로그인
-            </a>
-            이 필요합니다.
-          </div>
+            {t("리뷰를 작성하려면")}{" "}
+            <a href="/login" className="text-brand-neon hover:underline">{t("로그인")}</a>{t("이 필요합니다.")}</div>
         )
       )}
 
@@ -439,13 +432,11 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-zinc-200">
-                    {review.userName || "익명"}
+                    {review.userName || t("익명")}
                   </span>
                   {isLoggedIn &&
                     session?.user?.id === review.userId && (
-                      <span className="text-xs text-brand-neon border border-brand-neon/30 rounded-full px-2 py-0.5 leading-none">
-                        내 리뷰
-                      </span>
+                      <span className="text-xs text-brand-neon border border-brand-neon/30 rounded-full px-2 py-0.5 leading-none">{t("내 리뷰")}</span>
                     )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -463,25 +454,23 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                           setEditing(true);
                         }}
                         className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
-                        aria-label="리뷰 수정"
+                        aria-label={t("리뷰 수정")}
                       >
-                        <Pencil className="w-3 h-3" />
-                        수정
-                      </button>
+                        <Pencil className="w-3 h-3" />{t("수정")}</button>
                       <button
                         type="button"
                         onClick={handleDelete}
                         disabled={deleting}
                         className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
-                        aria-label="리뷰 삭제"
+                        aria-label={t("리뷰 삭제")}
                       >
                         <Trash2 className="w-3 h-3" />
-                        {deleting ? "삭제 중..." : "삭제"}
+                        {t(deleting ? "삭제 중..." : "삭제")}
                       </button>
                     </>
                   )}
                   <span className="text-xs text-zinc-600">
-                    {new Date(review.createdAt).toLocaleDateString("ko-KR")}
+                    {new Date(review.createdAt).toLocaleDateString(dateLocale, { timeZone: "UTC" })}
                   </span>
                 </div>
               </div>
@@ -499,7 +488,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                       src={url}
                       width={80}
                       height={80}
-                      alt="리뷰 이미지"
+                      alt={t("리뷰 이미지")}
                       className="rounded-lg object-cover"
                     />
                   ))}
@@ -513,7 +502,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
         <div className="py-20 flex flex-col items-center justify-center text-center gap-3 bg-zinc-900/20 rounded-xl border border-white/5">
           <Star className="w-10 h-10 text-zinc-700" />
           <p className="text-zinc-400 font-medium">
-            No reviews yet. Be the first to review!
+            {t("아직 리뷰가 없습니다.")}
           </p>
         </div>
       )}

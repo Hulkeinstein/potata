@@ -5,12 +5,16 @@ import { Sparkles } from "lucide-react";
 
 import { ProductCard } from "@/components/ui/ProductCard";
 import type { Product } from "@/types";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { discoveryMessages } from '@/lib/i18n/discovery-messages';
 
 interface ForYouContentProps {
     products: Product[];
 }
 
 export function ForYouContent({ products }: ForYouContentProps) {
+    const { locale } = useLanguage();
+    const t = discoveryMessages[locale];
     return (
         <div className="min-h-screen bg-black pt-20 pb-20 text-white">
             {/* ... header and AI Curator Card ... */}
@@ -18,9 +22,9 @@ export function ForYouContent({ products }: ForYouContentProps) {
 
                 <div className="px-5 mb-6">
                     <div className="mb-2">
-                        <h1 className="text-2xl font-bold tracking-tight">For Sarah</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">{t.forSarah}</h1>
                     </div>
-                    <p className="text-sm text-gray-400">Analysis based on your recent style.</p>
+                    <p className="text-sm text-gray-400">{t.analysisNote}</p>
                 </div>
 
                 {/* AI Curator Card */}
@@ -29,7 +33,7 @@ export function ForYouContent({ products }: ForYouContentProps) {
                         <div className="absolute inset-0 opacity-60 group-hover:scale-105 transition-transform duration-700">
                             <Image
                                 src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80"
-                                alt="Analysis"
+                                alt={t.analysis}
                                 fill
                                 className="object-cover"
                             />
@@ -37,19 +41,19 @@ export function ForYouContent({ products }: ForYouContentProps) {
                         <div className="absolute inset-0 bg-linear-to-r from-black via-black/50 to-transparent flex flex-col justify-center p-8">
                             <div className="inline-flex items-center gap-1.5 bg-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-full w-fit mb-4 animate-pulse">
                                 <Sparkles className="w-3 h-3" />
-                                <span>AI ANALYSIS</span>
+                                <span>{t.aiAnalysis}</span>
                             </div>
                             <h2 className="text-white text-2xl md:text-3xl font-black leading-tight mb-3">
-                                &quot;You love <br /> <span className="text-purple-400">Minimal &amp; Chic</span> vibes.&quot;
+                                &quot;{t.love} <br /> <span className="text-purple-400">{t.style}</span> {t.vibes}&quot;
                             </h2>
-                            <p className="text-gray-300 text-xs tracking-wider">Based on 12 viewed items</p>
+                            <p className="text-gray-300 text-xs tracking-wider">{t.viewed}</p>
                         </div>
                     </div>
                 </section>
 
                 {/* Keyword Tags */}
                 <div className="flex gap-2 px-5 overflow-x-auto no-scrollbar mb-10">
-                    {["#Minimalist", "#Office Look", "#Neutral Tone", "#Tweed"].map(tag => (
+                    {(locale === 'ko' ? ['#미니멀', '#오피스룩', '#뉴트럴톤', '#트위드'] : ["#Minimalist", "#Office Look", "#Neutral Tone", "#Tweed"]).map(tag => (
                         <span key={tag} className="text-xs font-bold px-4 py-2 bg-white/5 border border-white/10 rounded-full text-gray-300 whitespace-nowrap">
                             {tag}
                         </span>
@@ -59,7 +63,7 @@ export function ForYouContent({ products }: ForYouContentProps) {
                 {/* Recommended Products Grid */}
                 <div className="px-5">
                     <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                        Recommended Items
+                        {t.recommended}
                         <div className="h-px flex-1 bg-white/10"></div>
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-4 gap-y-8">

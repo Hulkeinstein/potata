@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CartDrawer } from "./CartDrawer";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
 
 const closeCart = vi.hoisted(() => vi.fn());
 
@@ -26,6 +27,12 @@ vi.mock("framer-motion", () => ({
 }));
 
 describe("CartDrawer empty state", () => {
+  it("shows Korean cart actions when Korean is selected", () => {
+    render(<LanguageProvider initialLocale="ko"><CartDrawer /></LanguageProvider>);
+    expect(screen.getByRole("heading", { name: "장바구니" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "쇼핑 시작하기" }).getAttribute("href")).toBe("/shop");
+    expect(screen.getByRole("button", { name: "장바구니 닫기" })).toBeTruthy();
+  });
   it("Start Shopping이 drawer를 닫고 실제 Shop route로 이동한다", () => {
     render(<CartDrawer />);
     const link = screen.getByRole("link", { name: "Start Shopping" });

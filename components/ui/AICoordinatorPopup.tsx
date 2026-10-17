@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { sharedMessages } from '@/lib/i18n/shared-messages';
 
 const HIDE_KEY = "aiCoordinatorHiddenUntil";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -17,6 +19,8 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
  * 읽어도 안전하며, 서버 렌더에는 포함되지 않아 hydration mismatch가 없다.
  */
 export function AICoordinatorPopup({ name }: { name?: string | null }) {
+    const { locale } = useLanguage();
+    const text = sharedMessages[locale];
     const [visible, setVisible] = useState(() => {
         if (typeof window === "undefined") return false;
         let hiddenUntil = 0;
@@ -62,7 +66,7 @@ export function AICoordinatorPopup({ name }: { name?: string | null }) {
                         {/* 닫기 (X) */}
                         <button
                             onClick={close}
-                            aria-label="닫기"
+                            aria-label={text.close}
                             className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors"
                         >
                             <X className="w-5 h-5" />
@@ -74,14 +78,14 @@ export function AICoordinatorPopup({ name }: { name?: string | null }) {
                         </div>
 
                         <h2 className="text-2xl font-bold leading-tight mb-2 text-white">
-                            Hello,{" "}
+                            {text.hello}{" "}
                             <span className="text-transparent bg-clip-text bg-linear-to-r from-brand-neon to-white">
-                                {name || "User"}
+                                {name || text.user}
                             </span>
                             .
                         </h2>
                         <p className="text-gray-400 text-sm leading-relaxed mb-5">
-                            개인화 코디 추천 기능을 준비하고 있습니다. 현재는 AI Studio에서 직접 스타일을 체험할 수 있습니다.
+                            {text.coordinator}
                         </p>
 
                         {/* 끄기 / 하루동안 보지 않기 */}
@@ -90,13 +94,13 @@ export function AICoordinatorPopup({ name }: { name?: string | null }) {
                                 onClick={close}
                                 className="text-zinc-400 hover:text-white transition-colors font-medium"
                             >
-                                끄기
+                                {text.dismiss}
                             </button>
                             <button
                                 onClick={hideForADay}
                                 className="text-zinc-400 hover:text-white transition-colors font-medium"
                             >
-                                하루동안 보지 않기
+                                {text.hideDay}
                             </button>
                         </div>
                     </motion.div>

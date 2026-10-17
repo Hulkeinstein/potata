@@ -1,11 +1,12 @@
 import { getAllProducts } from "@/lib/products";
 import { TryOnContent } from "./TryOnContent";
 import { Suspense } from "react";
+import { StudioLoading } from './StudioLoading';
 
 export default async function TryOnPage() {
     const products = await getAllProducts();
     return (
-        <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center">Loading Studio...</div>}>
+        <Suspense fallback={<StudioLoading />}>
             <TryOnContent products={products} />
         </Suspense>
     );

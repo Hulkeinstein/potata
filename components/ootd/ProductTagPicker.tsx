@@ -5,6 +5,8 @@ import Image from "next/image";
 import { Search, Check, X } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
 import type { ApiResponse, Order, OrderItemSnapshot, Product } from "@/types";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { socialMessages } from '@/lib/i18n/social-messages';
 
 const MAX_TAGS = 5;
 const MAX_RECENTS = 8;
@@ -23,6 +25,8 @@ export function ProductTagPicker({
   selected: string[];
   onChange: (ids: string[]) => void;
 }) {
+  const { locale } = useLanguage();
+  const t = socialMessages[locale];
   const [query, setQuery] = useState("");
   const [recentIds, setRecentIds] = useState<string[]>([]);
 
@@ -63,7 +67,7 @@ export function ProductTagPicker({
       onChange(selected.filter((x) => x !== id));
     } else {
       if (selected.length >= MAX_TAGS) {
-        alert(`상품은 최대 ${MAX_TAGS}개까지 태그할 수 있어요.`);
+        alert(t.maxTags);
         return;
       }
       onChange([...selected, id]);
@@ -98,7 +102,7 @@ export function ProductTagPicker({
               <button
                 type="button"
                 onClick={() => toggle(p.id)}
-                aria-label={`${p.name} 선택 해제`}
+                aria-label={`${p.name} — ${t.unselect}`}
                 className="text-zinc-400 hover:text-white"
               >
                 <X className="w-3.5 h-3.5" />
@@ -114,7 +118,8 @@ export function ProductTagPicker({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="상품 검색 (브랜드·이름)"
+          placeholder={t.search}
+          aria-label={t.search}
           className="w-full bg-black/40 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-purple-500"
         />
       </div>
@@ -124,7 +129,7 @@ export function ProductTagPicker({
         {filtered ? (
           filtered.length === 0 ? (
             <p className="text-xs text-zinc-500 py-6 text-center">
-              검색 결과가 없어요. 다른 상품명이나 브랜드로 검색해보세요.
+              {t.searchEmpty}
             </p>
           ) : (
             <ProductGrid products={filtered} selected={selected} onToggle={toggle} />
@@ -133,9 +138,9 @@ export function ProductTagPicker({
           <>
             {recentProducts.length > 0 && (
               <>
-                <p className="text-xs text-zinc-400 font-medium mb-2">최근 구매한 상품</p>
+                <p className="text-xs text-zinc-400 font-medium mb-2">{t.recent}</p>
                 <ProductGrid products={recentProducts} selected={selected} onToggle={toggle} />
-                <p className="text-xs text-zinc-400 font-medium mb-2 mt-4">전체 상품</p>
+                <p className="text-xs text-zinc-400 font-medium mb-2 mt-4">{t.allProducts}</p>
               </>
             )}
             <ProductGrid

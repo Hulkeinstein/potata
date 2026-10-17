@@ -9,12 +9,16 @@ import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/types";
 
 import { HeartButton } from "@/components/common/HeartButton";
+import { useLanguage } from '@/components/providers/LanguageProvider';
+import { sharedMessages } from '@/lib/i18n/shared-messages';
 
 interface ProductCardProps {
     product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+    const { locale } = useLanguage();
+    const text = sharedMessages[locale];
     const router = useRouter();
     const [imageError, setImageError] = useState(false);
 
@@ -43,26 +47,26 @@ export function ProductCard({ product }: ProductCardProps) {
                     />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
-                        <span className="text-gray-400 text-sm">Image unavailable</span>
+                        <span className="text-gray-400 text-sm">{text.imageUnavailable}</span>
                     </div>
                 )}
 
                 {/* Badges */}
-                <div className="absolute top-2 left-2 flex flex-col gap-1" aria-label="Product badges">
+                <div className="absolute top-2 left-2 flex flex-col gap-1" aria-label={text.badges}>
                     {product.isBest && (
                         <span className="bg-black/80 text-white text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider">
-                            Best
+                            {text.best}
                         </span>
                     )}
                     {product.isNew && (
                         <span className="bg-brand-neon text-black text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider">
-                            New
+                            {text.new}
                         </span>
                     )}
                     {/* 조회수 랭킹 기반 자동 산출 — HOT 배지 */}
                     {product.isHot && (
                         <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 font-bold uppercase tracking-wider">
-                            Hot
+                            {text.hot}
                         </span>
                     )}
                 </div>
@@ -75,7 +79,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 <button
                     onClick={handleTryOn}
                     className="bg-white/90 p-2 rounded-full shadow-lg hover:bg-brand-neon hover:text-black transition-colors focus:outline-none focus:ring-2 focus:ring-brand-neon absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Try on with AI"
+                    aria-label={text.tryOn}
                 >
                     <Sparkles className="w-4 h-4 text-black" aria-hidden="true" />
                 </button>
