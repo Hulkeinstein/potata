@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import Replicate from "replicate";
 import { auth } from "@/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 
 const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
@@ -9,6 +11,9 @@ const replicate = new Replicate({
 
 // 허용 입력: data:image/* 또는 https URL만. base64 폭주 방지 상한(~10MB).
 const MAX_IMAGE_LENGTH = 10 * 1024 * 1024;
+// 본문에는 userImage·productImage 두 장이 base64 data URL 그대로 실린다.
+// 기본 JSON 상한(100KB)을 쓰면 실제 사진은 전부 막히므로, 장당 상한에서 직접 파생한다.
+const MAX_TRY_ON_BODY_BYTES = 2 * MAX_IMAGE_LENGTH + 64 * 1024;
 function isAllowedImage(value: unknown): value is string {
     return (
         typeof value === "string" &&
@@ -31,7 +36,7 @@ export async function POST(req: Request) {
         }
 
         // 호출 1건이 곧 비용이다 — 가입만 하면 무한히 돌릴 수 있으면 안 된다.
-        if (!consumeRateLimit(`try-on:${session.user.id}`, TRY_ON_LIMIT_PER_USER, TRY_ON_WINDOW_MS)) {
+        if (!(await consumeRateLimit(`try-on:${session.user.id}`, TRY_ON_LIMIT_PER_USER, TRY_ON_WINDOW_MS))) {
             return NextResponse.json(
                 { error: "AI 피팅 요청이 너무 잦습니다. 잠시 후 다시 시도해주세요." },
                 { status: 429 }
@@ -46,10 +51,12 @@ export async function POST(req: Request) {
             );
         }
 
-        const body = (await req.json()) as {
+        const parsedBody = await readJsonBody<{
             userImage?: string;
             productImage?: string;
-        };
+        }>(req, MAX_TRY_ON_BODY_BYTES);
+        if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+        const body = parsedBody.value;
         const { userImage, productImage } = body;
 
         if (!userImage || !productImage) {
@@ -85,15 +92,11 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ output });
     } catch (error: unknown) {
-        console.error("Try-On Error:", error);
-        return NextResponse.json(
-            {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to generate try-on image",
-            },
-            { status: 500 }
-        );
+        // 응답에는 공통 문구만 싣는다. 로그에도 오류 객체를 통째로 남기지 않는다 — Replicate ApiError 는
+        // 요청(Request, Authorization: Bearer 토큰 포함)을 들고 있어 그대로 찍으면 토큰이 로그에 남을 수 있다.
+        console.error("Try-On Error:", error instanceof Error
+            ? { name: error.name, message: error.message, status: (error as { response?: { status?: number } }).response?.status }
+            : String(error));
+        return NextResponse.json({ error: INTERNAL_ERROR_MESSAGE }, { status: 500 });
     }
 }

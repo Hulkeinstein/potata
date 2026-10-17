@@ -121,7 +121,7 @@ Potata는 **로컬 개발·운영 관리 기능과 고객 화면 English/한국�
 
 - Prisma migration은 baseline 이후 additive 방식으로 관리한다. 운영 DB에는 별도 승인 없이 migrate/resolve/db push를 실행하지 않는다.
 - 관리자 페이지와 write API는 세션과 `ADMIN_EMAILS` 권한을 서버에서 다시 검증한다.
-- 프로필 이미지 업로드는 실제 decode·단일-frame·해상도 검증과 canonical 재인코딩을 수행한다. 현재 in-memory 사용자별 제한은 local/pre-launch 경계이며, production 공개 전 shared/upstream rate limit 적용을 release gate로 둔다.
+- 프로필 이미지 업로드는 실제 decode·단일-frame·해상도 검증과 canonical 재인코딩을 수행한다. 요청 제한(가입·재발송·로그인·조회수·AI 착용·프로필 사진)은 `RATE_LIMIT_STORE=db` 일 때 인스턴스 공유 DB 카운터로 동작한다(`docs/work-plans/shared-rate-limit.md`). 미설정 기본값은 인스턴스당 메모리 한도이므로, production 공개 전 운영 DB migration 적용 → env `db` 전환을 release gate로 둔다.
 - 쿠폰·포인트·재고 변경은 actor-bound idempotency, 감사 사유, transaction, 안전한 오류 반환을 사용한다.
 - 로컬 기준 TypeScript, lint, Vitest, production build와 주요 desktop/mobile 브라우저 흐름을 반복 검증했다.
 - 현재 프로젝트 전체에 기존 lint warning 3개가 남아 있으나 오류는 없다.
@@ -149,9 +149,9 @@ Potata는 **로컬 개발·운영 관리 기능과 고객 화면 English/한국�
 | 6 | **P1 / High** | 가입 법률 문서 확정 | 현재 Terms·Privacy·Marketing 본문은 명시적인 비운영 초안이라 실제 사용자 동의를 받을 수 없다. | UAE 법인·라이선스·주소, processor·retention, Arabic/English 문안 및 UAE 자격 법률 검토 승인 | 외부 결정 대기 |
 | 7 | **P1 / High** | 운영 DB 안전 검증 | schema 이력을 잘못 등록하면 운영 데이터 손상이나 drift 은폐가 발생할 수 있다. | 대상 DB 식별, timestamped backup, 격리 restore rehearsal, migration 이력에 맞는 drift 검증과 별도 write 승인 | 완료 — 기존 Supabase 최신 백업·복원 검증 후 승인된 17개 migration 적용, 원래 데이터 보존 |
 | 8 | **P1 / High** | 배포 환경 연결 | 로컬 성공만으로 OAuth·Storage·메일·AI가 운영 환경에서 동작한다고 볼 수 없다. | Vercel env, Supabase host/bucket, Google 운영 callback, Resend, Replicate 대상과 권한 확인 | 기존 Vercel·본인 Google 로그인 부분 확인, 전체 공개 출시 설정은 대기 |
-| 9 | **P1 / High** | 배포 smoke test | 공개 환경의 callback·cookie·DB·권한 경계를 최종 확인해야 한다. | 승인된 배포에서 signup → verify → login → 상품 탐색 → 관리자 권한 흐름 PASS | 이번 변경의 운영 migration·배포 승인 후. 공개 가입 제한을 풀어 검증하지 않음 |
+| 9 | **P1 / High** | 배포 smoke test | 공개 환경의 callback·cookie·DB·권한 경계를 최종 확인해야 한다. | 승인된 배포에서 signup → verify → login → 상품 탐색 → 관리자 권한 흐름 PASS | 이번 변경의 운영 migration·배포 승인 후. 공개 가입 제한을 풀지 않음. 비로그인 자동 점검 `npm run smoke -- <주소>`(7항목, `docs/work-plans/health-smoke.md`) 준비 완료, 로그인 흐름은 수동 |
 | 10 | **P2 / Medium** | 상품 실데이터 입력 | 현재 외부 이미지와 치수 누락은 고객 신뢰와 Size Guide 노출을 제한한다. | 사용 권한이 있는 대표 이미지와 권위 있는 상품별 cm 치수 입력; 없는 경우 CTA 숨김 유지 | 데이터 대기 |
-| 11 | **P2 / Medium** | 운영 관찰성·정책 보완 | 운영 어시스턴트는 감지·안내만 하므로 실서비스 장애 대응 기준이 별도로 필요하다. | 오류·메일·재고·문의 모니터링, 감사 로그 보존, 담당자와 대응 기준 문서화 | 출시 전 계획 |
+| 11 | **P2 / Medium** | 운영 관찰성·정책 보완 | 운영 어시스턴트는 감지·안내만 하므로 실서비스 장애 대응 기준이 별도로 필요하다. | 오류·메일·재고·문의 모니터링, 감사 로그 보존, 담당자와 대응 기준 문서화 | 출시 전 계획 — DB 포함 상태 확인 `GET /api/health`(200/503) 추가, uptime 모니터 연결·오류 모니터링(Sentry 등)은 미정 |
 | 12 | **P3 / Deferred** | 결제·혜택 사용·매출 분석 | 실거래 정책 없이 연결하면 주문·재고·환불·정산 불일치 위험이 크다. | 상품·물량, provider, 통화·세금, webhook, 환불·정산 정책 확정 후 별도 계획 승인 | 보류 |
 
 ### 공개 출시를 위한 기존 대기 작업 (위 배포 전 우선순위 이후)

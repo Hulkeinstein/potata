@@ -23,6 +23,7 @@ vi.mock("@/lib/products", () => ({ getProductById: getProductByIdMock }));
 
 import { POST, GET } from "./route";
 import type { NextRequest } from "next/server";
+import { multipartBodyLimit } from "@/lib/request-body";
 
 function jpeg(name = "a.jpg", size = 1000): File {
   // 라우트가 magic-byte로 실제 형식을 판별하므로 JPEG 시그니처(FF D8 FF)로 시작해야 한다.
@@ -38,7 +39,7 @@ function postReq(files: File[], fields: Record<string, string | string[]> = {}):
   for (const [k, v] of Object.entries(fields)) {
     (Array.isArray(v) ? v : [v]).forEach((val) => fd.append(k, val));
   }
-  return { url: "http://localhost/api/ootd", formData: async () => fd } as unknown as NextRequest;
+  return { url: "http://localhost/api/ootd", headers: new Headers(), formData: async () => fd } as unknown as NextRequest;
 }
 function getReq(params?: { cursor?: string; tab?: string }): NextRequest {
   const u = new URL("http://localhost/api/ootd");
@@ -67,6 +68,34 @@ describe("POST /api/ootd", () => {
     authMock.mockResolvedValue(null);
     const res = await POST(postReq([jpeg()]));
     expect(res.status).toBe(401);
+    expect(uploadMock).not.toHaveBeenCalled();
+  });
+
+  // route와 같은 방식으로 파생한다 — 상한이 조용히 줄면 아래 정상 케이스가 먼저 깨진다.
+  const OOTD_BODY_LIMIT = multipartBodyLimit(5 * 1024 * 1024, 5);
+
+  it("5장 분량(약 25MB)을 선언해도 통과한다 — 허용 장수만큼은 받아야 한다", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1" } });
+    const req = postReq([jpeg()]);
+    Object.defineProperty(req, "headers", {
+      value: new Headers({ "content-length": String(5 * 1024 * 1024 * 5) }),
+    });
+
+    const res = await POST(req);
+
+    expect(res.status).not.toBe(413);
+  });
+
+  it("본문이 상한보다 크다고 선언되면 413, 업로드 미호출", async () => {
+    authMock.mockResolvedValue({ user: { id: "u1" } });
+    const req = postReq([jpeg()]);
+    Object.defineProperty(req, "headers", {
+      value: new Headers({ "content-length": String(OOTD_BODY_LIMIT + 1) }),
+    });
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(413);
     expect(uploadMock).not.toHaveBeenCalled();
   });
 

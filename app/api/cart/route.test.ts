@@ -159,4 +159,20 @@ describe("/api/cart", () => {
     expect(ciDeleteMany).toHaveBeenCalled();
     expect(ciCreateMany).not.toHaveBeenCalled(); // 유효 라인 0 → createMany 미호출
   });
+
+  it("DB 오류는 500 공통 문구로만 응답하고 내부 오류 내용은 내보내지 않는다", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    authMock.mockResolvedValue({ user: { id: "u1" } });
+    ciFindMany.mockRejectedValue(new Error('relation "CartItem" does not exist at db.internal:5432'));
+
+    const res = await GET();
+    const text = await res.text();
+
+    expect(res.status).toBe(500);
+    expect(JSON.parse(text)).toEqual({ success: false, error: "서버 오류가 발생했습니다." });
+    expect(text).not.toContain("CartItem");
+    expect(text).not.toContain("db.internal");
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
 });

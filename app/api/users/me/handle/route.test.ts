@@ -23,13 +23,15 @@ vi.mock("@/lib/prisma", () => ({
 
 import { PATCH } from "./route";
 import type { NextRequest } from "next/server";
+import { MAX_JSON_BODY_BYTES } from "@/lib/request-body";
 
 /** JSON body를 가진 NextRequest 모의 */
 function makeReq(body: Record<string, unknown>): NextRequest {
-  return {
-    url: "http://localhost/api/users/me/handle",
-    json: async () => body,
-  } as unknown as NextRequest;
+  return new Request("http://localhost/api/users/me/handle", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }) as unknown as NextRequest;
 }
 
 describe("PATCH /api/users/me/handle", () => {
@@ -43,6 +45,21 @@ describe("PATCH /api/users/me/handle", () => {
     authMock.mockResolvedValue(null);
     const res = await PATCH(makeReq({ handle: "valid_handle" }));
     expect(res.status).toBe(401);
+    expect(userFindUniqueMock).not.toHaveBeenCalled();
+    expect(userUpdateMock).not.toHaveBeenCalled();
+  });
+
+  it("본문이 상한보다 크다고 선언되면 413, DB 미호출", async () => {
+    authMock.mockResolvedValue({ user: { id: "user1" } });
+    const oversized = new Request("http://localhost/api/users/me/handle", {
+      method: "PATCH",
+      headers: { "content-type": "application/json", "content-length": String(MAX_JSON_BODY_BYTES + 1) },
+      body: JSON.stringify({ handle: "valid_handle" }),
+    }) as unknown as NextRequest;
+
+    const res = await PATCH(oversized);
+
+    expect(res.status).toBe(413);
     expect(userFindUniqueMock).not.toHaveBeenCalled();
     expect(userUpdateMock).not.toHaveBeenCalled();
   });

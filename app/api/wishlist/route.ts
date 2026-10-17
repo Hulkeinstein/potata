@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import type { WishlistToggleRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 // GET: 본인 위시리스트 productId 목록 (session.user.id만 신뢰)
 export async function GET() {
@@ -27,7 +28,7 @@ export async function GET() {
   } catch (error) {
     console.error("[wishlist GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }
@@ -45,7 +46,9 @@ export async function POST(req: NextRequest) {
     }
     const userId = session.user.id;
 
-    const body = (await req.json()) as Partial<WishlistToggleRequest>;
+    const parsedBody = await readJsonBody<Partial<WishlistToggleRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const productId = typeof body.productId === "string" ? body.productId.trim() : "";
     if (!productId) {
       return NextResponse.json(
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[wishlist POST] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

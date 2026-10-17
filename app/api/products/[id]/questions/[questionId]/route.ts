@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/admin";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 // PATCH: 질문 수정 — 본인만(admin도 타인 질문 수정 불가)
 // 보안 게이트: auth → params → body 파싱 → content 검증 → 조회(404) → 소유검증(403) → update → revalidate → 200
@@ -25,15 +26,15 @@ export async function PATCH(
     const { id: productId, questionId } = await params;
 
     // 3. body JSON 파싱 — 실패 시 400
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
+    const parsedBody = await readJsonBody<unknown>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
       return NextResponse.json(
         { success: false, error: "Invalid request body" },
         { status: 400 },
       );
     }
+    const body = parsedBody.value;
 
     // 4. content 검증 — string·trim·≤2000
     const content =
@@ -89,7 +90,7 @@ export async function PATCH(
   } catch (error) {
     console.error("[questions PATCH] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }
@@ -149,7 +150,7 @@ export async function DELETE(
   } catch (error) {
     console.error("[questions DELETE] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }

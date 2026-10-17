@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getProductById } from "@/lib/products";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import type { CartItem, CartSyncRequest } from "@/types";
 import { findPurchasableVariant } from "@/lib/product-variants";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 // GET: 본인 장바구니 — productId로 현재 product/가격을 재조회(Zero Trust). 삭제/품절 상품은 제외.
 export async function GET() {
@@ -38,7 +39,7 @@ export async function GET() {
   } catch (error) {
     console.error("[cart GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }
@@ -56,7 +57,9 @@ export async function PUT(req: NextRequest) {
     }
     const userId = session.user.id;
 
-    const body = (await req.json()) as Partial<CartSyncRequest>;
+    const parsedBody = await readJsonBody<Partial<CartSyncRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     if (!Array.isArray(body.items)) {
       return NextResponse.json(
         { success: false, error: "items 배열이 필요합니다." },
@@ -111,7 +114,7 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     console.error("[cart PUT] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

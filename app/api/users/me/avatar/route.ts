@@ -3,13 +3,14 @@ import sharp from "sharp";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { removeProfileImagesByUrl, uploadProfileImage } from "@/lib/supabase-storage";
+import { isDeclaredBodyTooLarge, multipartBodyLimit, requestBodyErrorResponse } from "@/lib/request-body";
+import { consumeRateLimit } from "@/lib/rate-limit";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 const MAX_AVATAR_PIXELS = 25_000_000;
 const MAX_AVATAR_DIMENSION = 8_000;
 const RATE_WINDOW_MS = 5 * 60 * 1000;
 const RATE_LIMIT = 20;
-const uploadAttempts = new Map<string, readonly number[]>();
 const IMAGE_EXTENSIONS = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -68,17 +69,6 @@ async function decodeAndNormalizeImage(contentType: keyof typeof IMAGE_EXTENSION
   }
 }
 
-function consumeUploadAttempt(userId: string): boolean {
-  const now = Date.now();
-  const recent = (uploadAttempts.get(userId) ?? []).filter((timestamp) => now - timestamp < RATE_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT) return false;
-  uploadAttempts.set(userId, [...recent, now]);
-  if (uploadAttempts.size > 1_000) {
-    for (const [key, timestamps] of uploadAttempts) if (timestamps.every((timestamp) => now - timestamp >= RATE_WINDOW_MS)) uploadAttempts.delete(key);
-  }
-  return true;
-}
-
 async function cleanupProfileImages(userId: string, urls: readonly string[], context: string): Promise<void> {
   try {
     await removeProfileImagesByUrl(userId, [...urls]);
@@ -90,7 +80,12 @@ async function cleanupProfileImages(userId: string, urls: readonly string[], con
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return errorResponse("Unauthorized", 401);
-  if (!consumeUploadAttempt(session.user.id)) return errorResponse("사진 업로드 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", 429);
+  if (!(await consumeRateLimit(`avatar:${session.user.id}`, RATE_LIMIT, RATE_WINDOW_MS))) return errorResponse("사진 업로드 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", 429);
+
+  // multipart 본문은 파싱이 곧 버퍼링이므로, 선언 크기를 파싱 전에 먼저 본다.
+  if (isDeclaredBodyTooLarge(request, multipartBodyLimit(MAX_AVATAR_BYTES, 1))) {
+    return requestBodyErrorResponse("too_large");
+  }
 
   let body: FormData;
   try {

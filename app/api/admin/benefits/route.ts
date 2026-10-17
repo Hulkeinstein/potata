@@ -7,6 +7,7 @@ import { AdminReauthRateLimitError, verifyAdminReauth } from "@/lib/benefits/adm
 import { consumeGoogleStepUp } from "@/lib/benefits/admin-step-up";
 import { STEP_UP_COOKIE } from "@/lib/benefits/google-reauth";
 import { prisma } from "@/lib/prisma";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 async function adminSession() {
   const session = await auth();
@@ -26,7 +27,12 @@ export async function POST(request: Request) {
   const gate = await adminSession();
   if (gate.error) return gate.error;
   try {
-    const command = parseAdminCommand(await request.json());
+    const parsedBody = await readJsonBody<unknown>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
+      return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 });
+    }
+    const command = parseAdminCommand(parsedBody.value);
     if (!command) return NextResponse.json({ success: false, error: "Invalid request" }, { status: 400 });
     if (command.action !== "PREVIEW") {
       // Google proof는 본문이 아니라 httpOnly 쿠키에서만 읽는다 — 값이 script·주소창에 노출되지 않는다.
@@ -53,7 +59,6 @@ export async function POST(request: Request) {
       case "REVERSE_POINTS": return NextResponse.json({ success: true, data: await reversePoints(gate.userId, command) });
     }
   } catch (error) {
-    if (error instanceof SyntaxError) return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 });
     if (error instanceof AdminReauthRateLimitError) return NextResponse.json({ success: false, error: "관리자 재인증 시도가 제한되었습니다." }, { status: 429, headers: { "Retry-After": "300" } });
     if (error instanceof BenefitInputError) return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     console.error("[admin benefits] error", error);

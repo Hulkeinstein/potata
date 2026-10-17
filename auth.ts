@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { authorizeCredentials, syncOAuthUser } from "@/lib/auth-providers";
+import { clientIp } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { isLegalSignupReady } from "@/lib/onboarding";
 import { isPrelaunchOnboardingUser } from "@/lib/prelaunch-access";
@@ -19,10 +20,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      authorize: (credentials) =>
+      authorize: (credentials, request) =>
         authorizeCredentials(
           credentials?.email as string | undefined,
-          credentials?.password as string | undefined
+          credentials?.password as string | undefined,
+          clientIp(request)
         ),
     }),
   ],

@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { isAdmin } from "@/lib/admin";
 import type { Question, Answer, QuestionListResponse, CreateQuestionRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 // GET: 공개 질문 목록 조회 (인증 불필요 — 비로그인도 목록 조회 가능)
 // viewerIsAdmin: 로그인 + admin allowlist 해당 시 true, 그 외 false
@@ -66,7 +67,7 @@ export async function GET(
   } catch (error) {
     console.error("[questions GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }
@@ -92,15 +93,15 @@ export async function POST(
     const { id: productId } = await params;
 
     // 3. JSON 파싱 — 파싱 실패 시 400 (리뷰 패턴 동일, 좁은 try 허용)
-    let body: CreateQuestionRequest;
-    try {
-      body = await request.json();
-    } catch {
+    const parsedBody = await readJsonBody<CreateQuestionRequest>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
       return NextResponse.json(
         { success: false, error: "Invalid request body" },
         { status: 400 },
       );
     }
+    const body = parsedBody.value;
 
     const content = body.content;
 
@@ -146,7 +147,7 @@ export async function POST(
   } catch (error) {
     console.error("[questions POST] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 },
     );
   }

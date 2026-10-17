@@ -11,6 +11,8 @@ import { consumeRateLimit } from "@/lib/rate-limit";
 
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const LOGIN_LIMIT_PER_EMAIL = 10;
+// 발신지 전체 한도 — 이메일을 바꿔 가며 대입하는 것을 막는다. 같은 회사·학교 NAT 뒤 여러 사람의 정상 로그인은 넉넉히 허용.
+const LOGIN_LIMIT_PER_SOURCE = 50;
 
 export interface AuthorizedUser {
   id: string;
@@ -26,12 +28,18 @@ export interface AuthorizedUser {
  */
 export async function authorizeCredentials(
   email: string | undefined,
-  password: string | undefined
+  password: string | undefined,
+  ip: string
 ): Promise<AuthorizedUser | null> {
   if (!email || !password) return null;
 
   // 무제한 비밀번호 대입을 막는다. 한도를 넘으면 비밀번호가 맞아도 실패로 돌려보낸다(성공/실패 구분 없음).
-  if (!consumeRateLimit(`login:${email}`, LOGIN_LIMIT_PER_EMAIL, LOGIN_WINDOW_MS)) return null;
+  // 발신지 버킷을 먼저 본다 — 이메일을 바꿔 가며 보내는 대입과, 그때마다 새 이메일 버킷(공유 저장소의 행)이 생기는 것을 막는다.
+  // prefix 를 "login-ip:" 로 따로 둬 이메일 키("login:<email>")와 겹치지 않는다.
+  if (
+    !(await consumeRateLimit(`login-ip:${ip}`, LOGIN_LIMIT_PER_SOURCE, LOGIN_WINDOW_MS)) ||
+    !(await consumeRateLimit(`login:${email}`, LOGIN_LIMIT_PER_EMAIL, LOGIN_WINDOW_MS))
+  ) return null;
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return null;

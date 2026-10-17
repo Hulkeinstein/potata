@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   MAX_VERIFICATION_ATTEMPTS,
-  extractErrorMessage,
   normalizeEmail,
   VERIFICATION_CODE_LENGTH,
 } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import type { VerifyEmailRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<VerifyEmailRequest>;
+    const parsedBody = await readJsonBody<Partial<VerifyEmailRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const email = normalizeEmail(body.email ?? "");
     const code = body.code?.trim() ?? "";
 
@@ -118,7 +121,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[verify] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

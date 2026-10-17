@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { sendVerificationEmail } from "@/lib/email";
 import {
-  extractErrorMessage,
   generateVerificationCode,
   isValidEmail,
   VERIFICATION_EXPIRY_MS,
   MIN_PASSWORD_LENGTH,
   normalizeEmail,
 } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { isLegalSignupReady } from "@/lib/onboarding";
 import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import type { SignupRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const SIGNUP_WINDOW_MS = 10 * 60 * 1000;
 const SIGNUP_LIMIT_PER_EMAIL = 5;
@@ -20,7 +21,9 @@ const SIGNUP_LIMIT_PER_IP = 20;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<SignupRequest>;
+    const parsedBody = await readJsonBody<Partial<SignupRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const email = normalizeEmail(body.email ?? "");
     const password = body.password?.trim() ?? "";
     const name = email.split("@", 1)[0] ?? "New member";
@@ -37,8 +40,9 @@ export async function POST(req: NextRequest) {
 
     // 인증메일은 실제로 발송되므로(비용·수신자 피해) 주소당·발신지당 횟수를 제한한다.
     if (
-      !consumeRateLimit(`signup:email:${email}`, SIGNUP_LIMIT_PER_EMAIL, SIGNUP_WINDOW_MS) ||
-      !consumeRateLimit(`signup:ip:${clientIp(req)}`, SIGNUP_LIMIT_PER_IP, SIGNUP_WINDOW_MS)
+      // IP 를 먼저 본다 — IP 한도를 넘은 발신지가 새 이메일마다 email 버킷(DB 행)을 만들지 못하게 한다.
+      !(await consumeRateLimit(`signup:ip:${clientIp(req)}`, SIGNUP_LIMIT_PER_IP, SIGNUP_WINDOW_MS)) ||
+      !(await consumeRateLimit(`signup:email:${email}`, SIGNUP_LIMIT_PER_EMAIL, SIGNUP_WINDOW_MS))
     ) {
       return NextResponse.json(
         { success: false, error: "요청이 너무 잦습니다. 잠시 후 다시 시도해주세요." },
@@ -108,9 +112,10 @@ export async function POST(req: NextRequest) {
 
     const emailResult = await sendVerificationEmail(email, name, code);
     if (!emailResult.success) {
+      // 발송 실패 원문(설정 힌트·Resend 오류, sandbox 에선 소유자 이메일)은 서버 로그에만 남긴다
       console.error("[signup] Failed to send email:", emailResult.error);
       return NextResponse.json(
-        { success: false, error: `이메일 발송에 실패했습니다: ${emailResult.error ?? "서버 오류"}` },
+        { success: false, error: "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요." },
         { status: 500 }
       );
     }
@@ -134,7 +139,7 @@ export async function POST(req: NextRequest) {
     }
     console.error("[signup] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

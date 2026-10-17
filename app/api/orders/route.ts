@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { extractErrorMessage } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import type { CreateOrderRequest, OrderItemSnapshot } from "@/types";
 import type { Prisma } from "@prisma/client";
 import { findPurchasableVariant, getVariantLabel } from "@/lib/product-variants";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 // 무료 배송 임계값(AED) — 서버 단일 진실 원천, 클라이언트 입력 불신
 const FREE_SHIPPING_THRESHOLD = 50000;
@@ -29,7 +30,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. body 파싱 및 기본 구조 검증
-    const body = (await req.json()) as Partial<CreateOrderRequest>;
+    const parsedBody = await readJsonBody<Partial<CreateOrderRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const { items, idempotencyKey } = body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -122,7 +125,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof InventoryUnavailableError) return NextResponse.json({ success: false, error: error.message }, { status: error.status });
     console.error("[orders POST] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }
@@ -155,7 +158,7 @@ export async function GET() {
   } catch (error) {
     console.error("[orders GET] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendVerificationEmail } from "@/lib/email";
 import {
-  extractErrorMessage,
   generateVerificationCode,
   normalizeEmail,
   VERIFICATION_EXPIRY_MS,
 } from "@/lib/auth";
+import { INTERNAL_ERROR_MESSAGE } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { clientIp, consumeRateLimit } from "@/lib/rate-limit";
 import type { ResendVerificationRequest } from "@/types";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 const RESEND_WINDOW_MS = 10 * 60 * 1000;
 const RESEND_LIMIT_PER_EMAIL = 3;
@@ -16,7 +17,9 @@ const RESEND_LIMIT_PER_IP = 20;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<ResendVerificationRequest>;
+    const parsedBody = await readJsonBody<Partial<ResendVerificationRequest>>(req);
+    if (!parsedBody.ok) return requestBodyErrorResponse(parsedBody.error);
+    const body = parsedBody.value;
     const email = normalizeEmail(body.email ?? "");
 
     if (!email) {
@@ -28,8 +31,9 @@ export async function POST(req: NextRequest) {
 
     // 재발송은 곧바로 메일 발송으로 이어진다 — 주소당·발신지당 횟수를 제한한다.
     if (
-      !consumeRateLimit(`resend:email:${email}`, RESEND_LIMIT_PER_EMAIL, RESEND_WINDOW_MS) ||
-      !consumeRateLimit(`resend:ip:${clientIp(req)}`, RESEND_LIMIT_PER_IP, RESEND_WINDOW_MS)
+      // IP 를 먼저 본다 — IP 한도를 넘은 발신지가 새 이메일마다 email 버킷(DB 행)을 만들지 못하게 한다.
+      !(await consumeRateLimit(`resend:ip:${clientIp(req)}`, RESEND_LIMIT_PER_IP, RESEND_WINDOW_MS)) ||
+      !(await consumeRateLimit(`resend:email:${email}`, RESEND_LIMIT_PER_EMAIL, RESEND_WINDOW_MS))
     ) {
       return NextResponse.json(
         { success: false, error: "요청이 너무 잦습니다. 잠시 후 다시 시도해주세요." },
@@ -75,10 +79,12 @@ export async function POST(req: NextRequest) {
 
     const emailResult = await sendVerificationEmail(email, user.name, newCode);
     if (!emailResult.success) {
+      // 발송 실패 원문(설정 힌트·Resend 오류, sandbox 에선 소유자 이메일)은 서버 로그에만 남긴다
+      console.error("[resend] Failed to send email:", emailResult.error);
       return NextResponse.json(
         {
           success: false,
-          error: emailResult.error ?? "이메일 재발송에 실패했습니다. 다시 시도해주세요.",
+          error: "이메일 재발송에 실패했습니다. 다시 시도해주세요.",
         },
         { status: 500 }
       );
@@ -92,7 +98,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[resend] error:", error);
     return NextResponse.json(
-      { success: false, error: extractErrorMessage(error) },
+      { success: false, error: INTERNAL_ERROR_MESSAGE },
       { status: 500 }
     );
   }

@@ -44,12 +44,13 @@ vi.mock("next/cache", () => ({
 import { PATCH, DELETE } from "./route";
 import type { NextRequest } from "next/server";
 
-// JSON body fake req 헬퍼 (PATCH용)
+// JSON body를 실제로 실어 보내는 PATCH req 헬퍼
 function makePatchReq(body: unknown): NextRequest {
-  return {
-    url: "http://localhost/api/products/1/questions/q1/answers/a1",
-    json: async () => body,
-  } as unknown as NextRequest;
+  return new Request("http://localhost/api/products/1/questions/q1/answers/a1", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  }) as unknown as NextRequest;
 }
 
 // body 없는 req 헬퍼 (DELETE용)

@@ -20,10 +20,14 @@ vi.mock("next/cache", () => ({
   revalidateTag: mockRevalidateTag,
 }));
 
-// extractErrorMessage는 순수 함수라 실제 구현 사용(mock 불필요)
+// 실제 요청 제한은 그대로 쓰고 호출(키·순서)만 기록한다 — 키 이름과 "발신지 버킷 먼저" 순서를 테스트로 고정하기 위해
+vi.mock("@/lib/rate-limit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/rate-limit")>();
+  return { ...actual, consumeRateLimit: vi.fn(actual.consumeRateLimit) };
+});
 
 import { POST } from "./route";
-import { resetRateLimitsForTests } from "@/lib/rate-limit";
+import { consumeRateLimit, resetRateLimitsForTests } from "@/lib/rate-limit";
 
 /** params를 Promise로 감싸 Next.js 15 async params 인터페이스 맞춤 */
 function makeParams(id: string) {
@@ -54,6 +58,39 @@ describe("POST /api/products/[id]/view", () => {
     expect(productUpdate).toHaveBeenCalledTimes(5);
     expect(blocked.status).toBe(200);
     expect(await blocked.json()).toEqual({ success: false });
+  });
+
+  it("같은 발신지가 상품 id 를 바꿔 가며 호출해도 10분 120회를 넘으면 더 올리지 않는다", async () => {
+    productUpdate.mockResolvedValue({ id: "p", viewCount: 1 });
+
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      await POST(makeReq(), makeParams(`p${attempt}`));
+    }
+    const blocked = await POST(makeReq(), makeParams("p120"));
+
+    expect(productUpdate).toHaveBeenCalledTimes(120);
+    expect(blocked.status).toBe(200);
+    expect(await blocked.json()).toEqual({ success: false });
+  });
+
+  it("발신지 버킷(view-ip:)을 먼저 보고, 막히면 상품별 버킷은 건드리지 않는다", async () => {
+    productUpdate.mockResolvedValue({ id: "p", viewCount: 1 });
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      await POST(makeReq(), makeParams(`p${attempt}`));
+    }
+    vi.mocked(consumeRateLimit).mockClear();
+
+    await POST(makeReq(), makeParams("fresh"));
+
+    expect(vi.mocked(consumeRateLimit).mock.calls).toEqual([["view-ip:unknown", 120, 10 * 60 * 1000]]);
+  });
+
+  it("허용될 때는 발신지 → 상품 순서로 정확한 키를 쓴다(상품 id 가 \"ip\" 여도 발신지 키와 겹치지 않는다)", async () => {
+    productUpdate.mockResolvedValue({ id: "ip", viewCount: 1 });
+
+    await POST(makeReq(), makeParams("ip"));
+
+    expect(vi.mocked(consumeRateLimit).mock.calls.map(([key]) => key)).toEqual(["view-ip:unknown", "view:ip:unknown"]);
   });
 
   it("유효한 id → prisma.product.update(increment:1) 1회 호출, revalidateTag('hot-products') 1회 호출, 200 {success:true}", async () => {

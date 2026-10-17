@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
 import { parseInventoryAdjustmentInput } from "@/lib/inventory-adjustment-contract";
 import { adjustInventory, InventoryAdjustmentError, listVariantInventoryAdjustments } from "@/lib/inventory-adjustment-service";
+import { readJsonBody, requestBodyErrorResponse } from "@/lib/request-body";
 
 async function adminId(): Promise<string | null> {
   const session = await auth();
@@ -20,11 +21,15 @@ export async function POST(request: NextRequest) {
   const actorId = await adminId();
   if (!actorId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   try {
-    const parsed = parseInventoryAdjustmentInput(await request.json());
+    const parsedBody = await readJsonBody<unknown>(request);
+    if (!parsedBody.ok) {
+      if (parsedBody.error === "too_large") return requestBodyErrorResponse("too_large");
+      return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 });
+    }
+    const parsed = parseInventoryAdjustmentInput(parsedBody.value);
     if (!parsed.ok) return NextResponse.json({ success: false, error: parsed.error }, { status: 400 });
     return NextResponse.json({ success: true, data: await adjustInventory(actorId, parsed.value) });
   } catch (error) {
-    if (error instanceof SyntaxError) return NextResponse.json({ success: false, error: "Invalid JSON" }, { status: 400 });
     if (error instanceof InventoryAdjustmentError) return NextResponse.json({ success: false, error: error.message }, { status: 409 });
     console.error("[admin inventory adjustment] error", error);
     return NextResponse.json({ success: false, error: "Inventory adjustment failed" }, { status: 500 });
