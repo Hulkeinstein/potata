@@ -22,8 +22,8 @@
 - [x] 2. Take a fresh timestamped public-schema custom-format backup using existing postgres:17 tooling. Record backup size/checksum privately and restore into a fresh isolated local rehearsal DB/container, never existing potata_dev. Validate all existing tables/counts/data and structure. Backup does not include auth/storage platform or image objects; do not claim full-platform DR.
 - [x] 3. Apply the exact two migrations to the restored copy using normal Prisma migrate deploy. Confirm 19 migrations/current schema parity and all pre-existing column/count equivalence. Only the two columns and new RateLimitBucket table/PK/index/RLS may differ. Existing roles/RLS remain unchanged. Run actual Prisma product/variant/account-safe reads without exposing user data.
 - [x] 4. Repeat production target/history preflight; take immediate old-column/count fingerprints. Apply only the two verified migrations. Verify 19 migrations/schema parity, both nullable TEXT columns, new RateLimitBucket RLS, and old rows/descriptions unchanged. New history rows and counter table are expected differences. Investigate concurrent app writes rather than asserting loss or restoring.
-- [ ] 5. Only after all data gates pass, push the reconciled and tested release commit to origin/main without force and without unrelated local files. Confirm remote HEAD. Observe automatic Vercel Production deployment, expected source SHA and Ready/domain. Use existing authenticated UI/CLI; do not expose tokens or create paid resources.
-- [ ] 6. Production smoke: uncached/new requests for brands and product detail with EN/KO cookie; expected actual DB prices and legacy/fallback description; no hydration/server errors. Verify unauthenticated admin remains blocked. Keep public signup/legal gate and single-account exception unchanged. Do not submit orders or mutate real products/users for smoke.
+- [x] 5. Only after all data gates pass, push the reconciled and tested release commit to origin/main without force and without unrelated local files. Confirm remote HEAD. Observe automatic Vercel Production deployment, expected source SHA and Ready/domain. Use existing authenticated UI/CLI; do not expose tokens or create paid resources.
+- [x] 6. Production smoke: uncached/new requests for brands and product detail with EN/KO cookie; expected actual DB prices and legacy/fallback description; no hydration/server errors. Verify unauthenticated admin remains blocked. Keep public signup/legal gate and single-account exception unchanged. Do not submit orders or mutate real products/users for smoke.
 
 ## Failure and cleanup
 - Any backup/restore/preflight/migration failure blocks push. Do not automatically DROP columns or restore over production; additive nullable columns remain backward compatible with old deployment.
@@ -32,7 +32,7 @@
 - Capture sanitized receipts under evidence/bilingual-production-release; keep raw DB data/backups/private temp env under ignored state. Record exact checks, limitations and deployed SHA.
 
 ## Final verification
-- [ ] Goal/scope: exact migration and release SHA, no extra changes.
-- [ ] Data safety: restore verified, old columns/rows preserved, no unexplained drift.
-- [ ] Deployment/QA: Ready SHA/domain and EN/KO/product/admin checks pass; any unavailable authenticated user interaction stated explicitly.
-- [ ] Cleanup: private artifacts excluded from Git, temporary test resources stopped, dirty user files preserved. No new receipt commit/push unless needed and within approved release documentation scope.
+- [x] Goal/scope: exact two approved migrations and release SHA e40e6fd, no extra changes.
+- [x] Data safety: restore verified, old columns/rows preserved, no unexplained drift.
+- [x] Deployment/QA: Ready SHA/domain and EN/KO/product/admin checks pass; authenticated production mutations intentionally not performed.
+- [x] Cleanup: private artifacts excluded from Git, temporary test resources stopped, dirty user files preserved. Final receipt/plan updates saved in a user-requested documentation-only commit; no push or unnecessary second automatic deployment.
