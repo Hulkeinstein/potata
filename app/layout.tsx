@@ -4,7 +4,6 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/ui/Navbar";
 import { InitialLoader } from "@/components/ui/InitialLoader";
-import { CustomCursor } from "@/components/ui/CustomCursor";
 import { Footer } from "@/components/ui/Footer";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { StoreSync } from "@/components/providers/StoreSync";
@@ -42,7 +41,6 @@ export default async function RootLayout({
         <LanguageProvider initialLocale={locale}><AuthProvider>
           <StoreSync />
           <InitialLoader />
-          <CustomCursor />
           <Navbar />
           {children}
           <Footer />

@@ -35,18 +35,6 @@
   }
 
   /* Custom Scrollbar */
-  @media (pointer: fine) {
-    body.custom-cursor-active {
-      cursor: none;
-    }
-
-    body.custom-cursor-active a,
-    body.custom-cursor-active button,
-    body.custom-cursor-active [role="button"] {
-      cursor: none;
-    }
-  }
-
   ::-webkit-scrollbar {
     width: 6px;
   }
