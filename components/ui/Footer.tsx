@@ -1,11 +1,11 @@
 'use client';
 import Link from "next/link";
 import { useLanguage } from '@/components/providers/LanguageProvider';
-import { parseLocale } from '@/lib/i18n/locale';
+import { LanguageSelect } from './LanguageSelect';
 import { sharedMessages } from '@/lib/i18n/shared-messages';
 
 export function Footer() {
-    const { locale, setLocale } = useLanguage();
+    const { locale } = useLanguage();
     const text = sharedMessages[locale];
     return (
         <footer className="bg-black text-white py-12 border-t border-white/10">
@@ -30,11 +30,7 @@ export function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-white/10 text-center text-xs text-gray-400">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <span>© 2024 POTATA. {text.rights}</span>
-                  <label className="flex items-center gap-3">Language / 언어
-                    <select value={locale} onChange={(event) => setLocale(parseLocale(event.target.value))} className="min-h-11 min-w-36 rounded-md border border-white/20 bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-neon">
-                      <option value="en" lang="en">English</option><option value="ko" lang="ko">한국어</option>
-                    </select>
-                  </label>
+                  <LanguageSelect />
                 </div>
             </div>
         </footer>

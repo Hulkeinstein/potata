@@ -77,7 +77,7 @@ export const PAGE_METADATA = {
   },
   forYou: {
     title: "For You",
-    description: "Personalized fashion recommendations powered by AI. Discover styles curated just for you.",
+    description: "Explore the current Korean fashion collection in a product grid or photo discovery view.",
   },
   ootd: {
     title: "What to Wear",
