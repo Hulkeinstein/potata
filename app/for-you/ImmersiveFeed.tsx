@@ -6,16 +6,19 @@ import { LanguageSelect } from '@/components/ui/LanguageSelect';
 import { useLanguage } from '@/components/providers/LanguageProvider';
 import { feedMessages } from '@/lib/i18n/feed-messages';
 import { categoryLabel } from '@/lib/i18n/discovery-messages';
-import type { Product, ProductCategory } from '@/types';
+import type { ProductCategory } from '@/types';
 import { categories, parseCategory } from './discovery-state';
 import { ImmersiveProduct } from './ImmersiveProduct';
+import { ImmersiveBrand } from './ImmersiveBrand';
+import type { DiscoveryFeedItem } from './discovery-feed';
 import { useImmersiveDialog } from './use-immersive-dialog';
 
 type Props = {
-  readonly products: readonly Product[]; readonly index: number; readonly category: ProductCategory;
+  readonly items: readonly DiscoveryFeedItem[]; readonly index: number; readonly category: ProductCategory;
   readonly photos: Readonly<Record<string, number>>; readonly onPhoto: (id: string, photo: number) => void;
   readonly onIndex: (index: number) => void; readonly onCategory: (category: ProductCategory) => void;
   readonly onClose: () => void;
+  readonly onDismiss: (brand: string) => void;
 };
 function FooterPanel({ onClose }: { readonly onClose: () => void }) {
   const ref = useImmersiveDialog(false);
@@ -24,7 +27,7 @@ function FooterPanel({ onClose }: { readonly onClose: () => void }) {
     <button type="button" onClick={onClose} className="sticky top-0 ml-auto block min-h-11 bg-black px-5">{feedMessages[locale].close} ×</button><Footer />
   </dialog>;
 }
-export function ImmersiveFeed({ products, index, category, photos, onPhoto, onIndex, onCategory, onClose }: Props) {
+export function ImmersiveFeed({ items, index, category, photos, onPhoto, onIndex, onCategory, onClose, onDismiss }: Props) {
   const { locale } = useLanguage();
   const t = feedMessages[locale];
   const dialog = useImmersiveDialog();
@@ -35,6 +38,7 @@ export function ImmersiveFeed({ products, index, category, photos, onPhoto, onIn
   const [footer, setFooter] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initial = useRef(index);
+  const hasBrands = items.some(item => item.kind === 'brand');
   useEffect(() => {
     const element = track.current;
     if (!element) return;
@@ -44,6 +48,12 @@ export function ImmersiveFeed({ products, index, category, photos, onPhoto, onIn
     return () => { resize?.disconnect(); if (timer.current) clearTimeout(timer.current); };
   }, []);
   useEffect(() => { active.current = index; }, [index]);
+  const itemKeys = items.map(item => item.id).join('\u0000');
+  useEffect(() => {
+    const element = track.current;
+    if (element) element.scrollTop = active.current * element.clientHeight;
+    if (timer.current) clearTimeout(timer.current);
+  }, [itemKeys]);
   useEffect(() => {
     const element = controls.current;
     const modal = dialog.current;
@@ -55,10 +65,10 @@ export function ImmersiveFeed({ products, index, category, photos, onPhoto, onIn
     return () => resize?.disconnect();
   }, [dialog]);
   const move = (next: number) => {
-    const bounded = Math.max(0, Math.min(next, products.length));
+    const bounded = Math.max(0, Math.min(next, items.length));
     active.current = bounded;
-    setEnd(bounded === products.length);
-    if (bounded < products.length) onIndex(bounded);
+    setEnd(bounded === items.length);
+    if (bounded < items.length) onIndex(bounded);
     const element = track.current;
     if (element) {
       const top = bounded * element.clientHeight;
@@ -71,8 +81,9 @@ export function ImmersiveFeed({ products, index, category, photos, onPhoto, onIn
     if (event.key === 'ArrowDown' || event.key === 'PageDown') { event.preventDefault(); move(active.current + 1); }
     if (event.key === 'ArrowUp' || event.key === 'PageUp') { event.preventDefault(); move(active.current - 1); }
     if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && !end) {
-      const product = products[index];
-      if (!product) return;
+      const item = items[index];
+      if (item?.kind !== 'product') return;
+      const product = item.product;
       event.preventDefault();
       const count = new Set([product.imageUrl, ...(product.images ?? [])].filter(Boolean)).size;
       onPhoto(product.id, Math.min(Math.max((photos[product.id] ?? 0) + (event.key === 'ArrowRight' ? 1 : -1), 0), Math.max(count - 1, 0)));
@@ -87,22 +98,26 @@ export function ImmersiveFeed({ products, index, category, photos, onPhoto, onIn
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
         if (!element.clientHeight) return;
-        const next = Math.max(0, Math.min(products.length, Math.round(element.scrollTop / element.clientHeight)));
-        active.current = next; setEnd(next === products.length);
-        if (next < products.length) onIndex(next);
+        const next = Math.max(0, Math.min(items.length, Math.round(element.scrollTop / element.clientHeight)));
+        active.current = next; setEnd(next === items.length);
+        if (next < items.length) onIndex(next);
       }, 100);
     }}>
-      {products.map((product, position) => <ImmersiveProduct key={product.id} product={product} photo={photos[product.id] ?? 0} active={!end && index === position} load={Math.abs(index - position) <= 1} onPhoto={photo => onPhoto(product.id, photo)} />)}
-      <section data-feed-slide="end" aria-hidden={!end && products.length > 0} inert={!end && products.length > 0} className="flex h-full w-full snap-start snap-always flex-col items-center justify-center gap-6 px-6 text-center">
-        <h2 className="text-2xl font-bold">{products.length ? t.end : t.empty}</h2>
-        {products.length > 0 && <button type="button" onClick={() => move(0)} className="min-h-11 rounded-full border border-white/30 px-6">{t.restart}</button>}
+      {items.map((item, position) => { switch (item.kind) {
+        case 'product': return <ImmersiveProduct key={item.id} product={item.product} photo={photos[item.product.id] ?? 0} active={!end && index === position} load={Math.abs(index - position) <= 1} onPhoto={photo => onPhoto(item.product.id, photo)} />;
+        case 'brand': return <ImmersiveBrand key={item.id} item={item} active={!end && index === position} load={Math.abs(index - position) <= 1} onDismiss={() => { onDismiss(item.brand); track.current?.focus({ preventScroll: true }); }} />;
+        default: { const unreachable: never = item; return unreachable; }
+      } })}
+      <section data-feed-slide="end" aria-hidden={!end && items.length > 0} inert={!end && items.length > 0} className="flex h-full w-full snap-start snap-always flex-col items-center justify-center gap-6 px-6 text-center">
+        <h2 className="text-2xl font-bold">{items.length ? t.end : t.empty}</h2>
+        {items.length > 0 && <button type="button" onClick={() => move(0)} className="min-h-11 rounded-full border border-white/30 px-6">{t.restart}</button>}
         <button type="button" onClick={onClose} className="min-h-11 rounded-full bg-white px-6 text-black">{t.grid}</button>
       </section>
     </div>
     <nav ref={controls} aria-label={t.view} className="absolute inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-between gap-2 bg-black/85 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
       <LanguageSelect />
       <button type="button" onClick={() => setFooter(true)} className="min-h-11 text-xs underline">{t.footer}</button>
-      <div className="flex items-center gap-2 text-xs"><button type="button" aria-label={t.previous} disabled={!end && index === 0} onClick={() => move(active.current - 1)} className="min-h-11 min-w-11 disabled:opacity-30">↑</button><span role="status">{products.length ? `${end ? products.length : index + 1} / ${products.length}` : '0 / 0'}</span><button type="button" aria-label={t.next} disabled={end || products.length === 0} onClick={() => move(active.current + 1)} className="min-h-11 min-w-11 disabled:opacity-30">↓</button></div>
+      <div className="flex items-center gap-2 text-xs"><button type="button" aria-label={hasBrands ? t.previousItem : t.previous} disabled={!end && index === 0} onClick={() => move(active.current - 1)} className="min-h-11 min-w-11 disabled:opacity-30">↑</button><span role="status">{items.length ? `${end ? items.length : index + 1} / ${items.length}` : '0 / 0'}</span><button type="button" aria-label={hasBrands ? t.nextItem : t.next} disabled={end || items.length === 0} onClick={() => move(active.current + 1)} className="min-h-11 min-w-11 disabled:opacity-30">↓</button></div>
     </nav>
     {footer && <FooterPanel onClose={() => setFooter(false)} />}
   </dialog>, document.body);

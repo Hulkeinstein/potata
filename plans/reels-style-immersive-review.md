@@ -143,6 +143,49 @@ PC에서는 세로 사진 피드를 중앙에 두고 양옆은 어두운 여백�
 
 의존: R1→R2→R3→V1–V4. 새worktree불필요, 현재폴더의기존사용자변경보존. 완료는테스트뿐아니라실제동작증거가있어야한다.
 
+## 상품 사이 브랜드 발견 카드 추가
+
+### 승인과 데이터 근거
+
+사용자는 상품 사이 브랜드 추천 카드를 자연스럽게 넣되 기존 기능과 중복하지 않도록 구현을 승인했다. Prisma에는 Brand 모델이나 brandId가 없으며 Product.brand 문자열이 있다. 기존 BrandsContent의 에디토리얼 상단은 mock이므로 재사용하지 않는다. 실제 브랜드 상품 링크는 기존 `/search?q=브랜드명` 흐름을 사용한다.
+
+### 확정 범위
+
+- 몰입 피드에만 브랜드 슬라이드를 추가하고 일반 격자는 기존 상품 목록을 유지한다.
+- 상품 순서를 바꾸지 않고 6개 상품 뒤에 브랜드 1개를 삽입한다. 뒤에 상품이 더 있을 때만 넣고, 브랜드를 연속 배치하거나 마지막 뒤에 억지로 넣지 않는다.
+- 현재 카테고리의 활성 상품을 정확한 브랜드명으로 그룹화한다. 앞뒤공백은 제거하되 서로 다른 이름을 자의적으로 병합하지 않는다. 기존 검색의 최소 길이를 맞춰 브랜드명 2글자 이상·실제 상품 2개 이상인 브랜드만 대상이고 첫 2~3개를 대표 상품으로 사용한다.
+- 대상 브랜드는 현재 목록의 처음 등장 순서로 고정하며 같은 피드 안에서 한 번만 나온다. 후보가 없거나 숨김이면 브랜드 없이 상품이 이어진다.
+- 카드에는 브랜드명·상품 사진·대표 상품 2~3개·사실적 안내·기존 브랜드 검색 링크·관심 없음만 제공한다. 검색은 상품명/브랜드/카테고리 부분 일치이므로 CTA를 '브랜드 이름으로 검색'으로 표시하고 해당 브랜드 전용 목록이라고 주장하지 않는다. 없는 로고·공식 소개·광고 관계·개인화·편집팀 선정을 만들어내지 않는다.
+- 관심 없음은 이 탭의 세션에서 해당 브랜드 카드만 숨긴다. 상품·찜·브랜드 자체를 차단하지 않고 서버 저장·분석 이벤트·사용자 추적을 추가하지 않는다.
+- product/brand는 discriminated union과 안정된 키로 구분한다. 브랜드를 Product 타입으로 위장하거나 상세 조회수·찜·장바구니 대상으로 처리하지 않는다.
+- 활성 피드 항목과 마지막 상품 기준점을 분리한다. 브랜드를 보다가 일반 보기로 나가면 직전 상품으로 복귀하고, 다시 몰입/새로고침하면 유효한 브랜드 위치를 복원한다. 사라진/숨긴 브랜드는 다음 유효 상품, 없으면 직전 상품으로 이동한다.
+- 숨김·필터 변경으로 슬라이드 개수가 줄어들어도 스크롤 위치가 엉뚱한 항목이나 빈 화면에 걸리지 않게 복원한다. 종료·재탐색과 상품별 사진 상태는 유지한다.
+- 카드의 CTA가 하단 공통 메뉴와 겹치지 않도록 기존 높이 측정·안전 영역을 재사용한다. 상세·브랜드 검색 왕복, 일반 보기·카테고리·EN/KO·Footer·키보드·스크린리더·native snap 계약을 보존한다.
+- 새 브랜드 DB/API·관리자 화면·추천 엔진·실시간 상품 갱신·영상·광고·새 패키지·운영 변경·commit/push/배포는 제외한다. 기존 전체카탈로그 로딩의 확장 한계도 이번에 해결한 것으로 주장하지 않는다.
+
+## Brand Card TODOs
+
+- [x] B1. 중복 대조와 RED 테스트
+  - References: Product.brand, BrandsContent 링크, ImmersiveFeed/ForYouContent/discovery-state와 기존 테스트.
+  - Acceptance: 6상품 간격·최소2상품·후보없음·카테고리·브랜드중복·끝부분·고정순서·관심없음·악성저장값을 먼저 실패 재현한다.
+  - QA: 0/1/6/7/13상품 fixture, 한브랜드/여러브랜드, 같은상품ID 중복과브랜드빈문자열. DB seed 금지.
+- [x] B2. 혼합 피드와 브랜드 카드 구현
+  - Acceptance: typed feeditems, 상품수와피드위치분리, 기존순서/찜/사진/일반복귀/브랜드anchor복원/관심없음. truthfully labelled 카드 및 기존검색 URL 재사용. 코드파일250pureLOC이하.
+  - QA: 상품6→브랜드→상품7, 역방향, 브랜드 숨김 후 연속 탐색, 브랜드검색→뒤로, 새로고침·ENKO·필터·종료.
+- [x] B3. 회귀와 실제 화면 확인
+  - Acceptance: focused/full tests, tsc, lint, build, 실제 desktop/mobile에서 native 브랜드 중간 이동·CTA영역·overflow·console 확인.
+  - Evidence: evidence/brand-discovery-cards/verification.md와qa.md. 실카탈로그가 부족하면fixture/실데이터 증거 구분,DB임의추가금지.
+
+## Brand Card Final Verification
+
+- [x] BV1. Goal/context: 브랜드중간삽입·기존검색재사용·일반상품보기보존·가짜주장없음.
+- [x] BV2. Code/security: stableanchor·스크롤변경경합·sessionparse·no새권한/추적/DB/API·resource정리.
+- [x] BV3. Hands-on QA: 상품↔브랜드native넘김·숨김·복귀·언어·CTA·종료와오류검증.
+
+의존: B1→B2→B3→BV1–BV3. 기존완료체크는유지하고 새work만 ledger/Boulder로관리한다. 사용자미승인외부변경없이로컬서버를확인가능하게유지한다.
+
+브랜드 카드 완료: focused 46 / 전체 788 tests PASS, 14 guarded skip; TypeScript PASS; lint 오류 0(기존 경고 3); build 62 routes exit 0. 실제 9상품에서 상품6→AMOU카드→상품7, 숨김 후 9상품 유지/다른 브랜드 대체 없음, brand anchor/grid/search 왕복 및 native 중간 드래그를 검증했다. 검증 문서는 `evidence/brand-discovery-cards/verification.md`와 `qa.md`. 개발 서버14483 유지, DB/운영/commit/push/배포 변경 없음.
+
 ### 완료 기록
 
 2026-10-19: focused 27 / 전체 769 tests PASS, 14 guarded skip; TypeScript PASS, lint 오류 0(기존 경고 3), 최종 production build 62 routes exit 0. 첫 RED는 sandbox 권한 오류로 실행 전 차단되어 동작 증거로 인정하지 않았고, 이후 가로 키보드 사진 이동의 실제 실패→수정→GREEN을 확인했다. Native touch 중간 위치·snap·휠·일반 보기·상세 왕복·Footer/언어·빈 목록·종료·CTA 배치 검증과 Goal/Context/Code/Security 리뷰를 완료했다. 중첩 Footer unmount body lock과 모바일 CTA 겹침을 검토에서 발견하여 수정 후 재검증했다.

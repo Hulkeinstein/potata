@@ -24,6 +24,15 @@ describe('discovery persistence boundary', () => {
     // When / Then
     expect(parseDiscovery(saved).photos).toEqual({ first: 2 });
   });
+  it('parses bounded brand preferences without trusting stored objects', () => {
+    // Given
+    const saved = JSON.stringify({ feedId: 'javascript:alert(1)', dismissedBrands: ['Alpha', null, {}, 'A', 'x'.repeat(101), 'Alpha'] });
+    // When
+    const state = parseDiscovery(saved);
+    // Then
+    expect(state.feedId).toBeUndefined();
+    expect(state.dismissedBrands).toEqual(['Alpha']);
+  });
   it('falls back when browser policy blocks storage access', () => {
     // Given
     const read = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new DOMException('blocked', 'SecurityError'); });
