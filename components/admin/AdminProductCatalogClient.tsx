@@ -7,6 +7,7 @@ import { CATALOG_CATEGORIES, catalogQueryParams, parseAdminCatalogQuery } from "
 import { AdminInventoryProductThumbnail } from "./AdminInventoryProductThumbnail";
 import { getProductContentGaps, PRODUCT_CONTENT_GAP_LABELS, PRODUCT_CONTENT_QUALITY_OPTIONS } from "@/lib/product-content-quality";
 import { AdminProductStatusConfirmation } from "./AdminProductStatusConfirmation";
+import { AdminCatalogSavedViews } from "./AdminCatalogSavedViews";
 
 type CatalogItem = {
   readonly id: string;
@@ -29,27 +30,28 @@ type CatalogPage = {
 const fieldClass = "mt-1 w-full min-w-0 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white";
 const buttonClass = "rounded border border-zinc-600 px-3 py-2 text-sm disabled:opacity-40";
 
-export function AdminProductCatalogClient({ initialData: data }: { readonly initialData: CatalogPage }) {
+export function AdminProductCatalogClient({ initialData: data, storageScope }: { readonly initialData: CatalogPage; readonly storageScope?: string }) {
   const searchParams = useSearchParams();
-  return <CatalogFeedbackScope key={searchParams.toString()} initialData={data} />;
+  return <CatalogFeedbackScope key={JSON.stringify([storageScope, searchParams.toString()])} initialData={data} storageScope={storageScope} />;
 }
 
-function CatalogFeedbackScope({ initialData: data }: { readonly initialData: CatalogPage }) {
+function CatalogFeedbackScope({ initialData: data, storageScope }: { readonly initialData: CatalogPage; readonly storageScope?: string }) {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState("");
   const selectionScope = JSON.stringify([data.page, data.items.map(({ id, name, isActive }) => [id, name, isActive])]);
-  return <CatalogContent key={selectionScope} initialData={data} message={message} success={success} setMessage={setMessage} setSuccess={setSuccess} />;
+  return <CatalogContent key={selectionScope} initialData={data} storageScope={storageScope} message={message} success={success} setMessage={setMessage} setSuccess={setSuccess} />;
 }
 
 type CatalogContentProps = {
   readonly initialData: CatalogPage;
+  readonly storageScope?: string;
   readonly message: string;
   readonly success: string;
   readonly setMessage: (message: string) => void;
   readonly setSuccess: (success: string) => void;
 };
 
-function CatalogContent({ initialData: data, message, success, setMessage, setSuccess }: CatalogContentProps) {
+function CatalogContent({ initialData: data, storageScope, message, success, setMessage, setSuccess }: CatalogContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const applied = parseAdminCatalogQuery(new URLSearchParams(searchParams.toString()));
@@ -136,6 +138,7 @@ function CatalogContent({ initialData: data, message, success, setMessage, setSu
       <div className="mt-4 flex flex-wrap items-center gap-3"><button disabled={busy || pending} className="rounded bg-white px-4 py-2 text-sm font-bold text-black">조건 적용</button><Link className="text-sm text-zinc-400 underline" href="/admin/products">조건 초기화</Link><span className="text-xs text-zinc-500">조건을 바꾸면 첫 페이지부터 표시합니다.</span></div>
       <p className="mt-3 text-xs leading-relaxed text-zinc-500">한·영 설명 칸의 작성 여부를 확인합니다. 다른 언어나 기존 원문으로 대체 표시될 수 있습니다. 사진은 대표 URL 등록 여부만 확인하며, 실제 접속 실패는 누락으로 분류하지 않습니다.</p>
     </form>
+    <AdminCatalogSavedViews storageScope={storageScope} appliedQuery={queryString} busy={busy || pending} />
     {message ? <p role="alert" className="rounded border border-red-900 p-3 text-sm text-red-300">{message}</p> : null}
     {success ? <p role="status" className="rounded border border-emerald-900 p-3 text-sm text-emerald-300">{success}</p> : null}
     <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><p className="text-zinc-300">조회 결과 <strong>{data.total}</strong>개</p><span className="text-xs text-zinc-500">재고 총량은 수동 품절 옵션을 포함합니다.</span></div>

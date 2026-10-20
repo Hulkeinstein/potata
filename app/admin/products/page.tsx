@@ -16,5 +16,5 @@ export default async function AdminProductsPage({ searchParams }: { readonly sea
   for (const key of ["q", "brand", "category", "quality", "status", "sort", "page", "pageSize"]) {
     if (typeof params[key] === "string") query.set(key, params[key]);
   }
-  return <main className="min-h-screen bg-black px-4 py-12 text-white"><AdminProductCatalogClient initialData={await listAdminProducts(parseAdminCatalogQuery(query))} /></main>;
+  return <main className="min-h-screen bg-black px-4 py-12 text-white"><AdminProductCatalogClient storageScope={session.user.id} initialData={await listAdminProducts(parseAdminCatalogQuery(query))} /></main>;
 }

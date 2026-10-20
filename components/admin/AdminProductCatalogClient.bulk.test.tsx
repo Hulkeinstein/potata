@@ -1,12 +1,25 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdminProductCatalogClient } from "./AdminProductCatalogClient";
-const mocks = vi.hoisted(() => ({ refresh: vi.fn(), params: "quality=missing-any" }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh }), useSearchParams: () => new URLSearchParams(mocks.params) }));
+const mocks = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn(), params: "quality=missing-any" }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: mocks.refresh, push: mocks.push }), useSearchParams: () => new URLSearchParams(mocks.params) }));
 const items = ["One", "Two"].map((name, i) => ({ id: `p${i}`, name, brand: "QA", price: 10, imageUrl: "/a.png", isActive: true, category: "Top", variants: [{ stock: i, isManuallySoldOut: true }] }));
 const data = { items, total: 2, page: 1, pageSize: 20 };
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); mocks.params = "quality=missing-any"; });
 describe("bulk visibility workflow", () => {
+  it("loads a saved view through existing navigation and clears bulk selection after query changes", () => {
+    const key = "potata:admin-catalog-views:v1:admin";
+    localStorage.setItem(key, JSON.stringify({ version: 1, views: [{ id: "view", name: "Inactive", query: "status=inactive" }] }));
+    const { rerender } = render(<AdminProductCatalogClient storageScope="admin" initialData={data} />);
+    fireEvent.click(screen.getByLabelText("One 선택"));
+    fireEvent.change(screen.getByLabelText("저장한 보기 선택"), { target: { value: "view" } });
+    fireEvent.click(screen.getByRole("button", { name: "불러오기" }));
+    expect(mocks.push).toHaveBeenCalledWith("/admin/products?status=inactive");
+    mocks.params = "status=inactive";
+    rerender(<AdminProductCatalogClient storageScope="admin" initialData={data} />);
+    expect(screen.getByText("선택 0개")).toBeTruthy();
+    localStorage.removeItem(key);
+  });
   it("requires confirmation and cancellation never writes", () => {
     const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
     render(<AdminProductCatalogClient initialData={data} />);
