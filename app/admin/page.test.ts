@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,25 +12,24 @@ vi.mock("@/lib/operations-assistant", () => ({ listOperationsIssues: operationsI
 import AdminHomePage from "./page";
 
 beforeEach(() => {
+  dashboardSummaryMock.mockReset();
   dashboardSummaryMock.mockResolvedValue({
     totalProducts: 9, activeProducts: 9, inactiveProducts: 0, productsWithAvailableVariant: 9,
     soldOutProducts: 0, manuallySoldOutVariants: 0, zeroStockVariants: 0, lowStockVariants: 0,
     activeCouponCampaigns: 0, unansweredQuestions: 0,
   });
   operationsIssuesMock.mockReset();
+  operationsIssuesMock.mockResolvedValue([]);
 });
 
 describe("admin home Q&A metric", () => {
   it("links unanswered questions to the accessible inbox filter", async () => {
-    // Given: the server-rendered admin home source
-    const source = await readFile("app/admin/page.tsx", "utf8");
-
-    // When: an operator selects the unanswered Q&A metric
-
-    // Then: it uses a keyboard-accessible navigation link to the unanswered inbox
-    expect(source).toContain('href: "/admin/questions?status=unanswered"');
-    expect(source).toContain('? <Link');
-    expect(source).toContain('"미답변 Q&A"');
+    // Given: the existing summary contract
+    // When: the home renders
+    const html = renderToStaticMarkup(await AdminHomePage());
+    // Then: the metric points to the supported inbox filter
+    expect(html).toContain('href="/admin/questions?status=unanswered"');
+    expect(html).toContain("미답변 Q&amp;A");
   });
 });
 
@@ -52,6 +50,7 @@ describe("admin home operations assistant", () => {
 
     // Then: it preserves the full count but limits the visible cards to the first five
     expect(html).toContain("운영 어시스턴트");
+    expect(html).toContain("처리할 일");
     expect(html).toContain("확인할 운영 이슈 6개");
     expect(html).toContain("즉시 확인");
     expect(html).toContain("주의");
@@ -74,5 +73,30 @@ describe("admin home operations assistant", () => {
     expect(html).toContain("현재 확인이 필요한 운영 이슈가 없습니다.");
     expect(html).toContain('href="/admin/operations"');
     expect(html).not.toContain("즉시 확인");
+  });
+
+  it("offers supported work shortcuts and distinguishes zero stock from automatic sold out", async () => {
+    // Given: summary values use their existing different count semantics
+    // When: home renders
+    const html = renderToStaticMarkup(await AdminHomePage());
+    // Then: supported filters are real links, not fabricated filtered metric counts
+    expect(html).toContain('href="/admin/products/new"');
+    expect(html).toContain('href="/admin/inventory?filter=low-stock"');
+    expect(html).toContain('href="/admin/inventory?filter=sold-out"');
+    expect(html).toContain('href="/admin/inventory?filter=manual-sold-out"');
+    expect(html).toContain("자동 품절 보기");
+    expect(html).toContain("재고 0 옵션에는 수동 품절도 포함됩니다.");
+    expect(html).not.toContain("/admin/products?status=");
+    expect(dashboardSummaryMock).toHaveBeenCalledTimes(1);
+    expect(operationsIssuesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["summary", "issues"])("propagates %s loader failures rather than displaying healthy zero", async (loader) => {
+    // Given: an actual data read failure
+    const failure = new Error("private DB connection details");
+    (loader === "summary" ? dashboardSummaryMock : operationsIssuesMock).mockRejectedValueOnce(failure);
+    // When: the server page reads its data
+    // Then: the error boundary, not fabricated counts, owns failure presentation
+    await expect(AdminHomePage()).rejects.toBe(failure);
   });
 });

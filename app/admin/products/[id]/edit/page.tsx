@@ -6,13 +6,16 @@ import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
 import { getAdminProduct } from "@/lib/admin-product-catalog";
 import { AdminProductEditForm } from "@/components/admin/AdminProductEditForm";
+import { safeCatalogReturnTo } from '@/lib/admin-catalog-query';
 
-export default async function EditProductPage({ params }: { readonly params: Promise<{ id: string }> }) {
+export default async function EditProductPage({ params, searchParams }: { readonly params: Promise<{ id: string }>; readonly searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (!isAdmin(session.user.email)) redirect("/");
   const { id } = await params;
   const product = await getAdminProduct(id);
   if (!product) notFound();
-  return <main className="min-h-screen bg-black px-4 py-12 text-white"><AdminProductEditForm product={product} /></main>;
+  const query = await searchParams;
+  const returnTo = safeCatalogReturnTo(typeof query.returnTo === 'string' ? query.returnTo : undefined);
+  return <main className="min-h-screen bg-black px-4 py-12 text-white"><AdminProductEditForm product={product} returnTo={returnTo} /></main>;
 }

@@ -1,13 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import type { AdminCatalogQuery } from "./admin-catalog-query";
+export { parseAdminCatalogQuery } from "./admin-catalog-query";
+export type { AdminCatalogQuery } from "./admin-catalog-query";
 
 export type AdminCatalogProduct = Prisma.ProductGetPayload<{ include: { variants: true } }>;
-
-export type AdminCatalogQuery = {
-  readonly query: string;
-  readonly page: number;
-  readonly pageSize: number;
-};
 
 export type AdminCatalogPage = {
   readonly items: readonly AdminCatalogProduct[];
@@ -16,30 +13,31 @@ export type AdminCatalogPage = {
   readonly pageSize: number;
 };
 
-const MAX_PAGE_SIZE = 50;
-
-export function parseAdminCatalogQuery(searchParams: URLSearchParams): AdminCatalogQuery {
-  const query = (searchParams.get("q") ?? "").trim().slice(0, 100);
-  const parsedPage = Number.parseInt(searchParams.get("page") ?? "1", 10);
-  const parsedPageSize = Number.parseInt(searchParams.get("pageSize") ?? "20", 10);
-  return {
-    query,
-    page: Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1,
-    pageSize: Number.isSafeInteger(parsedPageSize) && parsedPageSize > 0
-      ? Math.min(parsedPageSize, MAX_PAGE_SIZE)
-      : 20,
+export async function listAdminProducts(input: Pick<AdminCatalogQuery, "query" | "page" | "pageSize"> & Partial<AdminCatalogQuery>): Promise<AdminCatalogPage> {
+  const available = { stock: { gt: 0 }, isManuallySoldOut: false };
+  const where: Prisma.ProductWhereInput = {
+    ...(input.query ? { OR: [{ name: { contains: input.query, mode: "insensitive" } }, { brand: { contains: input.query, mode: "insensitive" } }] } : {}),
+    ...(input.brand ? { brand: input.brand } : {}),
+    ...(input.category ? { category: input.category } : {}),
+    ...(input.status === "active" ? { isActive: true, variants: { some: available } } : {}),
+    ...(input.status === "sold-out" ? { isActive: true, variants: { none: available } } : {}),
+    ...(input.status === "inactive" ? { isActive: false } : {}),
   };
-}
-
-export async function listAdminProducts(input: AdminCatalogQuery): Promise<AdminCatalogPage> {
-  const where = input.query
-    ? { OR: [{ name: { contains: input.query, mode: "insensitive" as const } }, { brand: { contains: input.query, mode: "insensitive" as const } }] }
-    : {};
+  const sort = input.sort ?? "newest";
+  const orders = {
+    newest: { createdAt: "desc" }, name: { name: "asc" },
+    "price-asc": { price: "asc" }, "price-desc": { price: "desc" },
+  } satisfies Record<AdminCatalogQuery["sort"], Prisma.ProductOrderByWithRelationInput>;
   const [items, total] = await prisma.$transaction([
-    prisma.product.findMany({ where, include: { variants: true }, orderBy: { createdAt: "desc" }, skip: (input.page - 1) * input.pageSize, take: input.pageSize }),
+    prisma.product.findMany({ where, include: { variants: true }, orderBy: [orders[sort], { id: "asc" }], skip: (input.page - 1) * input.pageSize, take: input.pageSize }),
     prisma.product.count({ where }),
   ]);
   return { items, total, page: input.page, pageSize: input.pageSize };
+}
+
+export async function updateAdminProductStatus(id: string, isActive: boolean): Promise<boolean> {
+  const result = await prisma.product.updateMany({ where: { id }, data: { isActive } });
+  return result.count === 1;
 }
 
 export async function getAdminProduct(id: string): Promise<AdminCatalogProduct | null> {

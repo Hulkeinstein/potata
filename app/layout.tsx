@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Navbar } from "@/components/ui/Navbar";
-import { InitialLoader } from "@/components/ui/InitialLoader";
-import { Footer } from "@/components/ui/Footer";
+import { CustomerChrome } from "@/components/ui/CustomerChrome";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { StoreSync } from "@/components/providers/StoreSync";
 import { CatalogRefresh } from '@/components/providers/CatalogRefresh';
@@ -42,10 +40,9 @@ export default async function RootLayout({
         <LanguageProvider initialLocale={locale}><AuthProvider>
           <StoreSync />
           <CatalogRefresh />
-          <InitialLoader />
-          <Navbar />
+          <CustomerChrome placement="header" />
           {children}
-          <Footer />
+          <CustomerChrome placement="footer" />
         </AuthProvider></LanguageProvider>
       </body>
     </html>
