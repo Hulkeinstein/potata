@@ -33,7 +33,7 @@ const BEST_MIN_REVIEWS = 100;  // BEST: 최소 리뷰수(소수 리뷰 5점 배�
  * products 캐시와 독립(30분 주기 갱신) — 조회 증가가 카탈로그 캐시를 깨지 않게 분리.
  * unstable_cache는 직렬화 가능 값만 반환 가능하므로 string[] 반환(Set 불가).
  */
-const getHotProductIds = unstable_cache(
+export const getHotProductIds = unstable_cache(
   async (): Promise<string[]> => {
     const rows = await prisma.product.findMany({
       where: { isActive: true, viewCount: { gte: 1 } },
@@ -57,7 +57,7 @@ const getHotProductIds = unstable_cache(
  */
 type ProductWithVariants = PrismaProduct & { readonly variants?: readonly PrismaProductVariant[] };
 
-function toAppProduct(p: ProductWithVariants, hotIds?: Set<string>): Product {
+export function toAppProduct(p: ProductWithVariants, hotIds?: Set<string>): Product {
   const sizeGuide = parseSizeGuide(p.sizeGuide, p.sizes);
   const product: Product & { readonly sizeGuide?: SizeGuide } = {
     id: p.id,
@@ -92,7 +92,7 @@ function toAppProduct(p: ProductWithVariants, hotIds?: Set<string>): Product {
  * 전체 상품 raw rows 캐시 (카탈로그 캐시 — revalidateTag("products") 대상)
  * HOT 랭킹 캐시(hot-products)와 독립 분리: 조회수 갱신이 이 캐시를 건드리지 않음.
  */
-const getCachedProductRows = unstable_cache(
+export const getCachedProductRows = unstable_cache(
   async () => prisma.product.findMany({ where: { isActive: true }, include: { variants: true }, orderBy: { createdAt: "asc" } }),
   ["all-product-rows"],
   { tags: ["products"] }

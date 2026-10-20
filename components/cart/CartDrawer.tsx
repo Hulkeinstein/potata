@@ -46,6 +46,7 @@ export function CartDrawer() {
 
                     {/* Drawer */}
                     <motion.div
+                        data-catalog-refresh-blocked="true"
                         initial={{ x: "100%" }}
                         animate={{ x: 0 }}
                         exit={{ x: "100%" }}

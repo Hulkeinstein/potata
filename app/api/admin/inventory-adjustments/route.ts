@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { auth } from "@/auth";
 import { isAdmin } from "@/lib/admin";
 import { parseInventoryAdjustmentInput } from "@/lib/inventory-adjustment-contract";
@@ -28,7 +29,9 @@ export async function POST(request: NextRequest) {
     }
     const parsed = parseInventoryAdjustmentInput(parsedBody.value);
     if (!parsed.ok) return NextResponse.json({ success: false, error: parsed.error }, { status: 400 });
-    return NextResponse.json({ success: true, data: await adjustInventory(actorId, parsed.value) });
+    const adjustment = await adjustInventory(actorId, parsed.value);
+    revalidateTag("products", { expire: 0 });
+    return NextResponse.json({ success: true, data: adjustment });
   } catch (error) {
     if (error instanceof InventoryAdjustmentError) return NextResponse.json({ success: false, error: error.message }, { status: 409 });
     console.error("[admin inventory adjustment] error", error);

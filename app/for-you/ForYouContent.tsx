@@ -9,7 +9,7 @@ import type { Product } from '@/types';
 import { categories, parseCategory, parseDiscovery, storageRead, storageWrite } from './discovery-state';
 import type { ViewMode } from './discovery-state';
 import { ImmersiveFeed } from './ImmersiveFeed';
-import { buildDiscoveryFeed } from './discovery-feed';
+import { createCatalogSession, refreshCatalogSession, survivingAnchor } from './catalog-session';
 
 const subscribe = () => () => undefined;
 export function ForYouContent({ products }: { readonly products: readonly Product[] }) {
@@ -26,11 +26,20 @@ function DiscoveryContent({ products }: { readonly products: readonly Product[] 
   const [dismissed, setDismissed] = useState<readonly string[]>(() => state.dismissedBrands ?? []);
   const cards = useRef(new Map<string, HTMLDivElement>());
   const restoreGrid = useRef(true);
-  const seen = new Set<string>();
-  const catalog = products.filter(product => { if (seen.has(product.id)) return false; seen.add(product.id); return true; });
-  const visible = catalog.filter(product => state.category === 'All' || product.category === state.category);
+  const [session, setSession] = useState(() => ({ source: products, category: state.category, dismissed, ...createCatalogSession(products.filter(product => state.category === 'All' || product.category === state.category), dismissed) }));
+  if (session.source !== products || session.category !== state.category || session.dismissed !== dismissed) {
+    const incoming = products.filter(product => state.category === 'All' || product.category === state.category);
+    const next = session.category === state.category ? refreshCatalogSession(session, incoming, dismissed) : createCatalogSession(incoming, dismissed);
+    setSession({ source: products, category: state.category, dismissed, ...next });
+    if (session.category === state.category) {
+      const feedId = survivingAnchor(session.items, next.items, state.feedId ?? (state.productId ? `product:${state.productId}` : undefined));
+      const selected = next.items.find(item => item.id === feedId);
+      if (selected && selected.id !== state.feedId) setState(previous => ({ ...previous, feedId, productId: selected.kind === 'product' ? selected.product.id : previous.productId }));
+    }
+  }
+  const visible = session.products;
   const index = Math.max(0, visible.findIndex(product => product.id === state.productId));
-  const items = buildDiscoveryFeed(visible, dismissed);
+  const items = session.items;
   const savedIndex = items.findIndex(item => item.id === state.feedId);
   const fallbackProduct = state.feedId?.startsWith('brand:') ? visible[index + 1] ?? visible[index] : visible[index];
   const feedIndex = savedIndex >= 0 ? savedIndex : Math.max(0, items.findIndex(item => item.kind === 'product' && item.product.id === fallbackProduct?.id));
@@ -55,7 +64,7 @@ function DiscoveryContent({ products }: { readonly products: readonly Product[] 
     }, { threshold: 0.6, rootMargin: '-100px 0px -25% 0px' });
     cards.current.forEach(element => observer.observe(element));
     return () => observer.disconnect();
-  }, [mode, state.category]);
+  }, [mode, state.category, visible]);
   const switchMode = (next: ViewMode) => { restoreGrid.current = next === 'grid'; if (next === 'grid' && current) setState(previous => previous.productId === current.id && previous.feedId === feedItem?.id ? previous : { ...previous, productId: current.id, feedId: feedItem?.id }); setMode(next); };
   const rememberProduct = (id: string) => setState(previous => previous.productId === id && previous.feedId === `product:${id}` ? previous : { ...previous, productId: id, feedId: `product:${id}` });
   return (

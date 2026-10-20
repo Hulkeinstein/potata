@@ -62,6 +62,6 @@ export async function PATCH(request: NextRequest, context: RouteContext<"/api/ad
   const { id } = await context.params;
   const product = await updateAdminProduct(id, input);
   if (!product) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
-  revalidateTag("products", {});
+  revalidateTag("products", { expire: 0 });
   return NextResponse.json({ success: true, data: product });
 }

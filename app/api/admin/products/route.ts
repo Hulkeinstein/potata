@@ -267,8 +267,7 @@ export async function POST(req: NextRequest) {
       const product = await createProduct(productInput);
 
       // 카탈로그 목록 캐시 무효화 — tag 기반 1회로 8개 소비 페이지 전부 즉시 반영
-      // Next.js 16+에서 revalidateTag 두 번째 인자 필수 — 빈 profile({})로 호출
-      revalidateTag("products", {});
+      revalidateTag("products", { expire: 0 });
 
       return NextResponse.json(
         { success: true, data: { id: product.id } satisfies { id: AdminProductCreateData["id"] } },

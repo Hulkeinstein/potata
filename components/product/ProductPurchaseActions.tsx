@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Copy, Minus, Plus } from "lucide-react";
 import { HeartButton } from "@/components/common/HeartButton";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCartStore } from "@/store/cart-store";
-import type { ApiResponse, Product } from "@/types";
+import type { Product } from "@/types";
 import type { SizeGuide } from "@/lib/size-guide";
-import type { UserSettingsData } from "@/lib/user-settings";
+import { usePreferredProductSize } from './use-preferred-product-size';
 import { SizeGuideDialog } from "@/components/product/SizeGuideDialog";
 import { useSession } from "next-auth/react";
 import { getInventoryStatus } from "@/lib/inventory";
@@ -29,31 +29,17 @@ export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseAct
   const [quantity, setQuantity] = useState(1);
   const [copyStatus, setCopyStatus] = useState<{ readonly key: PurchaseFeedbackKey; readonly count?: number } | null>(null);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const [edited, setEdited] = useState(false);
+  const userChoice = useRef(false);
   const sizeGuideTriggerRef = useRef<HTMLButtonElement>(null);
   const { addItem } = useCartStore();
-  const { status: sessionStatus } = useSession();
+  const { status: sessionStatus, data: session } = useSession();
   const selectedVariant = product.variants?.find((variant) => variant.size === (selectedSize ?? sizes[0]) && variant.color === selectedColor);
   const hasInventory = product.variants !== undefined;
   const selectedStatus = selectedVariant ? getInventoryStatus(selectedVariant) : "SOLD_OUT";
-  const isPurchasable = !hasInventory || selectedStatus === "ON_SALE";
-
-  useEffect(() => {
-    if (sessionStatus !== "authenticated") return;
-    let active = true;
-    async function loadPreferredSize() {
-      try {
-        const response = await fetch("/api/users/me/settings");
-        if (!response.ok) return;
-        const payload: ApiResponse<UserSettingsData> = await response.json();
-        const preferred = payload.success ? payload.data?.preferredSize : null;
-        if (active && preferred && sizes.includes(preferred)) setSelectedSize(preferred);
-      } catch {
-        // 설정 조회 실패는 구매 흐름을 막지 않는다.
-      }
-    }
-    void loadPreferredSize();
-    return () => { active = false; };
-  }, [sessionStatus, sizes]);
+  const hasValidSelection = colors.includes(selectedColor) && (selectedSize === null || sizes.includes(selectedSize));
+  const isPurchasable = hasValidSelection && (!hasInventory || selectedStatus === "ON_SALE");
+  usePreferredProductSize(product.id, session?.user?.id, sessionStatus, sizes, userChoice, setSelectedSize);
 
   const addToCart = () => {
     const size = selectedSize ?? sizes[0];
@@ -85,13 +71,13 @@ export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseAct
   };
 
   return (
-    <div className="space-y-6">
+    <div data-catalog-refresh-blocked={edited ? 'true' : undefined} className="space-y-6">
       <div className="space-y-3">
         <span className="text-sm font-medium text-zinc-300">{text.color}</span>
         <div className="flex flex-wrap gap-2">
           {colors.map((color) => {
             const available = !hasInventory || (product.variants ?? []).some((variant) => variant.color === color && getInventoryStatus(variant) === "ON_SALE");
-            return <button key={color} onClick={() => setSelectedColor(color)} aria-pressed={selectedColor === color} className={cn("px-4 py-2 rounded-full border text-sm transition-all", selectedColor === color ? "border-brand-neon text-brand-neon bg-brand-neon/10" : "border-white/10 text-zinc-400 hover:border-white/30", !available && "cursor-not-allowed opacity-40 line-through")}>{color}</button>;
+            return <button key={color} onClick={() => { setEdited(true); setSelectedColor(color); }} aria-pressed={selectedColor === color} className={cn("px-4 py-2 rounded-full border text-sm transition-all", selectedColor === color ? "border-brand-neon text-brand-neon bg-brand-neon/10" : "border-white/10 text-zinc-400 hover:border-white/30", !available && "cursor-not-allowed opacity-40 line-through")}>{color}</button>;
           })}
         </div>
       </div>
@@ -106,16 +92,16 @@ export function ProductPurchaseActions({ product, imageUrl }: ProductPurchaseAct
             const variant = product.variants?.find((item) => item.size === size && item.color === selectedColor);
             const status = variant ? getInventoryStatus(variant) : "SOLD_OUT";
             const available = !hasInventory || status === "ON_SALE";
-            return <button key={size} onClick={() => available && setSelectedSize(size)} aria-pressed={selectedSize === size} disabled={!available} className={cn("py-3 rounded-lg border text-sm font-medium transition-all", selectedSize === size ? "border-brand-neon text-black bg-brand-neon" : "border-white/10 text-zinc-400 hover:border-white/30 hover:bg-white/5", !available && "cursor-not-allowed opacity-40")}>{size}{!available ? ` · ${text.soldOut}` : ""}</button>;
+            return <button key={size} onClick={() => { if (available) { userChoice.current = true; setEdited(true); setSelectedSize(size); } }} aria-pressed={selectedSize === size} disabled={!available} className={cn("py-3 rounded-lg border text-sm font-medium transition-all", selectedSize === size ? "border-brand-neon text-black bg-brand-neon" : "border-white/10 text-zinc-400 hover:border-white/30 hover:bg-white/5", !available && "cursor-not-allowed opacity-40")}>{size}{!available ? ` · ${text.soldOut}` : ""}</button>;
           })}
         </div>
       </div>
 
       <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
         <div className="flex items-center gap-3 rounded bg-black/20 px-2 py-1">
-          <button onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label={text.decrease} disabled={quantity === 1} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><Minus className="h-3 w-3" /></button>
+          <button onClick={() => { setEdited(true); setQuantity((value) => Math.max(1, value - 1)); }} aria-label={text.decrease} disabled={quantity === 1} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><Minus className="h-3 w-3" /></button>
           <span className="min-w-5 text-center text-sm font-medium">{quantity}</span>
-          <button onClick={() => setQuantity((value) => selectedVariant ? Math.min(selectedVariant.stock, value + 1) : value + 1)} aria-label={text.increase} disabled={!isPurchasable || (selectedVariant ? quantity >= selectedVariant.stock : false)} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><Plus className="h-3 w-3" /></button>
+          <button onClick={() => { setEdited(true); setQuantity((value) => selectedVariant ? Math.min(selectedVariant.stock, value + 1) : value + 1); }} aria-label={text.increase} disabled={!isPurchasable || (selectedVariant ? quantity >= selectedVariant.stock : false)} className="p-1 text-zinc-400 hover:text-white disabled:opacity-30"><Plus className="h-3 w-3" /></button>
         </div>
         <span className="text-lg font-bold">{formatPrice(product.price * quantity)}</span>
       </div>

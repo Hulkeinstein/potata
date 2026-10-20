@@ -8,6 +8,7 @@ const en = {
   hint: 'Swipe up/down for products, left/right for photos. Or use the arrow buttons.', loading: 'Preparing your view…',
   share: 'Copy product link', copied: 'Link copied', shareUnavailable: 'Could not copy the link', close: 'Close', restart: 'Start again',
   discoverBrand: 'Discover a brand', brandNote: 'Explore products from this brand in the current collection.', brandSearch: 'Search by brand name', notInterested: 'Not interested this session', previousItem: 'Previous item', nextItem: 'Next item',
+  continueNew: 'Continue to new products',
 } as const;
 export const feedMessages = {
   en,
@@ -20,5 +21,6 @@ export const feedMessages = {
     hint: '위아래로 상품, 좌우로 사진을 넘기세요. 방향 버튼으로도 이동할 수 있어요.', loading: '보기 방식을 준비하고 있어요…',
     share: '상품 링크 복사', copied: '링크를 복사했어요', shareUnavailable: '링크를 복사하지 못했어요', close: '닫기', restart: '다시 보기',
     discoverBrand: '브랜드 둘러보기', brandNote: '현재 컬렉션에 있는 이 브랜드의 상품을 살펴보세요.', brandSearch: '브랜드 이름으로 검색', notInterested: '이번에는 관심 없어요', previousItem: '이전 항목', nextItem: '다음 항목',
+    continueNew: '새 상품 이어보기',
   },
 } as const satisfies Record<Locale, { readonly [K in keyof typeof en]: string }>;

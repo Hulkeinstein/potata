@@ -141,7 +141,7 @@ export function TryOnContent({ products }: TryOnContentProps) {
     };
 
     return (
-        <main className="min-h-screen bg-black text-white flex flex-col pt-16">
+        <main data-catalog-refresh-blocked={isGenerating ? 'true' : undefined} className="min-h-screen bg-black text-white flex flex-col pt-16">
             <div className="flex-1 flex flex-col md:flex-row">
                 {/* Left Panel: The Studio / Canvas */}
                 <div className="w-full md:w-1/2 p-6 md:p-12 border-r border-white/5 flex flex-col items-center justify-center bg-black relative">

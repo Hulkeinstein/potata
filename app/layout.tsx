@@ -7,6 +7,7 @@ import { InitialLoader } from "@/components/ui/InitialLoader";
 import { Footer } from "@/components/ui/Footer";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { StoreSync } from "@/components/providers/StoreSync";
+import { CatalogRefresh } from '@/components/providers/CatalogRefresh';
 import { cookies } from 'next/headers';
 import { LanguageProvider } from '@/components/providers/LanguageProvider';
 import { LANGUAGE_COOKIE, parseLocale } from '@/lib/i18n/locale';
@@ -40,6 +41,7 @@ export default async function RootLayout({
       <body className={cn(outfit.variable, notoSansKr.variable, "font-sans min-h-screen bg-background text-foreground")}>
         <LanguageProvider initialLocale={locale}><AuthProvider>
           <StoreSync />
+          <CatalogRefresh />
           <InitialLoader />
           <Navbar />
           {children}

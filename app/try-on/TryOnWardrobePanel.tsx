@@ -59,7 +59,7 @@ export function TryOnWardrobePanel({ products, activeTab, setActiveTab, selected
                     </div>
 
                     {/* Tab Content */}
-                    <div className="flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide">
+                    <div className="min-h-0 flex-1 overflow-y-auto p-6 md:p-12 scrollbar-hide">
 
                         {/* WARDROBE TAB */}
                         {activeTab === "wardrobe" && (
@@ -185,7 +185,7 @@ export function TryOnWardrobePanel({ products, activeTab, setActiveTab, selected
 
                     {/* Action Bar (Only visible in Wardrobe) */}
                     {activeTab === "wardrobe" && (
-                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-zinc-950/90 backdrop-blur border-t border-white/5 md:w-1/2 md:left-auto">
+                        <div className="shrink-0 p-6 bg-zinc-950/90 backdrop-blur border-t border-white/5">
                             <button
                                 disabled={!selectedProduct || !userImage || isGenerating}
                                 onClick={handleGenerate}

@@ -27,7 +27,7 @@ function FooterPanel({ onClose }: { readonly onClose: () => void }) {
     <button type="button" onClick={onClose} className="sticky top-0 ml-auto block min-h-11 bg-black px-5">{feedMessages[locale].close} ×</button><Footer />
   </dialog>;
 }
-export function ImmersiveFeed({ items, index, category, photos, onPhoto, onIndex, onCategory, onClose, onDismiss }: Props) {
+export function ImmersiveFeed({ items: incoming, index, category, photos, onPhoto, onIndex, onCategory, onClose, onDismiss }: Props) {
   const { locale } = useLanguage();
   const t = feedMessages[locale];
   const dialog = useImmersiveDialog();
@@ -35,6 +35,9 @@ export function ImmersiveFeed({ items, index, category, photos, onPhoto, onIndex
   const controls = useRef<HTMLElement>(null);
   const active = useRef(index);
   const [end, setEnd] = useState(false);
+  const [endIds, setEndIds] = useState<readonly string[] | null>(null);
+  const items = endIds ? incoming.filter(item => endIds.includes(item.id)) : incoming;
+  const pending = endIds ? incoming.filter(item => !endIds.includes(item.id)) : [];
   const [footer, setFooter] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initial = useRef(index);
@@ -47,7 +50,7 @@ export function ImmersiveFeed({ items, index, category, photos, onPhoto, onIndex
     resize?.observe(element);
     return () => { resize?.disconnect(); if (timer.current) clearTimeout(timer.current); };
   }, []);
-  useEffect(() => { active.current = index; }, [index]);
+  useEffect(() => { active.current = end ? items.length : index; }, [index, end, items.length]);
   const itemKeys = items.map(item => item.id).join('\u0000');
   useEffect(() => {
     const element = track.current;
@@ -68,6 +71,7 @@ export function ImmersiveFeed({ items, index, category, photos, onPhoto, onIndex
     const bounded = Math.max(0, Math.min(next, items.length));
     active.current = bounded;
     setEnd(bounded === items.length);
+    setEndIds(bounded === items.length ? items.map(item => item.id) : null);
     if (bounded < items.length) onIndex(bounded);
     const element = track.current;
     if (element) {
@@ -100,6 +104,7 @@ export function ImmersiveFeed({ items, index, category, photos, onPhoto, onIndex
         if (!element.clientHeight) return;
         const next = Math.max(0, Math.min(items.length, Math.round(element.scrollTop / element.clientHeight)));
         active.current = next; setEnd(next === items.length);
+        setEndIds(next === items.length ? items.map(item => item.id) : null);
         if (next < items.length) onIndex(next);
       }, 100);
     }}>
@@ -110,6 +115,10 @@ export function ImmersiveFeed({ items, index, category, photos, onPhoto, onIndex
       } })}
       <section data-feed-slide="end" aria-hidden={!end && items.length > 0} inert={!end && items.length > 0} className="flex h-full w-full snap-start snap-always flex-col items-center justify-center gap-6 px-6 text-center">
         <h2 className="text-2xl font-bold">{items.length ? t.end : t.empty}</h2>
+        {pending.length > 0 && <button type="button" onClick={() => {
+          const next = incoming.findIndex(item => item.id === pending[0]?.id);
+          setEndIds(null); setEnd(false); active.current = next; onIndex(next);
+        }} className="min-h-11 rounded-full bg-brand-neon px-6 text-black">{t.continueNew}</button>}
         {items.length > 0 && <button type="button" onClick={() => move(0)} className="min-h-11 rounded-full border border-white/30 px-6">{t.restart}</button>}
         <button type="button" onClick={onClose} className="min-h-11 rounded-full bg-white px-6 text-black">{t.grid}</button>
       </section>

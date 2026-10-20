@@ -382,7 +382,6 @@ describe("POST /api/admin/products", () => {
     const res = await POST(req);
     expect(res.status).toBe(200);
     expect(revalidateTagMock).toHaveBeenCalledTimes(1);
-    // Next.js 16+에서 revalidateTag 두 번째 인자 필수 — 빈 profile({})로 호출
-    expect(revalidateTagMock).toHaveBeenCalledWith("products", {});
+    expect(revalidateTagMock).toHaveBeenCalledWith("products", { expire: 0 });
   });
 });
