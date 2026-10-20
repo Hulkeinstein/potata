@@ -44,3 +44,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 state/
+
+# AE 티저 빌드 중간 산출물
+marketing/launch-teaser/.build/
