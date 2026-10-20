@@ -9,6 +9,7 @@ export const OPERATION_ISSUE_KINDS = [
   "LOW_STOCK_VARIANT",
   "MANUAL_SOLD_OUT_WITH_STOCK",
   "MISSING_PRODUCT_IMAGE",
+  "MISSING_PRODUCT_DESCRIPTION",
   "INACTIVE_PRODUCT",
   "ACTIVE_UNISSUED_CAMPAIGN",
 ] as const;
@@ -42,6 +43,8 @@ export type OperationProductFact = {
   readonly name: string;
   readonly isActive: boolean | null;
   readonly imageUrl: string | null;
+  readonly descriptionKo?: string | null;
+  readonly descriptionEn?: string | null;
   readonly variants: readonly OperationVariantFact[] | null;
 };
 

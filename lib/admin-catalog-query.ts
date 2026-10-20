@@ -1,3 +1,6 @@
+import { PRODUCT_CONTENT_QUALITY_OPTIONS } from "./product-content-quality";
+import type { ProductContentQuality } from "./product-content-quality";
+
 export const CATALOG_CATEGORIES = ["Outer", "Top", "Bottom", "Dress", "Acc", "Shoes"] as const;
 export const CATALOG_STATUSES = ["all", "active", "inactive", "sold-out"] as const;
 export const CATALOG_SORTS = ["newest", "name", "price-asc", "price-desc"] as const;
@@ -6,6 +9,7 @@ export type AdminCatalogQuery = {
   readonly query: string;
   readonly brand: string;
   readonly category: string;
+  readonly quality: ProductContentQuality;
   readonly status: typeof CATALOG_STATUSES[number];
   readonly sort: typeof CATALOG_SORTS[number];
   readonly page: number;
@@ -26,6 +30,7 @@ export function parseAdminCatalogQuery(params: URLSearchParams): AdminCatalogQue
     query: (params.get("q") ?? "").trim().slice(0, 100),
     brand: (params.get("brand") ?? "").trim().slice(0, 100),
     category: choice(params.get("category"), CATALOG_CATEGORIES, ""),
+    quality: choice(params.get("quality"), PRODUCT_CONTENT_QUALITY_OPTIONS.map(({ value }) => value), "all"),
     status: choice(params.get("status"), CATALOG_STATUSES, "all"),
     sort: choice(params.get("sort"), CATALOG_SORTS, "newest"),
     page: positive(params.get("page"), 1, 100),
@@ -38,6 +43,7 @@ export function catalogQueryParams(input: AdminCatalogQuery): URLSearchParams {
   if (input.query) params.set("q", input.query);
   if (input.brand) params.set("brand", input.brand);
   if (input.category) params.set("category", input.category);
+  if (input.quality !== "all") params.set("quality", input.quality);
   if (input.status !== "all") params.set("status", input.status);
   if (input.sort !== "newest") params.set("sort", input.sort);
   if (input.page !== 1) params.set("page", String(input.page));

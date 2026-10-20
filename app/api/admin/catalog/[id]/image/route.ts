@@ -29,10 +29,17 @@ export async function POST(request: Request, context: { readonly params: Promise
     throw error;
   }
   const image = form.get('image');
-  const expectedImageUrl = form.get('expectedImageUrl');
-  if (!image || typeof image === 'string' || form.getAll('image').length !== 1 || typeof expectedImageUrl !== 'string' || expectedImageUrl.length === 0 || expectedImageUrl.length > 4096 || form.getAll('expectedImageUrl').length !== 1) {
+  const expectedValue = form.get('expectedImageUrl');
+  const encoding = form.get('expectedImageUrlEncoding');
+  if (!image || typeof image === 'string' || form.getAll('image').length !== 1 || typeof expectedValue !== 'string' || expectedValue.length > 49152 || form.getAll('expectedImageUrl').length !== 1 || form.getAll('expectedImageUrlEncoding').length > 1 || (encoding !== null && encoding !== 'uri')) {
     return errorResponse(400, '대표 사진 한 장과 현재 이미지 정보가 필요합니다.');
   }
+  let expectedImageUrl = expectedValue;
+  if (encoding === 'uri') {
+    try { expectedImageUrl = decodeURIComponent(expectedValue); }
+    catch (error) { if (error instanceof URIError) return errorResponse(400, '현재 이미지 정보가 올바르지 않습니다.'); throw error; }
+  }
+  if (expectedImageUrl.length > 4096) return errorResponse(400, '현재 이미지 정보가 너무 깁니다.');
   if (image.size === 0 || image.size > MAX_IMAGE_BYTES) return errorResponse(413, '사진은 3MB 이하로 선택해 주세요.');
   const data = await image.arrayBuffer();
   const ext = sniffProductImage(data);

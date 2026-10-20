@@ -9,6 +9,7 @@ import type {
   OperationVariantFact,
 } from "@/types/operations-assistant";
 import { prisma } from "@/lib/prisma";
+import { getProductContentGaps, PRODUCT_CONTENT_GAP_LABELS } from "./product-content-quality";
 
 const SEVERITY_RANK = { immediate: 0, warning: 1, info: 2 } as const satisfies Record<OperationIssueSeverity, number>;
 
@@ -61,8 +62,14 @@ function productIssues(product: OperationProductFact): readonly OperationIssue[]
       }
     }
   }
-  if (product.imageUrl !== null && product.imageUrl.trim().length === 0) {
+  const gaps = getProductContentGaps({ ...product, imageUrl: product.imageUrl ?? undefined });
+  if (gaps.includes("image")) {
     issues.push(createIssue("warning", "MISSING_PRODUCT_IMAGE", "대표 이미지 URL이 비어 있습니다.", 1, product.id, product.name, productLink(product.id)));
+  }
+  const missingDescriptions = gaps.filter((gap) => gap !== "image");
+  if (missingDescriptions.length > 0) {
+    const reason = missingDescriptions.map((gap) => PRODUCT_CONTENT_GAP_LABELS[gap]).join(" · ");
+    issues.push(createIssue("warning", "MISSING_PRODUCT_DESCRIPTION", `${reason}. 다른 언어나 기존 원문으로 대체 표시될 수 있습니다.`, 1, product.id, product.name, productLink(product.id)));
   }
   return issues;
 }
@@ -108,6 +115,8 @@ export async function listOperationsIssues(): Promise<readonly OperationIssue[]>
         name: true,
         isActive: true,
         imageUrl: true,
+        descriptionKo: true,
+        descriptionEn: true,
         variants: { select: { id: true, stock: true, isManuallySoldOut: true } },
         _count: { select: { questions: { where: { answers: { none: {} } } } } },
       },
@@ -124,6 +133,8 @@ export async function listOperationsIssues(): Promise<readonly OperationIssue[]>
       name: product.name,
       isActive: product.isActive,
       imageUrl: product.imageUrl,
+      descriptionKo: product.descriptionKo,
+      descriptionEn: product.descriptionEn,
       variants: product.variants.map((variant) => ({
         id: variant.id,
         stock: variant.stock,

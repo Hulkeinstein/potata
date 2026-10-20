@@ -9,9 +9,9 @@ beforeEach(() => { vi.clearAllMocks(); mocks.auth.mockResolvedValue({ user: { id
 describe("catalog list endpoint", () => {
   it("passes all normalized conditions to the existing loader", async () => {
     mocks.list.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20 });
-    const response = await GET(new NextRequest("http://localhost/api/admin/catalog?brand=Seoul&category=Top&status=active&sort=name"));
+    const response = await GET(new NextRequest("http://localhost/api/admin/catalog?brand=Seoul&category=Top&quality=missing-image&status=active&sort=name"));
     expect(response.status).toBe(200);
-    expect(mocks.list).toHaveBeenCalledWith({ query: "", brand: "Seoul", category: "Top", status: "active", sort: "name", page: 1, pageSize: 20 });
+    expect(mocks.list).toHaveBeenCalledWith({ query: "", brand: "Seoul", category: "Top", quality: "missing-image", status: "active", sort: "name", page: 1, pageSize: 20 });
   });
   it("returns a generic failure without exposing database internals", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);

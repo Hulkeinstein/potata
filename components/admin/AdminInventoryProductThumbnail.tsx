@@ -11,7 +11,7 @@ type AdminInventoryProductThumbnailProps = {
 export function AdminInventoryProductThumbnail({ imageUrl, productName }: AdminInventoryProductThumbnailProps) {
   const [failed, setFailed] = useState(false);
 
-  if (failed) {
+  if (failed || imageUrl.trim() === "") {
     return <div aria-label={`${productName} 이미지 없음`} className="flex h-[72px] w-16 shrink-0 items-center justify-center rounded bg-zinc-800 px-1 text-center text-xs text-zinc-400">이미지 없음</div>;
   }
 

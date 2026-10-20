@@ -65,7 +65,7 @@ export function AdminProductEditForm({ product, returnTo }: { readonly product: 
   }
   return <form onSubmit={(event) => void submit(event)} className="mx-auto max-w-2xl space-y-4 rounded border border-zinc-800 bg-zinc-950 p-5">
     <div><h1 className="text-3xl font-black">상품 수정</h1><p className="mt-1 text-sm text-zinc-400">기존 상품과 옵션을 유지하며 정보를 수정합니다. 대표 사진은 별도로 저장합니다.</p></div>
-    {product.imageUrl ? <AdminProductImageEditor key={`${product.id}:${product.imageUrl}`} productId={product.id} imageUrl={product.imageUrl} disabled={saving} onBusyChange={setImageSaving} /> : null}
+    {typeof product.imageUrl === 'string' ? <AdminProductImageEditor key={`${product.id}:${product.imageUrl}`} productId={product.id} imageUrl={product.imageUrl} disabled={saving} onBusyChange={setImageSaving} /> : null}
     <label className="block text-sm">상품명<input className="mt-1 w-full rounded bg-zinc-900 p-2" value={form.name} onChange={(event) => change("name", event.target.value)} /></label>
     <label className="block text-sm">브랜드<input className="mt-1 w-full rounded bg-zinc-900 p-2" value={form.brand} onChange={(event) => change("brand", event.target.value)} /></label>
     <label className="block text-sm">판매가 (AED)<input type="number" min="1" className="mt-1 w-full rounded bg-zinc-900 p-2" value={form.price} onChange={(event) => change("price", event.target.value)} /></label>

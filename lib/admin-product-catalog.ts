@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import type { AdminCatalogQuery } from "./admin-catalog-query";
+import { matchesProductContentQuality } from "./product-content-quality";
 export { parseAdminCatalogQuery } from "./admin-catalog-query";
 export type { AdminCatalogQuery } from "./admin-catalog-query";
 
@@ -15,7 +16,7 @@ export type AdminCatalogPage = {
 
 export async function listAdminProducts(input: Pick<AdminCatalogQuery, "query" | "page" | "pageSize"> & Partial<AdminCatalogQuery>): Promise<AdminCatalogPage> {
   const available = { stock: { gt: 0 }, isManuallySoldOut: false };
-  const where: Prisma.ProductWhereInput = {
+  const baseWhere: Prisma.ProductWhereInput = {
     ...(input.query ? { OR: [{ name: { contains: input.query, mode: "insensitive" } }, { brand: { contains: input.query, mode: "insensitive" } }] } : {}),
     ...(input.brand ? { brand: input.brand } : {}),
     ...(input.category ? { category: input.category } : {}),
@@ -23,6 +24,14 @@ export async function listAdminProducts(input: Pick<AdminCatalogQuery, "query" |
     ...(input.status === "sold-out" ? { isActive: true, variants: { none: available } } : {}),
     ...(input.status === "inactive" ? { isActive: false } : {}),
   };
+  const quality = input.quality ?? "all";
+  // 누락 필터에서만 후보의 작은 facts를 읽고, 공통 trim 규칙을 pagination 전에 적용한다.
+  const candidates = quality === "all" ? undefined : await prisma.product.findMany({
+    where: baseWhere, select: { id: true, descriptionKo: true, descriptionEn: true, imageUrl: true },
+  });
+  const where: Prisma.ProductWhereInput = candidates
+    ? { AND: [baseWhere, { id: { in: candidates.filter((product) => matchesProductContentQuality(product, quality)).map(({ id }) => id) } }] }
+    : baseWhere;
   const sort = input.sort ?? "newest";
   const orders = {
     newest: { createdAt: "desc" }, name: { name: "asc" },

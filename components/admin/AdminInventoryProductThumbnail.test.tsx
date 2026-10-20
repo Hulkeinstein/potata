@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import { AdminInventoryProductThumbnail } from "@/components/admin/AdminInventoryProductThumbnail";
 
 describe("AdminInventoryProductThumbnail", () => {
+  it.each(["", " \n\t"])("renders a placeholder directly for an unregistered photo %j", (imageUrl) => {
+    render(<AdminInventoryProductThumbnail imageUrl={imageUrl} productName="사진 누락 상품" />);
+    expect(screen.getByText("이미지 없음")).toBeTruthy();
+    expect(screen.queryByRole("img")).toBeNull();
+  });
   it("shows a readable fallback when the product image fails to load", () => {
     // Given: a product thumbnail with an unreachable external image
     render(<AdminInventoryProductThumbnail imageUrl="https://example.test/missing.png" productName="테스트 재킷" />);

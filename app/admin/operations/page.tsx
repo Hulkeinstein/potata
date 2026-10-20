@@ -27,6 +27,7 @@ export default async function AdminOperationsPage() {
         <header>
           <Link href="/admin" className="text-sm text-zinc-400 underline hover:text-white">운영 홈으로 돌아가기</Link>
           <h1 className="mt-4 text-3xl font-black">운영 어시스턴트</h1>
+          <Link href="/admin/products?quality=missing-any" className="mt-3 inline-block text-sm text-brand-neon underline">상품 정보 누락 모아보기</Link>
           {state.status === "ready" && <p className="mt-2 text-sm text-zinc-400">자동 변경 없이 실제 운영 이슈와 기존 해결 화면만 안내합니다.</p>}
         </header>
         {state.status === "ready" ? (

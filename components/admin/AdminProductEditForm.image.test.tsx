@@ -9,6 +9,11 @@ beforeEach(() => { vi.clearAllMocks(); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe('separate product image editing', () => {
+  it('keeps the photo repair control available when the current URL is empty', () => {
+    render(<AdminProductEditForm product={{ ...product, imageUrl: '' }} />);
+    expect(screen.getByRole('button', { name: '대표 사진 저장' })).toBeTruthy();
+    expect(screen.getByLabelText('새 대표 사진 선택')).toBeTruthy();
+  });
   it('shows separate image action while preserving normal description inputs', () => {
     // Given:
     render(<AdminProductEditForm product={product} />);

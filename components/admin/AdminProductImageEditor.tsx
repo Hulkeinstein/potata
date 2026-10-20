@@ -38,7 +38,9 @@ export function AdminProductImageEditor({ productId, imageUrl, disabled = false,
     setMessage('');
     const body = new FormData();
     body.set('image', file);
-    body.set('expectedImageUrl', savedImage);
+    // multipart는 개행을 CRLF로 바꾸므로 저장된 빈 값도 정확한 CAS 토큰으로 전달한다.
+    body.set('expectedImageUrl', encodeURIComponent(savedImage));
+    body.set('expectedImageUrlEncoding', 'uri');
     try {
       const response = await fetch(`/api/admin/catalog/${encodeURIComponent(productId)}/image`, { method: 'POST', body, signal: AbortSignal.timeout(30_000) });
       if (!response.ok) {
@@ -68,7 +70,7 @@ export function AdminProductImageEditor({ productId, imageUrl, disabled = false,
   return <section aria-labelledby="product-image-heading" className="space-y-3 rounded border border-zinc-700 bg-zinc-900/50 p-4">
     <div><h2 id="product-image-heading" className="font-bold">대표 사진</h2><p className="mt-1 text-xs text-zinc-400">JPG · PNG · WebP, 최대 3MB. 사진은 아래 버튼으로 별도 저장합니다.</p></div>
     <div className="flex flex-wrap items-start gap-4">
-      {imageFailed && !preview ? <div aria-label="현재 대표 사진 이미지 없음" className="flex h-40 w-32 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">이미지 없음</div> : <Image key={preview ?? savedImage} src={preview ?? savedImage} alt={preview ? '저장 전 대표 사진 미리보기' : '현재 대표 사진'} width={128} height={160} unoptimized onError={() => setImageFailed(true)} className="h-40 w-32 rounded bg-zinc-800 object-cover" />}
+      {(imageFailed || savedImage.trim() === '') && !preview ? <div aria-label="현재 대표 사진 이미지 없음" className="flex h-40 w-32 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">이미지 없음</div> : <Image key={preview ?? savedImage} src={preview ?? savedImage} alt={preview ? '저장 전 대표 사진 미리보기' : '현재 대표 사진'} width={128} height={160} unoptimized onError={() => setImageFailed(true)} className="h-40 w-32 rounded bg-zinc-800 object-cover" />}
       <div className="min-w-0 flex-1 space-y-3">
         <label className="block text-sm">새 대표 사진 선택<input ref={input} disabled={saving || disabled} type="file" accept="image/jpeg,image/png,image/webp" className="mt-2 block w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-zinc-700 file:px-3 file:py-2 file:text-white" onChange={(event) => {
           const selected = event.target.files?.[0];

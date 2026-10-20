@@ -29,6 +29,8 @@ describe("AdminOperationsPage", () => {
     expect(html).toContain('href="/admin/questions?status=unanswered"');
     expect(html).toContain('href="/admin/products/inactive-product/edit"');
     expect(html).toContain('href="/admin"');
+    expect(html).toContain('href="/admin/products?quality=missing-any"');
+    expect(html).toContain("상품 정보 누락 모아보기");
   });
 
   it("shows a safe retry state when the read-only loader fails", async () => {

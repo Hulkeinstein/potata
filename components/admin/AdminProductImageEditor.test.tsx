@@ -14,6 +14,25 @@ function selectPhoto() {
   fireEvent.change(screen.getByLabelText('새 대표 사진 선택'), { target: { files: [new File(['photo'], 'photo.png', { type: 'image/png' })] } });
 }
 describe('representative photo editing', () => {
+  it.each(['', ' \n\t'])('repairs an unregistered photo URL %j without rendering an invalid image source', async (imageUrl) => {
+    // Given: the exact stored blank string is still the compare-and-swap token.
+    request.mockResolvedValue({ ok: true, json: async () => ({ success: true, data: { imageUrl: 'https://example.test/new.jpg' } }) });
+    render(<AdminProductImageEditor productId="p" imageUrl={imageUrl} />);
+    expect(screen.getByText('이미지 없음')).toBeTruthy();
+    expect(screen.queryByRole('img')).toBeNull();
+    selectPhoto();
+    // When:
+    fireEvent.click(screen.getByRole('button', { name: '대표 사진 저장' }));
+    // Then:
+    await waitFor(() => expect(screen.getByRole('status')).toBeTruthy());
+    const options: unknown = request.mock.calls[0]?.[1];
+    if (!options || typeof options !== 'object') throw new Error('Missing request');
+    const body: unknown = Reflect.get(options, 'body');
+    if (!(body instanceof FormData)) throw new Error('Missing multipart');
+    expect(body.get('expectedImageUrl')).toBe(encodeURIComponent(imageUrl));
+    expect(body.get('expectedImageUrlEncoding')).toBe('uri');
+    expect(screen.getByAltText('현재 대표 사진').getAttribute('src')).toBe('https://example.test/new.jpg');
+  });
   it('disables photo actions when ordinary product save is in progress', () => {
     // Given:
     const { rerender } = render(<AdminProductImageEditor productId="p" imageUrl="https://example.test/old.jpg" />);
@@ -58,7 +77,8 @@ describe('representative photo editing', () => {
     const body: unknown = Reflect.get(options, 'body');
     expect(body).toBeInstanceOf(FormData);
     if (!(body instanceof FormData)) throw new Error('Missing multipart');
-    expect(body.get('expectedImageUrl')).toBe('https://example.test/old.jpg');
+    expect(body.get('expectedImageUrl')).toBe(encodeURIComponent('https://example.test/old.jpg'));
+    expect(body.get('expectedImageUrlEncoding')).toBe('uri');
     expect(screen.getByAltText('현재 대표 사진').getAttribute('src')).toBe('https://example.test/new.jpg');
   });
   it('cancels only preview without changing original or sending request', () => {

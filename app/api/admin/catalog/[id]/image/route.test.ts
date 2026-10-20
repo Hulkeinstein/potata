@@ -30,6 +30,55 @@ beforeEach(() => {
 });
 
 describe('admin representative image endpoint', () => {
+  it.each(['', ' \n\t'])('allows repairing the exact existing blank URL %j', async (expectedImageUrl) => {
+    mocks.get.mockResolvedValue({ imageUrl: expectedImageUrl });
+    const body = new FormData();
+    body.set('image', new File([png], 'photo.png', { type: 'image/png' }));
+    body.set('expectedImageUrl', encodeURIComponent(expectedImageUrl));
+    body.set('expectedImageUrlEncoding', 'uri');
+    const response = await POST(new NextRequest('http://localhost/api/admin/catalog/product/image', { method: 'POST', body }), context);
+    expect(response.status).toBe(200);
+    expect(mocks.replace).toHaveBeenCalledWith('product', expectedImageUrl, 'new');
+  });
+  it('rejects an absent expected URL field rather than treating it as the empty token', async () => {
+    const body = new FormData();
+    body.set('image', new File([png], 'photo.png', { type: 'image/png' }));
+    const response = await POST(new NextRequest('http://localhost/api/admin/catalog/product/image', { method: 'POST', body }), context);
+    expect(response.status).toBe(400);
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+  it.each([
+    { encoding: 'unknown', token: 'old' },
+    { encoding: 'uri', token: '%' },
+    { encoding: 'uri', token: 'x'.repeat(4097) },
+    { encoding: 'uri', token: '%20'.repeat(16385) },
+  ])('rejects malformed or oversized encoded token $encoding', async ({ encoding, token }) => {
+    const body = new FormData();
+    body.set('image', new File([png], 'photo.png', { type: 'image/png' }));
+    body.set('expectedImageUrl', token);
+    body.set('expectedImageUrlEncoding', encoding);
+    const response = await POST(new NextRequest('http://localhost/api/admin/catalog/product/image', { method: 'POST', body }), context);
+    expect(response.status).toBe(400);
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+  it('rejects duplicate encoding fields before touching storage', async () => {
+    const body = new FormData();
+    body.set('image', new File([png], 'photo.png', { type: 'image/png' }));
+    body.set('expectedImageUrl', 'old');
+    body.append('expectedImageUrlEncoding', 'uri');
+    body.append('expectedImageUrlEncoding', 'uri');
+    expect((await POST(new NextRequest('http://localhost/api/admin/catalog/product/image', { method: 'POST', body }), context)).status).toBe(400);
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+  it('does not URI-decode a legacy plain URL containing percent escapes', async () => {
+    const expected = 'https://example.test/a%2Fb.png';
+    mocks.get.mockResolvedValue({ imageUrl: expected });
+    const body = new FormData();
+    body.set('image', new File([png], 'photo.png', { type: 'image/png' }));
+    body.set('expectedImageUrl', expected);
+    expect((await POST(new NextRequest('http://localhost/api/admin/catalog/product/image', { method: 'POST', body }), context)).status).toBe(200);
+    expect(mocks.replace).toHaveBeenCalledWith('product', expected, 'new');
+  });
   it.each([401, 403])('blocks unauthorized %s requests before upload', async (status) => {
     // Given:
     if (status === 401) mocks.auth.mockResolvedValue(null);
