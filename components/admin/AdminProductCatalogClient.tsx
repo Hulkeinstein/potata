@@ -6,6 +6,7 @@ import { useRef, useState, useTransition } from "react";
 import { CATALOG_CATEGORIES, catalogQueryParams, parseAdminCatalogQuery } from "@/lib/admin-catalog-query";
 import { AdminInventoryProductThumbnail } from "./AdminInventoryProductThumbnail";
 import { getProductContentGaps, PRODUCT_CONTENT_GAP_LABELS, PRODUCT_CONTENT_QUALITY_OPTIONS } from "@/lib/product-content-quality";
+import { AdminProductStatusConfirmation } from "./AdminProductStatusConfirmation";
 
 type CatalogItem = {
   readonly id: string;
@@ -29,6 +30,26 @@ const fieldClass = "mt-1 w-full min-w-0 rounded border border-zinc-700 bg-zinc-9
 const buttonClass = "rounded border border-zinc-600 px-3 py-2 text-sm disabled:opacity-40";
 
 export function AdminProductCatalogClient({ initialData: data }: { readonly initialData: CatalogPage }) {
+  const searchParams = useSearchParams();
+  return <CatalogFeedbackScope key={searchParams.toString()} initialData={data} />;
+}
+
+function CatalogFeedbackScope({ initialData: data }: { readonly initialData: CatalogPage }) {
+  const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState("");
+  const selectionScope = JSON.stringify([data.page, data.items.map(({ id, name, isActive }) => [id, name, isActive])]);
+  return <CatalogContent key={selectionScope} initialData={data} message={message} success={success} setMessage={setMessage} setSuccess={setSuccess} />;
+}
+
+type CatalogContentProps = {
+  readonly initialData: CatalogPage;
+  readonly message: string;
+  readonly success: string;
+  readonly setMessage: (message: string) => void;
+  readonly setSuccess: (success: string) => void;
+};
+
+function CatalogContent({ initialData: data, message, success, setMessage, setSuccess }: CatalogContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const applied = parseAdminCatalogQuery(new URLSearchParams(searchParams.toString()));
@@ -37,7 +58,9 @@ export function AdminProductCatalogClient({ initialData: data }: { readonly init
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState("");
+  const [selected, setSelected] = useState<readonly string[]>([]);
+  const [confirmation, setConfirmation] = useState<boolean | null>(null);
+  const selectedItems = data.items.filter(({ id }) => selected.includes(id));
   const pageCount = Math.min(100, Math.max(1, Math.ceil(data.total / data.pageSize)));
   const pageSizes = [...new Set([10, 20, 50, applied.pageSize])].sort((left, right) => left - right);
   function pageUrl(page: number) {
@@ -48,6 +71,7 @@ export function AdminProductCatalogClient({ initialData: data }: { readonly init
     lock.current = true;
     setBusy(true);
     setMessage("");
+    setSuccess("");
     try {
       const response = await fetch(`/api/admin/catalog/${encodeURIComponent(item.id)}/status`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -62,6 +86,34 @@ export function AdminProductCatalogClient({ initialData: data }: { readonly init
       if (!(error instanceof Error)) throw error;
       setMessage("판매 상태를 변경하지 못했습니다. 연결을 확인하고 다시 시도해 주세요.");
     } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+  async function applyBatch() {
+    if (lock.current || confirmation === null || selectedItems.length === 0) return;
+    lock.current = true;
+    setBusy(true);
+    setMessage("");
+    setSuccess("");
+    try {
+      const response = await fetch("/api/admin/catalog/status", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedItems.map(({ id }) => id), isActive: confirmation }), signal: AbortSignal.timeout(15000),
+      });
+      const result: unknown = await response.json();
+      if (!response.ok || !result || typeof result !== "object" || !("success" in result) || result.success !== true) {
+        setMessage("판매 상태를 처리하지 못했습니다. 목록을 새로고침해 현재 상태를 확인해 주세요.");
+        return;
+      }
+      setSuccess(`상품 ${selectedItems.length}개 처리 완료. ${"warning" in result && typeof result.warning === "string" ? result.warning : "판매 상태를 저장했습니다."}`);
+      setSelected([]);
+      startTransition(() => router.refresh());
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      setMessage("요청 결과를 확인하지 못했습니다. 목록을 새로고침해 현재 상태를 확인한 뒤 다시 시도해 주세요.");
+    } finally {
+      setConfirmation(null);
       lock.current = false;
       setBusy(false);
     }
@@ -85,13 +137,23 @@ export function AdminProductCatalogClient({ initialData: data }: { readonly init
       <p className="mt-3 text-xs leading-relaxed text-zinc-500">한·영 설명 칸의 작성 여부를 확인합니다. 다른 언어나 기존 원문으로 대체 표시될 수 있습니다. 사진은 대표 URL 등록 여부만 확인하며, 실제 접속 실패는 누락으로 분류하지 않습니다.</p>
     </form>
     {message ? <p role="alert" className="rounded border border-red-900 p-3 text-sm text-red-300">{message}</p> : null}
+    {success ? <p role="status" className="rounded border border-emerald-900 p-3 text-sm text-emerald-300">{success}</p> : null}
     <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><p className="text-zinc-300">조회 결과 <strong>{data.total}</strong>개</p><span className="text-xs text-zinc-500">재고 총량은 수동 품절 옵션을 포함합니다.</span></div>
+    <div className="flex flex-wrap items-center gap-3 rounded border border-zinc-700 bg-zinc-900 p-3 text-sm">
+      <label className="flex min-h-10 items-center gap-2"><input type="checkbox" disabled={busy || pending || data.items.length === 0} checked={data.items.length > 0 && selectedItems.length === data.items.length} onChange={(event) => setSelected(event.target.checked ? data.items.map(({ id }) => id) : [])} />현재 페이지 전체 선택</label>
+      <span aria-live="polite">선택 {selectedItems.length}개</span>
+      <button className={buttonClass} disabled={busy || pending || selectedItems.length === 0} onClick={() => setSelected([])}>선택 해제</button>
+      <button className={buttonClass} disabled={busy || pending || selectedItems.length === 0} onClick={() => setConfirmation(false)}>선택 상품 판매 중지</button>
+      <button className={buttonClass} disabled={busy || pending || selectedItems.length === 0} onClick={() => setConfirmation(true)}>선택 상품 재노출</button>
+      <p className="w-full text-xs text-zinc-500">현재 페이지에서만 최대 50개를 선택합니다. 페이지나 조건을 바꾸면 선택이 해제됩니다.</p>
+    </div>
     <ul className="space-y-3">{data.items.map((item) => {
       const availableCount = item.variants.filter((variant) => variant.stock > 0 && !variant.isManuallySoldOut).length;
       const stock = item.variants.reduce((sum, variant) => sum + variant.stock, 0);
       const status = item.isActive ? (availableCount > 0 ? "판매 중" : "품절") : "판매 중지";
       const contentGaps = getProductContentGaps(item);
       return <li key={item.id} className="grid gap-3 rounded border border-zinc-800 bg-zinc-950 p-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center lg:gap-6">
+        <label className="flex min-h-10 items-center gap-2 text-xs text-zinc-400 lg:col-span-3"><input type="checkbox" aria-label={`${item.name} 선택`} disabled={busy || pending} checked={selected.includes(item.id)} onChange={(event) => setSelected(event.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} />상품 선택</label>
         <div className="flex min-w-0 gap-3"><AdminInventoryProductThumbnail key={item.imageUrl} imageUrl={item.imageUrl} productName={item.name} /><div className="min-w-0"><p className="text-xs text-zinc-400">{item.brand} · {item.category}</p><h2 className="mt-1 break-words font-bold">{item.name}</h2><p className="mt-1 font-mono text-sm">AED {item.price.toLocaleString("en-US")}</p>{contentGaps.length > 0 ? <div className="mt-2 flex flex-wrap gap-1">{contentGaps.map((gap) => <span key={gap} className="rounded border border-amber-900 bg-amber-950/30 px-2 py-1 text-xs text-amber-200">{PRODUCT_CONTENT_GAP_LABELS[gap]}</span>)}</div> : null}</div></div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs lg:block lg:space-y-1"><p className={status === "판매 중" ? "text-emerald-400" : "text-amber-400"}>{status}</p><p className="text-zinc-400">재고 총량 {stock} · 구매 가능 옵션 {availableCount}/{item.variants.length}</p></div>
         <div className="flex flex-wrap gap-2"><Link className={buttonClass} href={`/admin/products/${encodeURIComponent(item.id)}/edit?returnTo=${encodeURIComponent(returnTo)}`}>수정</Link><button className={buttonClass} disabled={busy || pending} onClick={() => void toggle(item)}>{item.isActive ? "판매 중지" : "재노출"}</button></div>
@@ -103,5 +165,6 @@ export function AdminProductCatalogClient({ initialData: data }: { readonly init
       <span className="text-sm text-zinc-400">{data.page} / {pageCount}</span>
       {data.page < pageCount ? <Link className={buttonClass} href={pageUrl(data.page + 1)}>다음</Link> : <span className={`${buttonClass} opacity-40`}>다음</span>}
     </nav>
+    {confirmation !== null ? <AdminProductStatusConfirmation items={selectedItems} isActive={confirmation} busy={busy || pending} onCancel={() => setConfirmation(null)} onConfirm={() => void applyBatch()} /> : null}
   </section>;
 }

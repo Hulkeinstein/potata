@@ -45,8 +45,22 @@ export async function listAdminProducts(input: Pick<AdminCatalogQuery, "query" |
 }
 
 export async function updateAdminProductStatus(id: string, isActive: boolean): Promise<boolean> {
-  const result = await prisma.product.updateMany({ where: { id }, data: { isActive } });
-  return result.count === 1;
+  return (await updateAdminProductStatuses([id], isActive)) === 1;
+}
+
+class MissingStatusProductsError extends Error {}
+
+export async function updateAdminProductStatuses(ids: readonly string[], isActive: boolean): Promise<number> {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const result = await tx.product.updateMany({ where: { id: { in: [...ids] } }, data: { isActive } });
+      if (result.count !== ids.length) throw new MissingStatusProductsError();
+      return result.count;
+    });
+  } catch (error) {
+    if (error instanceof MissingStatusProductsError) return 0;
+    throw error;
+  }
 }
 
 export async function getAdminProduct(id: string): Promise<AdminCatalogProduct | null> {

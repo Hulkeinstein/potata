@@ -15,7 +15,8 @@ describe("catalog database contracts", () => {
     if (status === "sold-out") expect(query.where.variants).toEqual({ none: { stock: { gt: 0 }, isManuallySoldOut: false } });
   });
   it("never overwrites product content or stock during a visibility change", async () => {
+    mocks.transaction.mockImplementationOnce(async (run) => run({ product: { updateMany: mocks.updateMany } }));
     expect(await updateAdminProductStatus("product", false)).toBe(true);
-    expect(mocks.updateMany).toHaveBeenCalledExactlyOnceWith({ where: { id: "product" }, data: { isActive: false } });
+    expect(mocks.updateMany).toHaveBeenCalledExactlyOnceWith({ where: { id: { in: ["product"] } }, data: { isActive: false } });
   });
 });
